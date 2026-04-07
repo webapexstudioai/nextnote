@@ -570,7 +570,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
               <button
                 onClick={() => handleSummarizeNotes(appt.id)}
                 disabled={summarizing || !meetingNotesValue.trim()}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 text-xs font-medium hover:bg-indigo-500/20 disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[rgba(232,85,61,0.1)] text-[var(--accent)] text-xs font-medium hover:bg-[rgba(232,85,61,0.2)] disabled:opacity-50"
               >
                 {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                 {summarizing ? "Summarizing..." : "Summarize with AI"}
@@ -578,10 +578,10 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
             </div>
 
             {appt.summarizedNotes && (
-              <div className="p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+              <div className="p-3 rounded-lg bg-[rgba(232,85,61,0.05)] border border-[rgba(232,85,61,0.1)]">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Sparkles className="w-3 h-3 text-indigo-400" />
-                  <span className="text-[10px] font-medium text-indigo-400 uppercase tracking-wider">AI Summary</span>
+                  <Sparkles className="w-3 h-3 text-[var(--accent)]" />
+                  <span className="text-[10px] font-medium text-[var(--accent)] uppercase tracking-wider">AI Summary</span>
                 </div>
                 <div className="text-xs text-[var(--muted)] leading-relaxed whitespace-pre-wrap">
                   {appt.summarizedNotes}
@@ -640,15 +640,15 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
           <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Contact Info</h3>
           <div className="space-y-2">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--background)]">
-              <Phone className="w-4 h-4 text-indigo-400" />
+              <Phone className="w-4 h-4 text-[var(--accent)]" />
               <span className="text-sm">{prospect.phone || "\u2014"}</span>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--background)]">
-              <Mail className="w-4 h-4 text-indigo-400" />
+              <Mail className="w-4 h-4 text-[var(--accent)]" />
               <span className="text-sm">{prospect.email || "\u2014"}</span>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--background)]">
-              <Briefcase className="w-4 h-4 text-indigo-400" />
+              <Briefcase className="w-4 h-4 text-[var(--accent)]" />
               <span className="text-sm">{prospect.service || "\u2014"}</span>
             </div>
           </div>
@@ -841,8 +841,8 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
               {/* AI Generate Tab */}
               {vmTab === "ai" && (
                 <div className="flex flex-col items-center justify-center py-8 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-indigo-400" />
+                  <div className="w-12 h-12 rounded-full bg-[rgba(232,85,61,0.1)] flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-[var(--accent)]" />
                   </div>
                   <p className="text-sm font-medium text-[var(--foreground)]">AI Voice Generation</p>
                   <p className="text-xs text-[var(--muted)] text-center">

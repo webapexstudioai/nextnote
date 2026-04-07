@@ -237,11 +237,11 @@ export default function AppointmentsPage() {
         <div className="p-4 hover:bg-[var(--card-hover)] transition-colors">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex flex-col items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-indigo-400">
+              <div className="w-12 h-12 rounded-xl bg-[rgba(232,85,61,0.1)] flex flex-col items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-[var(--accent)]">
                   {new Date(appt.date).toLocaleDateString("en-US", { month: "short" })}
                 </span>
-                <span className="text-sm font-bold text-indigo-300">
+                <span className="text-sm font-bold text-[var(--accent-hover)]">
                   {new Date(appt.date).getDate()}
                 </span>
               </div>
@@ -320,7 +320,7 @@ export default function AppointmentsPage() {
                   if (isNotesOpen) { setActiveNotesId(null); }
                   else { setActiveNotesId(appt.id); setNotesInput(appt.meetingNotes || ""); }
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 text-xs font-medium hover:bg-indigo-500/20 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(232,85,61,0.1)] text-[var(--accent)] text-xs font-medium hover:bg-[rgba(232,85,61,0.2)] transition-colors"
               >
                 <FileText className="w-3 h-3" /> Notes
               </button>
@@ -348,17 +348,17 @@ export default function AppointmentsPage() {
               <button
                 onClick={() => handleSummarize(p.id, appt.id, p.name, p.service)}
                 disabled={summarizing || !notesInput.trim()}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 text-xs font-medium hover:bg-indigo-500/20 disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[rgba(232,85,61,0.1)] text-[var(--accent)] text-xs font-medium hover:bg-[rgba(232,85,61,0.2)] disabled:opacity-50"
               >
                 {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                 {summarizing ? "Summarizing..." : "AI Summarize"}
               </button>
             </div>
             {appt.summarizedNotes && (
-              <div className="p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/10">
+              <div className="p-3 rounded-lg bg-[rgba(232,85,61,0.05)] border border-[rgba(232,85,61,0.1)]">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <Sparkles className="w-3 h-3 text-indigo-400" />
-                  <span className="text-[10px] font-medium text-indigo-400 uppercase tracking-wider">AI Summary</span>
+                  <Sparkles className="w-3 h-3 text-[var(--accent)]" />
+                  <span className="text-[10px] font-medium text-[var(--accent)] uppercase tracking-wider">AI Summary</span>
                 </div>
                 <p className="text-xs text-[var(--muted)] leading-relaxed whitespace-pre-wrap">{appt.summarizedNotes}</p>
               </div>
@@ -460,7 +460,7 @@ export default function AppointmentsPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
             <div className="flex items-center gap-2 mb-1">
-              <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+              <Calendar className="w-3.5 h-3.5 text-[var(--accent)]" />
               <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider">Booked This Month</span>
             </div>
             <p className="text-2xl font-bold">{stats.booked}</p>
@@ -521,7 +521,7 @@ export default function AppointmentsPage() {
                       isSelected
                         ? "bg-[var(--accent)] text-white"
                         : isToday
-                        ? "bg-indigo-500/10 text-indigo-400 font-medium"
+                        ? "bg-[rgba(232,85,61,0.1)] text-[var(--accent)] font-medium"
                         : "hover:bg-[var(--background)] text-[var(--foreground)]"
                     }`}
                   >
@@ -610,8 +610,8 @@ export default function AppointmentsPage() {
 
         {/* Follow-up Prompt */}
         {followUpTarget && (
-          <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-4 space-y-3">
-            <h3 className="text-sm font-medium text-indigo-400">Schedule a follow-up with {followUpTarget.prospect.name}?</h3>
+          <div className="rounded-xl border border-[rgba(232,85,61,0.2)] bg-[rgba(232,85,61,0.05)] p-4 space-y-3">
+            <h3 className="text-sm font-medium text-[var(--accent)]">Schedule a follow-up with {followUpTarget.prospect.name}?</h3>
             <div className="flex gap-2 flex-wrap">
               <button onClick={() => handleFollowUpQuick(1)} className="px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs hover:bg-[var(--card-hover)]">
                 Tomorrow

@@ -80,7 +80,7 @@ export default function ProspectsPage() {
             <div
               key={p.id}
               className={`rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 hover:bg-[var(--card-hover)] transition-colors ${
-                selectedId === p.id ? "border-indigo-500/50" : ""
+                selectedId === p.id ? "border-[rgba(232,85,61,0.5)]" : ""
               }`}
             >
               {editingId === p.id ? (

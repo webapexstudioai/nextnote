@@ -129,8 +129,8 @@ export default function DashboardPage() {
         {/* Empty State — No Folders Yet */}
         {!hasFolders && !showCreateFolder && (
           <div className="rounded-2xl border-2 border-dashed border-[var(--border)] bg-[var(--card)] p-12 text-center fade-in">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
-              <FolderPlus className="w-8 h-8 text-indigo-400" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(232, 85, 61, 0.1)" }}>
+              <FolderPlus className="w-8 h-8 text-[var(--accent)]" />
             </div>
             <h2 className="text-lg font-bold mb-2">Create Your First Folder</h2>
             <p className="text-sm text-[var(--muted)] max-w-md mx-auto mb-6">

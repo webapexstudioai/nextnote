@@ -4,8 +4,8 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Public paths that don't need auth
-  const publicPaths = ["/auth/login", "/auth/signup", "/api/auth/login", "/api/auth/signup", "/api/auth/google", "/api/auth/google/callback", "/api/auth/status"];
-  if (publicPaths.some((p) => pathname.startsWith(p))) {
+  const publicPaths = ["/", "/auth/login", "/auth/signup", "/api/auth/login", "/api/auth/signup", "/api/auth/google", "/api/auth/google/callback", "/api/auth/status"];
+  if (publicPaths.some((p) => pathname === p) || pathname.startsWith("/api/auth/")) {
     return NextResponse.next();
   }
 

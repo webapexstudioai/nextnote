@@ -25,7 +25,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
       {/* Logo */}
       <div className="p-5 border-b border-[var(--border)]">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e8553d] to-[#ff8a6a] flex items-center justify-center">
             <span className="text-white font-bold text-sm">N</span>
           </div>
           {!collapsed && (
@@ -48,9 +48,10 @@ export default function Sidebar({ collapsed }: SidebarProps) {
               href={item.href}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                 isActive
-                  ? "bg-indigo-500/10 text-indigo-400"
+                  ? "bg-[var(--accent)]/10 text-[var(--accent)]"
                   : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--card-hover)]"
               }`}
+              style={isActive ? { background: "rgba(232, 85, 61, 0.1)", color: "#e8553d" } : undefined}
             >
               <Icon className="w-4 h-4 shrink-0" />
               {!collapsed && <span>{item.label}</span>}
@@ -62,7 +63,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
       {/* User Section */}
       <div className="p-3 border-t border-[var(--border)]">
         <div className="flex items-center gap-3 px-3 py-2.5">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#e8553d] to-[#ff8a6a] flex items-center justify-center shrink-0">
             <span className="text-white font-bold text-xs">E</span>
           </div>
           {!collapsed && (

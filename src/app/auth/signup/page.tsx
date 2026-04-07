@@ -64,14 +64,17 @@ export default function SignupPage() {
   }
 
   const inputClass =
-    "w-full px-4 py-3 bg-[var(--card)] border border-[var(--border)] rounded-lg text-sm text-[var(--foreground)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-colors";
+    "w-full px-4 py-3 bg-[var(--card)] border border-[var(--border)] rounded-lg text-sm text-[var(--foreground)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[rgba(232,85,61,0.5)] focus:border-[rgba(232,85,61,0.5)] transition-colors";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 relative overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#e8553d]/[0.04] blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-md relative">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 mb-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-[#e8553d] to-[#ff8a6a] mb-4">
             <span className="text-white font-bold text-lg">N</span>
           </div>
           <h1 className="text-2xl font-bold">Create your account</h1>
@@ -172,7 +175,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium text-sm hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-lg bg-gradient-to-r from-[#e8553d] to-[#d44429] text-white font-medium text-sm hover:from-[#f06a54] hover:to-[#e8553d] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#e8553d]/20"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {loading ? "Creating account..." : "Create Account"}
@@ -181,7 +184,7 @@ export default function SignupPage() {
 
         <p className="text-center text-sm text-[var(--muted)] mt-6">
           Already have an account?{" "}
-          <Link href="/auth/login" className="text-indigo-400 hover:text-indigo-300 transition-colors">
+          <Link href="/auth/login" className="text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">
             Log in
           </Link>
         </p>

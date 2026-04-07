@@ -96,8 +96,8 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
     <>
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-indigo-500/5 border border-indigo-500/20 rounded-xl mb-3">
-          <span className="text-xs text-indigo-400 font-medium">{selectedIds.size} selected</span>
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl mb-3" style={{ background: "rgba(232, 85, 61, 0.05)", border: "1px solid rgba(232, 85, 61, 0.2)" }}>
+          <span className="text-xs text-[var(--accent)] font-medium">{selectedIds.size} selected</span>
           <button
             onClick={() => { setShowBulkVm(true); setBulkVmDone(false); setBulkVmMessage(""); }}
             disabled={selectedWithPhone.length === 0}
@@ -124,7 +124,7 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
                   type="checkbox"
                   checked={selectedIds.size === prospects.length && prospects.length > 0}
                   onChange={toggleAll}
-                  className="rounded border-zinc-600 bg-transparent cursor-pointer accent-indigo-500"
+                  className="rounded border-zinc-600 bg-transparent cursor-pointer accent-[var(--accent)]"
                 />
               </th>
               <th className="text-left py-3 px-4 text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Name</th>
@@ -142,18 +142,19 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
                 onClick={() => onSelect(prospect)}
                 className={`border-b border-[var(--border)] cursor-pointer transition-colors ${
                   selectedId === prospect.id
-                    ? "bg-indigo-500/10"
+                    ? "bg-[var(--accent-subtle)]"
                     : selectedIds.has(prospect.id)
-                    ? "bg-indigo-500/5"
+                    ? "bg-[var(--accent-subtle)]"
                     : "hover:bg-[var(--card-hover)]"
                 }`}
+                style={selectedId === prospect.id ? { background: "rgba(232, 85, 61, 0.1)" } : selectedIds.has(prospect.id) ? { background: "rgba(232, 85, 61, 0.05)" } : undefined}
               >
                 <td className="py-3 px-2" onClick={(e) => toggleSelect(prospect.id, e)}>
                   <input
                     type="checkbox"
                     checked={selectedIds.has(prospect.id)}
                     onChange={() => {}}
-                    className="rounded border-zinc-600 bg-transparent cursor-pointer accent-indigo-500"
+                    className="rounded border-zinc-600 bg-transparent cursor-pointer accent-[var(--accent)]"
                   />
                 </td>
                 <td className="py-3 px-4">

@@ -37,7 +37,7 @@ export default function SettingsPage() {
         {/* Profile */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
           <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-            <User className="w-4 h-4 text-indigo-400" /> Profile
+            <User className="w-4 h-4 text-[var(--accent)]" /> Profile
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {Object.entries(profile).map(([key, value]) => (
@@ -115,7 +115,7 @@ export default function SettingsPage() {
             <Palette className="w-4 h-4 text-purple-400" /> Appearance
           </h3>
           <div className="flex gap-3">
-            <button className="flex-1 px-4 py-3 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-sm text-indigo-400 font-medium">
+            <button className="flex-1 px-4 py-3 rounded-lg bg-[rgba(232,85,61,0.1)] border border-[rgba(232,85,61,0.3)] text-sm text-[var(--accent)] font-medium">
               Dark Mode
             </button>
             <button className="flex-1 px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm text-[var(--muted)] font-medium cursor-not-allowed opacity-50">

@@ -226,7 +226,7 @@ export default function FolderImportModal({ folderId, onClose }: FolderImportMod
             <>
               <div className="space-y-2">
                 <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-indigo-400" /> AI Column Mapping
+                  <Sparkles className="w-3 h-3 text-[var(--accent)]" /> AI Column Mapping
                 </h3>
                 <div className="grid grid-cols-2 gap-1.5">
                   {rawHeaders.map((h) => (
@@ -234,7 +234,7 @@ export default function FolderImportModal({ folderId, onClose }: FolderImportMod
                       <span className="text-[var(--muted)] truncate mr-2">{h}</span>
                       <div className="flex items-center gap-1">
                         <ArrowRight className="w-2.5 h-2.5 text-[var(--muted)]" />
-                        <span className={`font-medium ${mapping[h] === "skip" ? "text-zinc-500" : "text-indigo-400"}`}>
+                        <span className={`font-medium ${mapping[h] === "skip" ? "text-zinc-500" : "text-[var(--accent)]"}`}>
                           {fieldLabels[mapping[h]] || mapping[h]}
                         </span>
                       </div>

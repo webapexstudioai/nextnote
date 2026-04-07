@@ -236,19 +236,19 @@ export default function ImportPage() {
             {/* How it works */}
             <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
               <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-400" /> How AI Import Works
+                <Sparkles className="w-4 h-4 text-[var(--accent)]" /> How AI Import Works
               </h3>
               <div className="space-y-2 text-xs text-[var(--muted)]">
                 <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0 text-[10px] font-bold">1</span>
+                  <span className="w-5 h-5 rounded-full bg-[rgba(232,85,61,0.1)] text-[var(--accent)] flex items-center justify-center shrink-0 text-[10px] font-bold">1</span>
                   <span>Upload your XLSX file or paste a Google Sheets link</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0 text-[10px] font-bold">2</span>
+                  <span className="w-5 h-5 rounded-full bg-[rgba(232,85,61,0.1)] text-[var(--accent)] flex items-center justify-center shrink-0 text-[10px] font-bold">2</span>
                   <span>Claude AI scans your data and auto-detects columns (name, email, phone, service, notes)</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0 text-[10px] font-bold">3</span>
+                  <span className="w-5 h-5 rounded-full bg-[rgba(232,85,61,0.1)] text-[var(--accent)] flex items-center justify-center shrink-0 text-[10px] font-bold">3</span>
                   <span>Preview the mapped data before importing into your dashboard</span>
                 </div>
               </div>
@@ -271,7 +271,7 @@ export default function ImportPage() {
             {/* Column Mapping */}
             <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
               <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-400" /> AI Column Mapping
+                <Sparkles className="w-4 h-4 text-[var(--accent)]" /> AI Column Mapping
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {rawHeaders.map((header) => (
@@ -279,7 +279,7 @@ export default function ImportPage() {
                     <span className="text-xs text-[var(--muted)] truncate">{header}</span>
                     <div className="flex items-center gap-1.5">
                       <ArrowRight className="w-3 h-3 text-[var(--muted)]" />
-                      <span className={`text-xs font-medium ${mapping[header] === "skip" ? "text-zinc-500" : "text-indigo-400"}`}>
+                      <span className={`text-xs font-medium ${mapping[header] === "skip" ? "text-zinc-500" : "text-[var(--accent)]"}`}>
                         {fieldLabels[mapping[header]] || mapping[header]}
                       </span>
                     </div>

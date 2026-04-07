@@ -55,7 +55,7 @@ export default function AIInsightsPage() {
       <header className="sticky top-0 z-30 bg-[rgba(10,10,15,0.85)] backdrop-blur-xl border-b border-[var(--border)]">
         <div className="px-4 sm:px-6 py-4">
           <h1 className="text-xl font-bold flex items-center gap-2">
-            <Zap className="w-5 h-5 text-indigo-400" /> AI Insights
+            <Zap className="w-5 h-5 text-[var(--accent)]" /> AI Insights
           </h1>
           <p className="text-xs text-[var(--muted)]">Intelligent analysis of your prospect pipeline</p>
         </div>
@@ -74,10 +74,10 @@ export default function AIInsightsPage() {
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-indigo-400" />
+              <TrendingUp className="w-4 h-4 text-[var(--accent)]" />
               <span className="text-xs text-[var(--muted)] uppercase tracking-wider">Booking Rate</span>
             </div>
-            <p className="text-3xl font-bold text-indigo-400">{insights.bookingRate}%</p>
+            <p className="text-3xl font-bold text-[var(--accent)]">{insights.bookingRate}%</p>
             <p className="text-xs text-[var(--muted)] mt-1">{insights.byStatus.Booked.length} prospects booked</p>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
