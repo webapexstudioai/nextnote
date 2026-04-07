@@ -1,12 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIronSession } from "iron-session";
-import { cookies } from "next/headers";
-
-const SESSION_OPTIONS = {
-  password: process.env.SESSION_SECRET || "nextnote-super-secret-session-key-32chars",
-  cookieName: "nextnote_session",
-  cookieOptions: { secure: process.env.NODE_ENV === "production" },
-};
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

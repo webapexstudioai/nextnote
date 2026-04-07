@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
@@ -15,7 +14,6 @@ interface FieldErrors {
 }
 
 export default function SignupPage() {
-  const router = useRouter();
   const [form, setForm] = useState({ name: "", username: "", email: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
