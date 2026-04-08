@@ -16,6 +16,12 @@ interface FieldErrors {
 
 export default function SignupPage() {
   const [form, setForm] = useState({ name: "", agencyName: "", email: "", password: "", confirmPassword: "" });
+  const passwordChecks = {
+    minLength: form.password.length >= 6,
+    uppercase: /[A-Z]/.test(form.password),
+    number: /\d/.test(form.password),
+    special: /[^A-Za-z0-9]/.test(form.password),
+  };
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -109,7 +115,7 @@ export default function SignupPage() {
             <label className="block text-sm font-medium mb-1.5">Agency Name</label>
             <input
               type="text"
-              placeholder="Apex Studio"
+              placeholder="Your agency name"
               value={form.agencyName}
               onChange={(e) => setForm({ ...form, agencyName: e.target.value })}
               className={inputClass}
@@ -136,7 +142,7 @@ export default function SignupPage() {
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="6+ chars, 1 uppercase, 1 number, 1 special"
+                placeholder="Enter password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 className={inputClass}
@@ -150,6 +156,12 @@ export default function SignupPage() {
               </button>
             </div>
             {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
+            <div className="mt-2 space-y-1 text-xs text-[var(--muted)]">
+              <p className={passwordChecks.minLength ? "text-emerald-400" : "text-[var(--muted)]"}>{passwordChecks.minLength ? "✓" : "•"} 6+ characters</p>
+              <p className={passwordChecks.uppercase ? "text-emerald-400" : "text-[var(--muted)]"}>{passwordChecks.uppercase ? "✓" : "•"} 1 uppercase letter</p>
+              <p className={passwordChecks.number ? "text-emerald-400" : "text-[var(--muted)]"}>{passwordChecks.number ? "✓" : "•"} 1 number</p>
+              <p className={passwordChecks.special ? "text-emerald-400" : "text-[var(--muted)]"}>{passwordChecks.special ? "✓" : "•"} 1 special character</p>
+            </div>
           </div>
 
           {/* Confirm Password */}
