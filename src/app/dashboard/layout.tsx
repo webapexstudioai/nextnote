@@ -1,12 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { ProspectsProvider } from "@/context/ProspectsContext";
+import { ACCENT_COLORS, UI_DENSITIES } from "@/lib/subscriptions";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // Load and apply user customization on mount
+  useEffect(() => {
+    async function loadCustomization() {
+      try {
+        const res = await fetch("/api/settings");
+        if (!res.ok) return;
+        const s = await res.json();
+
+        const color = ACCENT_COLORS.find((c) => c.id === s.accent_color);
+        if (color) {
+          document.documentElement.style.setProperty("--accent", color.css);
+          document.documentElement.style.setProperty("--accent-hover", color.hover);
+          document.documentElement.style.setProperty("--accent-glow", color.glow);
+        }
+
+        const density = UI_DENSITIES.find((d) => d.id === s.ui_density);
+        if (density) {
+          document.documentElement.style.setProperty("--ui-scale", density.scale.toString());
+        }
+      } catch {
+        // Silently ignore — defaults apply
+      }
+    }
+    loadCustomization();
+  }, []);
 
   return (
     <ProspectsProvider>

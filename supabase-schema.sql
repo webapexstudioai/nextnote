@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
   agency_name TEXT NOT NULL DEFAULT '',
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
+  email_verified BOOLEAN NOT NULL DEFAULT false,
+  subscription_tier TEXT NOT NULL DEFAULT 'starter',
+  subscription_status TEXT NOT NULL DEFAULT 'active',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -88,6 +91,36 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_reset_tokens_token ON password_reset_tokens (token);
 
+-- 7. Email verification OTP codes
+CREATE TABLE IF NOT EXISTS email_verification_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_verification_codes_user ON email_verification_codes (user_id);
+
+-- 8. User settings (API keys, customization)
+CREATE TABLE IF NOT EXISTS user_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  anthropic_api_key_encrypted TEXT,
+  openai_api_key_encrypted TEXT,
+  accent_color TEXT NOT NULL DEFAULT 'red-orange',
+  ui_density TEXT NOT NULL DEFAULT 'default',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_settings_user ON user_settings (user_id);
+
+-- Add email_verified and subscription fields to users table
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_tier TEXT NOT NULL DEFAULT 'starter';
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_status TEXT NOT NULL DEFAULT 'active';
+
 -- Row-Level Security (RLS)
 -- Enable RLS on all tables (enforced when using anon key)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -96,6 +129,8 @@ ALTER TABLE files ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prospects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE password_reset_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE email_verification_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 
 -- Service-role key bypasses RLS, so the API routes (which use supabaseAdmin) work fine.
 -- If you want browser-side Supabase access in the future, add policies like:

@@ -63,7 +63,7 @@ export default function SignupPage() {
         setErrors({ general: data.error || "Signup failed" });
         return;
       }
-      window.location.href = "/dashboard";
+      window.location.href = "/auth/verify-email";
     } catch {
       setErrors({ general: "Network error. Please try again." });
     } finally {

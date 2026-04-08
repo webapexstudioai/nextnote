@@ -139,6 +139,11 @@ export default function ForgotPasswordPage() {
                 Back to login
               </Link>
             </div>
+
+            <p className="text-center text-[10px] text-[var(--muted)] mt-4 opacity-60">
+              Note: Password reset emails are sent from a verified sender domain.
+              If you&apos;re not receiving emails, check your spam folder or contact support.
+            </p>
           </form>
         )}
       </div>
