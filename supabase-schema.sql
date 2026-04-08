@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
   openai_api_key_encrypted TEXT,
   accent_color TEXT NOT NULL DEFAULT 'red-orange',
   ui_density TEXT NOT NULL DEFAULT 'default',
+  theme_mode TEXT NOT NULL DEFAULT 'dark',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -135,3 +136,6 @@ ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 -- Service-role key bypasses RLS, so the API routes (which use supabaseAdmin) work fine.
 -- If you want browser-side Supabase access in the future, add policies like:
 --   CREATE POLICY "users_own_data" ON folders FOR ALL USING (user_id = auth.uid());
+
+-- Migration: Add theme_mode column if it doesn't exist yet
+-- ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS theme_mode TEXT NOT NULL DEFAULT 'dark';

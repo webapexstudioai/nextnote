@@ -13,7 +13,7 @@ interface SearchFilterProps {
 const statuses: (ProspectStatus | "All")[] = ["All", "New", "Contacted", "Qualified", "Booked", "Closed"];
 
 const statusColors: Record<string, string> = {
-  All: "bg-zinc-700 text-zinc-200",
+  All: "bg-[var(--border)] text-[var(--foreground)]",
   New: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   Contacted: "bg-amber-500/20 text-amber-400 border-amber-500/30",
   Qualified: "bg-purple-500/20 text-purple-400 border-purple-500/30",

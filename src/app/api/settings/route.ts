@@ -48,8 +48,7 @@ export async function GET() {
         openai_api_key: null,
         anthropic_connected: false,
         openai_connected: false,
-        accent_color: "red-orange",
-        ui_density: "default",
+        theme_mode: "dark",
       });
     }
 
@@ -62,8 +61,7 @@ export async function GET() {
         : null,
       anthropic_connected: !!settings.anthropic_api_key_encrypted,
       openai_connected: !!settings.openai_api_key_encrypted,
-      accent_color: settings.accent_color,
-      ui_density: settings.ui_density,
+      theme_mode: settings.theme_mode || "dark",
     });
   } catch (err) {
     console.error("Get settings error:", err);
@@ -79,28 +77,57 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const updates: Record<string, string | null> = { updated_at: new Date().toISOString() };
+    const settingsUpdates: Record<string, string | null> = { updated_at: new Date().toISOString() };
+
+    // Handle profile fields — update users table
+    const profileUpdates: Record<string, string> = {};
+    if (body.name !== undefined && typeof body.name === "string" && body.name.trim()) {
+      profileUpdates.name = body.name.trim();
+    }
+    if (body.email !== undefined && typeof body.email === "string" && body.email.trim()) {
+      profileUpdates.email = body.email.trim().toLowerCase();
+    }
+    if (body.agency_name !== undefined && typeof body.agency_name === "string") {
+      profileUpdates.agency_name = body.agency_name.trim();
+    }
+
+    if (Object.keys(profileUpdates).length > 0) {
+      const { error: profileError } = await supabaseAdmin
+        .from("users")
+        .update(profileUpdates)
+        .eq("id", session.userId);
+
+      if (profileError) {
+        console.error("Profile update error:", profileError);
+        return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
+      }
+
+      // Update session with new values
+      if (profileUpdates.name) session.name = profileUpdates.name;
+      if (profileUpdates.email) session.email = profileUpdates.email;
+      if (profileUpdates.agency_name) session.agencyName = profileUpdates.agency_name;
+      await session.save();
+    }
 
     // Handle API keys
     if ("anthropic_api_key" in body) {
       if (body.anthropic_api_key === null || body.anthropic_api_key === "") {
-        updates.anthropic_api_key_encrypted = null;
+        settingsUpdates.anthropic_api_key_encrypted = null;
       } else {
-        updates.anthropic_api_key_encrypted = encrypt(body.anthropic_api_key);
+        settingsUpdates.anthropic_api_key_encrypted = encrypt(body.anthropic_api_key);
       }
     }
 
     if ("openai_api_key" in body) {
       if (body.openai_api_key === null || body.openai_api_key === "") {
-        updates.openai_api_key_encrypted = null;
+        settingsUpdates.openai_api_key_encrypted = null;
       } else {
-        updates.openai_api_key_encrypted = encrypt(body.openai_api_key);
+        settingsUpdates.openai_api_key_encrypted = encrypt(body.openai_api_key);
       }
     }
 
-    // Handle customization
-    if (body.accent_color) updates.accent_color = body.accent_color;
-    if (body.ui_density) updates.ui_density = body.ui_density;
+    // Handle theme
+    if (body.theme_mode) settingsUpdates.theme_mode = body.theme_mode;
 
     // Upsert settings
     const { data: existing } = await supabaseAdmin
@@ -112,12 +139,12 @@ export async function PUT(req: NextRequest) {
     if (existing) {
       await supabaseAdmin
         .from("user_settings")
-        .update(updates)
+        .update(settingsUpdates)
         .eq("user_id", session.userId);
     } else {
       await supabaseAdmin
         .from("user_settings")
-        .insert({ user_id: session.userId, ...updates });
+        .insert({ user_id: session.userId, ...settingsUpdates });
     }
 
     return NextResponse.json({ success: true });

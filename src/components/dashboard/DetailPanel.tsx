@@ -414,7 +414,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
           onClick={() => setSendMeetInvite(!sendMeetInvite)}
           disabled={!googleConnected}
           className={`w-10 h-5 rounded-full transition-colors relative ${
-            sendMeetInvite && googleConnected ? "bg-[var(--accent)]" : "bg-zinc-700"
+            sendMeetInvite && googleConnected ? "bg-[var(--accent)]" : "bg-[var(--border)]"
           } ${!googleConnected ? "opacity-40 cursor-not-allowed" : ""}`}
         >
           <div
@@ -622,7 +622,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
               >
                 <div
                   className={`h-2 rounded-full transition-all ${
-                    i <= currentIndex ? pipelineColors[stage] : "bg-zinc-800"
+                    i <= currentIndex ? pipelineColors[stage] : "bg-[var(--border)]"
                   } ${i <= currentIndex ? "opacity-100" : "opacity-40"} group-hover:opacity-100`}
                 />
                 <span className={`block text-[10px] mt-1.5 text-center transition-colors ${

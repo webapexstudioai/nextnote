@@ -51,7 +51,7 @@ export default function ProspectsPage() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-[rgba(10,10,15,0.85)] backdrop-blur-xl border-b border-[var(--border)]">
+      <header className="sticky top-0 z-30 bg-[var(--header-bg)] backdrop-blur-xl border-b border-[var(--border)]">
         <div className="flex items-center justify-between px-4 sm:px-6 py-4">
           <div>
             <h1 className="text-xl font-bold">Prospects</h1>
@@ -122,7 +122,7 @@ export default function ProspectsPage() {
                     <button onClick={() => saveEdit(p.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors">
                       <Check className="w-3 h-3" /> Save
                     </button>
-                    <button onClick={() => setEditingId(null)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-700/50 text-zinc-400 text-xs font-medium hover:bg-zinc-700 transition-colors">
+                    <button onClick={() => setEditingId(null)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--border)]/50 text-[var(--muted)] text-xs font-medium hover:bg-[var(--border)] transition-colors">
                       <X className="w-3 h-3" /> Cancel
                     </button>
                   </div>

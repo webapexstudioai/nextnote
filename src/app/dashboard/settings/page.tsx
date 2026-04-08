@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import {
   Settings, User, Bell, Shield, Palette, Save, CheckCircle, Loader2,
-  Key, Eye, EyeOff, Trash2, Zap, Crown,
+  Key, Eye, EyeOff, Trash2, Zap, Crown, AlertCircle, Sun, Moon,
 } from "lucide-react";
-import { ACCENT_COLORS, UI_DENSITIES, TIERS } from "@/lib/subscriptions";
+import { TIERS } from "@/lib/subscriptions";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 
 interface UserProfile {
@@ -22,13 +22,15 @@ interface SettingsData {
   openai_api_key: string | null;
   anthropic_connected: boolean;
   openai_connected: boolean;
-  accent_color: string;
-  ui_density: string;
+  theme_mode: string;
 }
+
+type KeyValidationState = "idle" | "validating" | "valid" | "invalid";
 
 export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [profile, setProfile] = useState<UserProfile>({
@@ -43,7 +45,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsData>({
     anthropic_api_key: null, openai_api_key: null,
     anthropic_connected: false, openai_connected: false,
-    accent_color: "red-orange", ui_density: "default",
+    theme_mode: "dark",
   });
 
   // API key input state
@@ -51,10 +53,13 @@ export default function SettingsPage() {
   const [openaiKey, setOpenaiKey] = useState("");
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+  const [anthropicValidation, setAnthropicValidation] = useState<KeyValidationState>("idle");
+  const [openaiValidation, setOpenaiValidation] = useState<KeyValidationState>("idle");
+  const [anthropicError, setAnthropicError] = useState("");
+  const [openaiError, setOpenaiError] = useState("");
 
-  // Customization state
-  const [accentColor, setAccentColor] = useState("red-orange");
-  const [uiDensity, setUiDensity] = useState("default");
+  // Theme state
+  const [themeMode, setThemeMode] = useState("dark");
 
   useEffect(() => {
     async function load() {
@@ -77,8 +82,7 @@ export default function SettingsPage() {
         if (settingsRes.ok) {
           const s = await settingsRes.json();
           setSettings(s);
-          setAccentColor(s.accent_color || "red-orange");
-          setUiDensity(s.ui_density || "default");
+          setThemeMode(s.theme_mode || "dark");
         }
       } catch (err) {
         console.error("Failed to load settings:", err);
@@ -89,15 +93,43 @@ export default function SettingsPage() {
     load();
   }, []);
 
+  async function validateKey(provider: "anthropic" | "openai", key: string) {
+    if (!key.trim()) return;
+    const setValidation = provider === "anthropic" ? setAnthropicValidation : setOpenaiValidation;
+    const setError = provider === "anthropic" ? setAnthropicError : setOpenaiError;
+    setValidation("validating");
+    setError("");
+    try {
+      const res = await fetch("/api/settings/validate-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, api_key: key }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setValidation("valid");
+      } else {
+        setValidation("invalid");
+        setError(data.reason || "Invalid key");
+      }
+    } catch {
+      setValidation("invalid");
+      setError("Validation request failed");
+    }
+  }
+
   async function handleSave() {
     setSaving(true);
+    setSaveError("");
     try {
       const body: Record<string, string | null> = {
-        accent_color: accentColor,
-        ui_density: uiDensity,
+        name: profile.name,
+        email: profile.email,
+        agency_name: profile.agencyName,
+        theme_mode: themeMode,
       };
-      if (anthropicKey) body.anthropic_api_key = anthropicKey;
-      if (openaiKey) body.openai_api_key = openaiKey;
+      if (anthropicKey && anthropicValidation === "valid") body.anthropic_api_key = anthropicKey;
+      if (openaiKey && openaiValidation === "valid") body.openai_api_key = openaiKey;
 
       const res = await fetch("/api/settings", {
         method: "PUT",
@@ -105,23 +137,27 @@ export default function SettingsPage() {
         body: JSON.stringify(body),
       });
 
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-        // Refresh settings
-        const settingsRes = await fetch("/api/settings");
-        if (settingsRes.ok) {
-          const s = await settingsRes.json();
-          setSettings(s);
-        }
-        setAnthropicKey("");
-        setOpenaiKey("");
-        // Apply accent color live
-        applyAccentColor(accentColor);
-        applyUiDensity(uiDensity);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Save failed");
       }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+      // Refresh settings
+      const settingsRes = await fetch("/api/settings");
+      if (settingsRes.ok) {
+        const s = await settingsRes.json();
+        setSettings(s);
+      }
+      setAnthropicKey("");
+      setOpenaiKey("");
+      setAnthropicValidation("idle");
+      setOpenaiValidation("idle");
+      // Apply theme live
+      applyTheme(themeMode);
     } catch (err) {
-      console.error("Save failed:", err);
+      setSaveError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -143,26 +179,19 @@ export default function SettingsPage() {
     }
   }
 
-  function applyAccentColor(colorId: string) {
-    const color = ACCENT_COLORS.find((c) => c.id === colorId);
-    if (color) {
-      document.documentElement.style.setProperty("--accent", color.css);
-      document.documentElement.style.setProperty("--accent-hover", color.hover);
-      document.documentElement.style.setProperty("--accent-glow", color.glow);
-    }
+  function applyTheme(mode: string) {
+    document.documentElement.setAttribute("data-theme", mode);
   }
 
-  function applyUiDensity(densityId: string) {
-    const density = UI_DENSITIES.find((d) => d.id === densityId);
-    if (density) {
-      document.documentElement.style.setProperty("--ui-scale", density.scale.toString());
-    }
+  function handleThemeChange(mode: string) {
+    setThemeMode(mode);
+    applyTheme(mode);
   }
 
   const tierConfig = TIERS[profile.subscriptionTier] || TIERS.starter;
 
   const inputClass =
-    "w-full px-4 py-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] transition-colors";
+    "w-full px-4 py-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] text-sm focus:outline-none focus:border-[var(--accent)] transition-colors";
 
   if (loading) {
     return (
@@ -174,9 +203,9 @@ export default function SettingsPage() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-[rgba(10,10,15,0.85)] backdrop-blur-xl border-b border-[var(--border)]">
+      <header className="sticky top-0 z-30 bg-[var(--header-bg)] backdrop-blur-xl border-b border-[var(--border)]">
         <div className="px-4 sm:px-6 py-4">
-          <h1 className="text-xl font-bold flex items-center gap-2">
+          <h1 className="text-xl font-bold flex items-center gap-2 text-[var(--foreground)]">
             <Settings className="w-5 h-5 text-[var(--muted)]" /> Settings
           </h1>
           <p className="text-xs text-[var(--muted)]">Manage your account, API keys, and preferences</p>
@@ -186,18 +215,30 @@ export default function SettingsPage() {
       <div className="p-4 sm:p-6 max-w-2xl space-y-6">
         {/* Profile */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-          <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+          <h3 className="text-sm font-medium mb-4 flex items-center gap-2 text-[var(--foreground)]">
             <User className="w-4 h-4 text-[var(--accent)]" /> Profile
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1.5 block">Name</label>
-              <input type="text" value={profile.name} readOnly className={inputClass + " opacity-70 cursor-default"} />
+              <input
+                type="text"
+                value={profile.name}
+                onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                className={inputClass}
+                placeholder="Your name"
+              />
             </div>
             <div>
               <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1.5 block">Email</label>
               <div className="relative">
-                <input type="text" value={profile.email} readOnly className={inputClass + " opacity-70 cursor-default pr-20"} />
+                <input
+                  type="email"
+                  value={profile.email}
+                  onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
+                  className={inputClass + " pr-20"}
+                  placeholder="you@example.com"
+                />
                 <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium px-2 py-0.5 rounded-full ${
                   profile.emailVerified
                     ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
@@ -208,22 +249,28 @@ export default function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1.5 block">Agency</label>
-              <input type="text" value={profile.agencyName} readOnly className={inputClass + " opacity-70 cursor-default"} />
+              <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1.5 block">Agency Name</label>
+              <input
+                type="text"
+                value={profile.agencyName}
+                onChange={(e) => setProfile((p) => ({ ...p, agencyName: e.target.value }))}
+                className={inputClass}
+                placeholder="Your agency"
+              />
             </div>
           </div>
         </div>
 
         {/* Subscription Plan */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-          <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+          <h3 className="text-sm font-medium mb-4 flex items-center gap-2 text-[var(--foreground)]">
             <Crown className="w-4 h-4 text-amber-400" /> Subscription Plan
           </h3>
           <div className="flex items-center gap-3 mb-4">
             <div className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
               profile.subscriptionTier === "agency" ? "bg-purple-500/10 text-purple-400 border border-purple-500/20" :
               profile.subscriptionTier === "pro" ? "bg-[rgba(232,85,61,0.1)] text-[var(--accent)] border border-[rgba(232,85,61,0.2)]" :
-              "bg-zinc-800 text-zinc-300 border border-zinc-700"
+              "bg-[var(--background)] text-[var(--muted)] border border-[var(--border)]"
             }`}>
               {tierConfig.name}
             </div>
@@ -255,7 +302,7 @@ export default function SettingsPage() {
 
         {/* API Keys */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-          <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+          <h3 className="text-sm font-medium mb-2 flex items-center gap-2 text-[var(--foreground)]">
             <Key className="w-4 h-4 text-emerald-400" /> AI API Keys
           </h3>
           <p className="text-xs text-[var(--muted)] mb-4">
@@ -269,7 +316,7 @@ export default function SettingsPage() {
               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                 settings.anthropic_connected
                   ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "bg-zinc-800 text-zinc-500 border border-zinc-700"
+                  : "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20"
               }`}>
                 {settings.anthropic_connected ? "Connected" : "Not connected"}
               </span>
@@ -288,21 +335,44 @@ export default function SettingsPage() {
                 </button>
               </div>
             ) : (
-              <div className="relative">
-                <input
-                  type={showAnthropicKey ? "text" : "password"}
-                  placeholder="sk-ant-api03-..."
-                  value={anthropicKey}
-                  onChange={(e) => setAnthropicKey(e.target.value)}
-                  className={inputClass}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowAnthropicKey(!showAnthropicKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-                >
-                  {showAnthropicKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              <div>
+                <div className="relative">
+                  <input
+                    type={showAnthropicKey ? "text" : "password"}
+                    placeholder="sk-ant-api03-..."
+                    value={anthropicKey}
+                    onChange={(e) => { setAnthropicKey(e.target.value); setAnthropicValidation("idle"); setAnthropicError(""); }}
+                    className={inputClass + " pr-20"}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAnthropicKey(!showAnthropicKey)}
+                      className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      {showAnthropicKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                {anthropicKey && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      onClick={() => validateKey("anthropic", anthropicKey)}
+                      disabled={anthropicValidation === "validating"}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] text-xs font-medium hover:bg-[var(--accent)]/20 transition-colors disabled:opacity-50"
+                    >
+                      {anthropicValidation === "validating" ? (
+                        <span className="flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Validating...</span>
+                      ) : "Validate Key"}
+                    </button>
+                    {anthropicValidation === "valid" && (
+                      <span className="flex items-center gap-1 text-xs text-emerald-400"><CheckCircle className="w-3 h-3" /> Valid</span>
+                    )}
+                    {anthropicValidation === "invalid" && (
+                      <span className="flex items-center gap-1 text-xs text-red-400"><AlertCircle className="w-3 h-3" /> {anthropicError}</span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -314,7 +384,7 @@ export default function SettingsPage() {
               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                 settings.openai_connected
                   ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "bg-zinc-800 text-zinc-500 border border-zinc-700"
+                  : "bg-zinc-500/10 text-zinc-500 border border-zinc-500/20"
               }`}>
                 {settings.openai_connected ? "Connected" : "Not connected"}
               </span>
@@ -333,34 +403,57 @@ export default function SettingsPage() {
                 </button>
               </div>
             ) : (
-              <div className="relative">
-                <input
-                  type={showOpenaiKey ? "text" : "password"}
-                  placeholder="sk-..."
-                  value={openaiKey}
-                  onChange={(e) => setOpenaiKey(e.target.value)}
-                  className={inputClass}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowOpenaiKey(!showOpenaiKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-                >
-                  {showOpenaiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              <div>
+                <div className="relative">
+                  <input
+                    type={showOpenaiKey ? "text" : "password"}
+                    placeholder="sk-..."
+                    value={openaiKey}
+                    onChange={(e) => { setOpenaiKey(e.target.value); setOpenaiValidation("idle"); setOpenaiError(""); }}
+                    className={inputClass + " pr-20"}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowOpenaiKey(!showOpenaiKey)}
+                      className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                    >
+                      {showOpenaiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                {openaiKey && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      onClick={() => validateKey("openai", openaiKey)}
+                      disabled={openaiValidation === "validating"}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] text-xs font-medium hover:bg-[var(--accent)]/20 transition-colors disabled:opacity-50"
+                    >
+                      {openaiValidation === "validating" ? (
+                        <span className="flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Validating...</span>
+                      ) : "Validate Key"}
+                    </button>
+                    {openaiValidation === "valid" && (
+                      <span className="flex items-center gap-1 text-xs text-emerald-400"><CheckCircle className="w-3 h-3" /> Valid</span>
+                    )}
+                    {openaiValidation === "invalid" && (
+                      <span className="flex items-center gap-1 text-xs text-red-400"><AlertCircle className="w-3 h-3" /> {openaiError}</span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
 
           <p className="text-[10px] text-[var(--muted)] mt-3 flex items-start gap-1.5">
             <Shield className="w-3 h-3 mt-0.5 shrink-0" />
-            Keys are encrypted at rest and never exposed in the frontend. They power AI-driven features like import parsing and note summaries.
+            Keys are encrypted at rest and never exposed in the frontend. Validate before saving to confirm your key works.
           </p>
         </div>
 
         {/* Notifications */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-          <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+          <h3 className="text-sm font-medium mb-4 flex items-center gap-2 text-[var(--foreground)]">
             <Bell className="w-4 h-4 text-amber-400" /> Notifications
           </h3>
           <div className="space-y-3">
@@ -371,13 +464,13 @@ export default function SettingsPage() {
             ].map((item) => (
               <div key={item.key} className="flex items-center justify-between px-3 py-3 rounded-lg bg-[var(--background)]">
                 <div>
-                  <p className="text-sm">{item.label}</p>
+                  <p className="text-sm text-[var(--foreground)]">{item.label}</p>
                   <p className="text-xs text-[var(--muted)]">{item.desc}</p>
                 </div>
                 <button
                   onClick={() => setNotifications((n) => ({ ...n, [item.key]: !n[item.key] }))}
                   className={`w-10 h-5 rounded-full transition-colors relative ${
-                    notifications[item.key] ? "bg-[var(--accent)]" : "bg-zinc-700"
+                    notifications[item.key] ? "bg-[var(--accent)]" : "bg-[var(--border)]"
                   }`}
                 >
                   <div
@@ -391,84 +484,44 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Appearance / Customization */}
+        {/* Appearance — Dark/Light Mode Only */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-          <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+          <h3 className="text-sm font-medium mb-4 flex items-center gap-2 text-[var(--foreground)]">
             <Palette className="w-4 h-4 text-purple-400" /> Appearance
           </h3>
-
-          {/* Accent Color */}
-          <div className="mb-5">
-            <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-3 block">
-              Accent Color
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {ACCENT_COLORS.map((color) => (
-                <button
-                  key={color.id}
-                  onClick={() => {
-                    setAccentColor(color.id);
-                    applyAccentColor(color.id);
-                  }}
-                  className={`w-10 h-10 rounded-lg border-2 transition-all flex items-center justify-center ${
-                    accentColor === color.id
-                      ? "border-white scale-110 shadow-lg"
-                      : "border-transparent hover:border-zinc-600"
-                  }`}
-                  style={{ backgroundColor: color.css + "20" }}
-                  title={color.label}
-                >
-                  <div
-                    className="w-5 h-5 rounded-full"
-                    style={{ backgroundColor: color.css }}
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* UI Density */}
-          <div className="mb-5">
-            <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-3 block">
-              UI Density
-            </label>
-            <div className="flex gap-2">
-              {UI_DENSITIES.map((density) => (
-                <button
-                  key={density.id}
-                  onClick={() => {
-                    setUiDensity(density.id);
-                    applyUiDensity(density.id);
-                  }}
-                  className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    uiDensity === density.id
-                      ? "bg-[rgba(232,85,61,0.1)] border border-[rgba(232,85,61,0.3)] text-[var(--accent)]"
-                      : "bg-[var(--background)] border border-[var(--border)] text-[var(--muted)] hover:border-zinc-600"
-                  }`}
-                >
-                  {density.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Theme (dark only for now) */}
-          <div>
-            <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-3 block">
-              Theme
-            </label>
-            <div className="flex gap-3">
-              <button className="flex-1 px-4 py-3 rounded-lg bg-[rgba(232,85,61,0.1)] border border-[rgba(232,85,61,0.3)] text-sm text-[var(--accent)] font-medium">
-                Dark Mode
-              </button>
-              <button className="flex-1 px-4 py-3 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm text-[var(--muted)] font-medium cursor-not-allowed opacity-50">
-                Light Mode (Coming Soon)
-              </button>
-            </div>
+          <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-3 block">
+            Theme
+          </label>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleThemeChange("dark")}
+              className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                themeMode === "dark"
+                  ? "bg-[rgba(232,85,61,0.1)] border border-[rgba(232,85,61,0.3)] text-[var(--accent)]"
+                  : "bg-[var(--background)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]/30"
+              }`}
+            >
+              <Moon className="w-4 h-4" /> Dark Mode
+            </button>
+            <button
+              onClick={() => handleThemeChange("light")}
+              className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                themeMode === "light"
+                  ? "bg-[rgba(232,85,61,0.1)] border border-[rgba(232,85,61,0.3)] text-[var(--accent)]"
+                  : "bg-[var(--background)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]/30"
+              }`}
+            >
+              <Sun className="w-4 h-4" /> Light Mode
+            </button>
           </div>
         </div>
 
         {/* Save */}
+        {saveError && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            <AlertCircle className="w-4 h-4 shrink-0" /> {saveError}
+          </div>
+        )}
         <button
           onClick={handleSave}
           disabled={saving}
@@ -476,7 +529,7 @@ export default function SettingsPage() {
         >
           {saved ? (
             <>
-              <CheckCircle className="w-4 h-4" /> Saved!
+              <CheckCircle className="w-4 h-4" /> Saved Successfully!
             </>
           ) : saving ? (
             <>
@@ -491,7 +544,7 @@ export default function SettingsPage() {
 
         {/* Quick feature info */}
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-          <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-medium mb-3 flex items-center gap-2 text-[var(--foreground)]">
             <Zap className="w-4 h-4 text-amber-400" /> Feature Access
           </h3>
           <div className="space-y-2 text-xs text-[var(--muted)]">

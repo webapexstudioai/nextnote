@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { ProspectsProvider } from "@/context/ProspectsContext";
-import { ACCENT_COLORS, UI_DENSITIES } from "@/lib/subscriptions";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -17,17 +16,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (!res.ok) return;
         const s = await res.json();
 
-        const color = ACCENT_COLORS.find((c) => c.id === s.accent_color);
-        if (color) {
-          document.documentElement.style.setProperty("--accent", color.css);
-          document.documentElement.style.setProperty("--accent-hover", color.hover);
-          document.documentElement.style.setProperty("--accent-glow", color.glow);
-        }
-
-        const density = UI_DENSITIES.find((d) => d.id === s.ui_density);
-        if (density) {
-          document.documentElement.style.setProperty("--ui-scale", density.scale.toString());
-        }
+        // Apply theme mode
+        const theme = s.theme_mode || "dark";
+        document.documentElement.setAttribute("data-theme", theme);
       } catch {
         // Silently ignore — defaults apply
       }
@@ -46,12 +37,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-30 bg-[rgba(10,10,15,0.85)] backdrop-blur-xl border-b border-[var(--border)] px-4 py-3">
+          <div className="lg:hidden sticky top-0 z-30 bg-[var(--header-bg)] backdrop-blur-xl border-b border-[var(--border)] px-4 py-3">
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="p-2 rounded-lg hover:bg-[var(--card)] transition-colors"
             >
-              {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {showMobileMenu ? <X className="w-5 h-5 text-[var(--foreground)]" /> : <Menu className="w-5 h-5 text-[var(--foreground)]" />}
             </button>
           </div>
 

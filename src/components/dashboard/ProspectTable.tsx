@@ -206,7 +206,7 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
             </div>
             {(bulkVmSending || bulkVmDone) && (
               <div className="space-y-2">
-                <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-[var(--border)] rounded-full h-2 overflow-hidden">
                   <div
                     className="bg-amber-400 h-full rounded-full transition-all"
                     style={{ width: `${bulkVmProgress.total > 0 ? ((bulkVmProgress.sent + bulkVmProgress.failed) / bulkVmProgress.total) * 100 : 0}%` }}
