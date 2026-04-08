@@ -159,7 +159,7 @@ export default function ImportPage() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-[rgba(10,10,15,0.85)] backdrop-blur-xl border-b border-[var(--border)]">
+      <header className="sticky top-0 z-30 bg-[var(--header-bg)] backdrop-blur-xl border-b border-[var(--border)]">
         <div className="px-4 sm:px-6 py-4">
           <h1 className="text-xl font-bold">Import Prospects</h1>
           <p className="text-xs text-[var(--muted)]">Import from XLSX files or Google Sheets — AI auto-detects your columns</p>

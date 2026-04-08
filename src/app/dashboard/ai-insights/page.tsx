@@ -52,7 +52,7 @@ export default function AIInsightsPage() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-[rgba(10,10,15,0.85)] backdrop-blur-xl border-b border-[var(--border)]">
+      <header className="sticky top-0 z-30 bg-[var(--header-bg)] backdrop-blur-xl border-b border-[var(--border)]">
         <div className="px-4 sm:px-6 py-4">
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Zap className="w-5 h-5 text-[var(--accent)]" /> AI Insights

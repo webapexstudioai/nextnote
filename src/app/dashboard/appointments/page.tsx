@@ -371,7 +371,7 @@ export default function AppointmentsPage() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-[rgba(10,10,15,0.85)] backdrop-blur-xl border-b border-[var(--border)]">
+      <header className="sticky top-0 z-30 bg-[var(--header-bg)] backdrop-blur-xl border-b border-[var(--border)]">
         <div className="flex items-center justify-between px-4 sm:px-6 py-4">
           <div>
             <h1 className="text-xl font-bold">Appointments</h1>
