@@ -1,61 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { v4 as uuidv4 } from "uuid";
-import { getDb } from "@/lib/db";
+import { supabaseAdmin } from "@/lib/supabase";
 import { getAuthSession } from "@/lib/session";
+import { isPasswordStrong } from "@/lib/password";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, username, email, password } = await req.json();
+    const { name, email, agencyName, password } = await req.json();
 
-    // Validate fields
-    if (!name || !username || !email || !password) {
-      return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: "Name, email, and password are required" }, { status: 400 });
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
 
-    if (/\s/.test(username)) {
-      return NextResponse.json({ error: "Username cannot contain spaces" }, { status: 400 });
+    if (!isPasswordStrong(password)) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters with 1 uppercase letter, 1 number, and 1 special character" },
+        { status: 400 },
+      );
     }
-
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
-    }
-
-    const db = getDb();
 
     // Check existing user
-    const existingEmail = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
-    if (existingEmail) {
+    const { data: existing } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("email", email.toLowerCase())
+      .single();
+
+    if (existing) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });
     }
 
-    const existingUsername = db.prepare("SELECT id FROM users WHERE username = ?").get(username);
-    if (existingUsername) {
-      return NextResponse.json({ error: "Username already taken" }, { status: 409 });
-    }
-
     // Create user
-    const id = uuidv4();
     const password_hash = await bcrypt.hash(password, 10);
 
-    db.prepare(
-      "INSERT INTO users (id, name, username, email, password_hash) VALUES (?, ?, ?, ?, ?)"
-    ).run(id, name, username, email.toLowerCase(), password_hash);
+    const { data: user, error: insertError } = await supabaseAdmin
+      .from("users")
+      .insert({
+        name,
+        agency_name: agencyName || "",
+        email: email.toLowerCase(),
+        password_hash,
+      })
+      .select("id, name, agency_name, email")
+      .single();
+
+    if (insertError) {
+      console.error("Supabase insert error:", insertError);
+      return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
+    }
 
     // Set session
     const session = await getAuthSession();
-    session.userId = id;
-    session.name = name;
-    session.username = username;
-    session.email = email.toLowerCase();
+    session.userId = user.id;
+    session.name = user.name;
+    session.agencyName = user.agency_name;
+    session.email = user.email;
     session.isLoggedIn = true;
     await session.save();
 
-    return NextResponse.json({ success: true, user: { id, name, username, email } });
+    return NextResponse.json({
+      success: true,
+      user: { id: user.id, name: user.name, agencyName: user.agency_name, email: user.email },
+    });
   } catch (err) {
     console.error("Signup error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

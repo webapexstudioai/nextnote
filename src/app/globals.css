@@ -40,7 +40,7 @@ body {
   }
 }
 
-/* Slide panel animation */
+/* ── Slide panel animation (dashboard) ── */
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
@@ -55,6 +55,7 @@ body {
   animation: slideIn 0.3s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }
 
+/* ── Fade animations ── */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -82,21 +83,73 @@ body {
   animation: pulse-glow 4s ease-in-out infinite;
 }
 
-/* Premium glass card */
+/* ── Scroll-triggered reveal ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered children */
+.reveal-stagger > .reveal-child {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-stagger.visible > .reveal-child {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-stagger.visible > .reveal-child:nth-child(1) { transition-delay: 0ms; }
+.reveal-stagger.visible > .reveal-child:nth-child(2) { transition-delay: 80ms; }
+.reveal-stagger.visible > .reveal-child:nth-child(3) { transition-delay: 160ms; }
+.reveal-stagger.visible > .reveal-child:nth-child(4) { transition-delay: 240ms; }
+.reveal-stagger.visible > .reveal-child:nth-child(5) { transition-delay: 320ms; }
+.reveal-stagger.visible > .reveal-child:nth-child(6) { transition-delay: 400ms; }
+.reveal-stagger.visible > .reveal-child:nth-child(7) { transition-delay: 480ms; }
+.reveal-stagger.visible > .reveal-child:nth-child(8) { transition-delay: 560ms; }
+
+/* ── Premium glass card ── */
 .glass-card {
   background: linear-gradient(135deg, rgba(12, 12, 18, 0.8), rgba(20, 20, 32, 0.6));
   border: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: border-color 0.3s, background 0.3s, transform 0.3s, box-shadow 0.3s;
 }
 
 .glass-card:hover {
   border-color: rgba(232, 85, 61, 0.2);
   background: linear-gradient(135deg, rgba(15, 15, 22, 0.9), rgba(25, 25, 38, 0.7));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(232, 85, 61, 0.06);
 }
 
-/* Radial glow backgrounds */
+/* Featured glass card (pricing) */
+.glass-card-featured {
+  background: linear-gradient(160deg, rgba(232, 85, 61, 0.1), rgba(12, 12, 18, 0.9) 50%, rgba(232, 85, 61, 0.05));
+  border: 1.5px solid rgba(232, 85, 61, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 0 60px rgba(232, 85, 61, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.glass-card-featured:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 48px rgba(232, 85, 61, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ── Radial glow backgrounds ── */
 .glow-hero {
-  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(232, 85, 61, 0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(232, 85, 61, 0.14) 0%, transparent 70%);
 }
 
 .glow-section {
@@ -105,4 +158,186 @@ body {
 
 .glow-bottom {
   background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(232, 85, 61, 0.1) 0%, transparent 70%);
+}
+
+/* ── Floating orbs ── */
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(15px, -20px) scale(1.05); }
+  66% { transform: translate(-10px, 10px) scale(0.95); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-20px, -15px) scale(1.03); }
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.orb-1 {
+  width: 300px;
+  height: 300px;
+  background: rgba(232, 85, 61, 0.07);
+  animation: float-slow 20s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 138, 106, 0.05);
+  animation: float-medium 15s ease-in-out infinite;
+}
+
+.orb-3 {
+  width: 250px;
+  height: 250px;
+  background: rgba(232, 85, 61, 0.04);
+  animation: float-slow 25s ease-in-out infinite reverse;
+}
+
+/* ── Futuristic graph-grid background ── */
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    /* Large grid lines */
+    linear-gradient(rgba(232, 85, 61, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 85, 61, 0.06) 1px, transparent 1px),
+    /* Small grid lines */
+    linear-gradient(rgba(232, 85, 61, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 85, 61, 0.025) 1px, transparent 1px);
+  background-size:
+    120px 120px,
+    120px 120px,
+    24px 24px,
+    24px 24px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 0%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 0%, transparent 80%);
+}
+
+.grid-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 50% 40% at 50% 0%, rgba(232, 85, 61, 0.08) 0%, transparent 60%),
+              radial-gradient(ellipse 30% 30% at 80% 20%, rgba(255, 138, 106, 0.04) 0%, transparent 60%);
+}
+
+/* ── Cursor glow (desktop only) ── */
+.cursor-glow {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(circle, rgba(232, 85, 61, 0.08) 0%, rgba(255, 138, 106, 0.03) 40%, transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: opacity 0.4s ease;
+  will-change: left, top;
+}
+
+/* Grid-reactive spotlight near cursor */
+.cursor-grid-spot {
+  position: fixed;
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(circle, rgba(232, 85, 61, 0.12) 0%, transparent 60%);
+  transform: translate(-50%, -50%);
+  transition: opacity 0.4s ease;
+  will-change: left, top;
+  mix-blend-mode: screen;
+}
+
+@media (max-width: 768px) {
+  .cursor-glow, .cursor-grid-spot { display: none; }
+}
+
+/* ── Premium CTA button ── */
+.cta-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #e8553d, #d44429);
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s;
+  box-shadow: 0 4px 24px rgba(232, 85, 61, 0.25);
+}
+
+.cta-primary:hover {
+  background: linear-gradient(135deg, #f06a54, #e8553d);
+  box-shadow: 0 8px 40px rgba(232, 85, 61, 0.4);
+  transform: translateY(-1px);
+}
+
+.cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-weight: 500;
+  font-size: 1rem;
+  transition: all 0.3s;
+  background: rgba(12, 12, 18, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+.cta-secondary:hover {
+  background: var(--card);
+  border-color: rgba(232, 85, 61, 0.25);
+  transform: translateY(-1px);
+}
+
+/* ── Section dividers ── */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(232, 85, 61, 0.15) 50%, transparent 100%);
+}
+
+/* ── Shimmer text ── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.text-shimmer {
+  background: linear-gradient(90deg, #e8553d 0%, #ff8a6a 25%, #ffb59a 50%, #ff8a6a 75%, #e8553d 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+
+/* ── How it works step connector ── */
+.step-connector {
+  position: absolute;
+  top: 28px;
+  left: calc(50% + 28px);
+  width: calc(100% - 56px);
+  height: 2px;
+  background: linear-gradient(90deg, rgba(232, 85, 61, 0.3), rgba(232, 85, 61, 0.1));
+}
+
+@media (max-width: 768px) {
+  .step-connector { display: none; }
 }

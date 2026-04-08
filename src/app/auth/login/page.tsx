@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -48,8 +49,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md relative">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-[#e8553d] to-[#ff8a6a] mb-4">
-            <span className="text-white font-bold text-lg">N</span>
+          <div className="inline-flex items-center justify-center mb-4">
+            <OrbitGridIcon size={48} />
           </div>
           <h1 className="text-2xl font-bold">Welcome back</h1>
           <p className="text-[var(--muted)] text-sm mt-1">Log in to your NextNote account</p>
@@ -111,6 +112,11 @@ export default function LoginPage() {
           Don&apos;t have an account?{" "}
           <Link href="/auth/signup" className="text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">
             Sign up
+          </Link>
+        </p>
+        <p className="text-center text-sm mt-3">
+          <Link href="/auth/forgot-password" className="text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors">
+            Forgot Password?
           </Link>
         </p>
 

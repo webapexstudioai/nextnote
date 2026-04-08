@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET() {
   try {
@@ -9,12 +10,25 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    // Fetch fresh user data from Supabase
+    const { data: user, error } = await supabaseAdmin
+      .from("users")
+      .select("id, name, agency_name, email")
+      .eq("id", session.userId)
+      .single();
+
+    if (error || !user) {
+      // User no longer exists in DB — destroy stale session
+      session.destroy();
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
     return NextResponse.json({
       user: {
-        id: session.userId,
-        name: session.name,
-        username: session.username,
-        email: session.email,
+        id: user.id,
+        name: user.name,
+        agencyName: user.agency_name,
+        email: user.email,
       },
     });
   } catch (err) {

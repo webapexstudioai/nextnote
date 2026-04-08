@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 
 interface FieldErrors {
   name?: string;
-  username?: string;
+  agencyName?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -14,7 +15,7 @@ interface FieldErrors {
 }
 
 export default function SignupPage() {
-  const [form, setForm] = useState({ name: "", username: "", email: "", password: "", confirmPassword: "" });
+  const [form, setForm] = useState({ name: "", agencyName: "", email: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -23,12 +24,13 @@ export default function SignupPage() {
   function validate(): FieldErrors {
     const e: FieldErrors = {};
     if (!form.name.trim()) e.name = "Full name is required";
-    if (!form.username.trim()) e.username = "Username is required";
-    else if (/\s/.test(form.username)) e.username = "Username cannot contain spaces";
+    if (!form.agencyName.trim()) e.agencyName = "Agency name is required";
     if (!form.email.trim()) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Invalid email format";
     if (!form.password) e.password = "Password is required";
-    else if (form.password.length < 6) e.password = "Password must be at least 6 characters";
+    else if (!/^.*(?=.{6,})(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).*$/.test(form.password)) {
+      e.password = "Must be 6+ chars with 1 uppercase, 1 number, and 1 special character";
+    }
     if (!form.confirmPassword) e.confirmPassword = "Please confirm your password";
     else if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match";
     return e;
@@ -48,7 +50,7 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name, username: form.username, email: form.email, password: form.password }),
+        body: JSON.stringify({ name: form.name, agencyName: form.agencyName, email: form.email, password: form.password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -74,8 +76,8 @@ export default function SignupPage() {
       <div className="w-full max-w-md relative">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-[#e8553d] to-[#ff8a6a] mb-4">
-            <span className="text-white font-bold text-lg">N</span>
+          <div className="inline-flex items-center justify-center mb-4">
+            <OrbitGridIcon size={48} />
           </div>
           <h1 className="text-2xl font-bold">Create your account</h1>
           <p className="text-[var(--muted)] text-sm mt-1">Get started with NextNote</p>
@@ -102,17 +104,17 @@ export default function SignupPage() {
             {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
           </div>
 
-          {/* Username */}
+          {/* Agency Name */}
           <div>
-            <label className="block text-sm font-medium mb-1.5">Username</label>
+            <label className="block text-sm font-medium mb-1.5">Agency Name</label>
             <input
               type="text"
-              placeholder="johndoe"
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              placeholder="Apex Studio"
+              value={form.agencyName}
+              onChange={(e) => setForm({ ...form, agencyName: e.target.value })}
               className={inputClass}
             />
-            {errors.username && <p className="text-red-400 text-xs mt-1">{errors.username}</p>}
+            {errors.agencyName && <p className="text-red-400 text-xs mt-1">{errors.agencyName}</p>}
           </div>
 
           {/* Email */}
@@ -134,7 +136,7 @@ export default function SignupPage() {
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="At least 6 characters"
+                placeholder="6+ chars, 1 uppercase, 1 number, 1 special"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 className={inputClass}

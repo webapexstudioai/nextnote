@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { LayoutDashboard, Users, Calendar, FileSpreadsheet, Settings, LogOut, Zap } from "lucide-react";
+import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 
 interface SidebarProps {
   collapsed?: boolean;
@@ -19,18 +21,31 @@ const navItems = [
 
 export default function Sidebar({ collapsed }: SidebarProps) {
   const pathname = usePathname();
+  const [profile, setProfile] = useState({ name: "User", agencyName: "NextNote" });
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.user) setProfile({ name: data.user.name || "User", agencyName: data.user.agencyName || "NextNote" });
+      })
+      .catch(() => {});
+  }, []);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    window.location.href = "/auth/login";
+  }
 
   return (
     <aside className={`flex flex-col h-screen bg-[var(--card)] border-r border-[var(--border)] ${collapsed ? "w-16" : "w-56"} transition-all duration-300 shrink-0`}>
       {/* Logo */}
       <div className="p-5 border-b border-[var(--border)]">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#e8553d] to-[#ff8a6a] flex items-center justify-center">
-            <span className="text-white font-bold text-sm">N</span>
-          </div>
+          <OrbitGridIcon size={30} />
           {!collapsed && (
             <div>
-              <h1 className="font-bold text-sm">NextNote</h1>
+              <h1 className="font-bold text-sm tracking-tight">Next<span className="text-[var(--accent)]">Note</span></h1>
               <p className="text-[10px] text-[var(--muted)]">by Apex Studio</p>
             </div>
           )}
@@ -64,16 +79,16 @@ export default function Sidebar({ collapsed }: SidebarProps) {
       <div className="p-3 border-t border-[var(--border)]">
         <div className="flex items-center gap-3 px-3 py-2.5">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#e8553d] to-[#ff8a6a] flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-xs">E</span>
+            <span className="text-white font-bold text-xs">{profile.name.charAt(0).toUpperCase()}</span>
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">Edgar</p>
-              <p className="text-[10px] text-[var(--muted)] truncate">Apex Studio</p>
+              <p className="text-sm font-medium truncate">{profile.name}</p>
+              <p className="text-[10px] text-[var(--muted)] truncate">{profile.agencyName}</p>
             </div>
           )}
           {!collapsed && (
-            <button className="p-1.5 rounded-lg hover:bg-[var(--card-hover)] transition-colors">
+            <button onClick={handleLogout} className="p-1.5 rounded-lg hover:bg-[var(--card-hover)] transition-colors">
               <LogOut className="w-4 h-4 text-[var(--muted)]" />
             </button>
           )}

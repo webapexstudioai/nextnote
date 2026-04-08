@@ -28,7 +28,7 @@ export async function getSession(): Promise<IronSession<SessionData>> {
 export interface AuthSessionData {
   userId?: string;
   name?: string;
-  username?: string;
+  agencyName?: string;
   email?: string;
   isLoggedIn?: boolean;
 }
