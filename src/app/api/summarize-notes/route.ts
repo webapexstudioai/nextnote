@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey || apiKey === "your-api-key-here") {
-      return NextResponse.json({ error: "API key not configured" }, { status: 500 });
+      return NextResponse.json({ error: "Anthropic API key not configured. Add your key in Settings." }, { status: 500 });
     }
 
     const client = new Anthropic({ apiKey });

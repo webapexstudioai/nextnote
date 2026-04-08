@@ -216,7 +216,7 @@ export default function FolderImportModal({ folderId, onClose }: FolderImportMod
           {step === "analyzing" && (
             <div className="py-10 text-center">
               <Loader2 className="w-10 h-10 mx-auto mb-4 text-[var(--accent)] animate-spin" />
-              <p className="text-sm font-medium">Claude AI is analyzing your data...</p>
+              <p className="text-sm font-medium">Let AI summarize your document...</p>
               <p className="text-xs text-[var(--muted)] mt-1">Detecting columns for &quot;{fileName}&quot;</p>
             </div>
           )}
@@ -300,6 +300,14 @@ export default function FolderImportModal({ folderId, onClose }: FolderImportMod
             <div className="py-8 text-center">
               <AlertCircle className="w-10 h-10 mx-auto mb-3 text-rose-400" />
               <p className="text-sm font-medium text-rose-400">{error}</p>
+              {error.toLowerCase().includes("api key") && (
+                <button
+                  onClick={() => window.location.href = "/dashboard/settings"}
+                  className="mt-4 mr-2 px-6 py-2.5 rounded-lg bg-[var(--accent)] text-white text-sm hover:opacity-90"
+                >
+                  Go to Settings
+                </button>
+              )}
               <button onClick={() => setStep("source")} className="mt-4 px-6 py-2.5 rounded-lg border border-[var(--border)] text-sm hover:bg-[var(--card-hover)]">
                 Try Again
               </button>
