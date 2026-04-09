@@ -142,3 +142,34 @@ ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 
 -- Migration: Add preferred_provider column for user-specific AI provider selection
 ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS preferred_provider TEXT NOT NULL DEFAULT 'anthropic';
+
+-- Migration: Add Stripe and onboarding fields to users
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_complete BOOLEAN NOT NULL DEFAULT false;
+
+-- 9. Onboarding responses
+CREATE TABLE IF NOT EXISTS onboarding_responses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  reason_chose TEXT NOT NULL DEFAULT '',
+  what_stood_out TEXT NOT NULL DEFAULT '',
+  dedication_score INT NOT NULL DEFAULT 5,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_onboarding_user ON onboarding_responses (user_id);
+ALTER TABLE onboarding_responses ENABLE ROW LEVEL SECURITY;
+
+-- 10. Email verification tokens (link-based)
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_verification_tokens_token ON email_verification_tokens (token);
+ALTER TABLE email_verification_tokens ENABLE ROW LEVEL SECURITY;

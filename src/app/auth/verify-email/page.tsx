@@ -1,44 +1,61 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Loader2, CheckCircle, Mail, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, Mail, RefreshCw, CheckCircle, Pencil } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 
 export default function VerifyEmailPage() {
-  const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState("");
+  const [editEmail, setEditEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [mounted, setMounted] = useState(false);
 
-  // Send initial OTP on mount
   useEffect(() => {
-    sendCode();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setMounted(true);
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user?.email) {
+          setEmail(d.user.email);
+          setNewEmail(d.user.email);
+        }
+        if (d.user?.emailVerified) {
+          window.location.href = "/pricing";
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  // Cooldown timer
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  async function sendCode() {
-    setResending(true);
+  // Auto-send on mount
+  useEffect(() => {
+    if (email && !sent) {
+      sendVerification();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email]);
+
+  async function sendVerification() {
+    setSending(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/send-verification-code", { method: "POST" });
+      const res = await fetch("/api/auth/send-verification", { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
         if (data.error === "Email already verified") {
-          window.location.href = "/dashboard";
+          window.location.href = "/pricing";
           return;
         }
-        setError(data.error || "Failed to send code");
+        setError(data.error || "Failed to send verification email");
       } else {
         setSent(true);
         setCooldown(60);
@@ -46,181 +63,176 @@ export default function VerifyEmailPage() {
     } catch {
       setError("Network error. Please try again.");
     } finally {
-      setResending(false);
+      setSending(false);
     }
   }
 
-  function handleChange(index: number, value: string) {
-    if (!/^\d*$/.test(value)) return;
-    const next = [...code];
-    next[index] = value.slice(-1);
-    setCode(next);
-
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+  async function handleUpdateEmail() {
+    if (!newEmail.trim() || newEmail === email) {
+      setEditEmail(false);
+      return;
     }
-
-    // Auto-submit when all 6 digits are entered
-    const fullCode = next.join("");
-    if (fullCode.length === 6 && next.every((d) => d !== "")) {
-      verifyCode(fullCode);
-    }
-  }
-
-  function handleKeyDown(index: number, e: React.KeyboardEvent) {
-    if (e.key === "Backspace" && !code[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  }
-
-  function handlePaste(e: React.ClipboardEvent) {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (!pasted) return;
-    const next = [...code];
-    for (let i = 0; i < 6; i++) {
-      next[i] = pasted[i] || "";
-    }
-    setCode(next);
-    if (pasted.length === 6) {
-      verifyCode(pasted);
-    } else {
-      inputRefs.current[Math.min(pasted.length, 5)]?.focus();
-    }
-  }
-
-  async function verifyCode(otp: string) {
-    setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/verify-otp", {
-        method: "POST",
+      const res = await fetch("/api/settings", {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: otp }),
+        body: JSON.stringify({ email: newEmail }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Verification failed");
-        setCode(["", "", "", "", "", ""]);
-        inputRefs.current[0]?.focus();
+      if (res.ok) {
+        setEmail(newEmail);
+        setEditEmail(false);
+        setSent(false);
+        setCooldown(0);
+        // Re-send verification to new email
+        setTimeout(() => sendVerification(), 500);
       } else {
-        setSuccess(true);
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 1500);
+        const data = await res.json();
+        setError(data.error || "Failed to update email");
       }
     } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
+      setError("Network error");
     }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#e8553d]/[0.04] blur-3xl pointer-events-none" />
+      <div className="grid-bg" />
+      <div className="glow-hero pointer-events-none absolute inset-0" />
+      <div className="orb orb-1" style={{ top: "5%", right: "20%" }} />
+      <div className="orb orb-3" style={{ bottom: "15%", left: "10%" }} />
 
-      <div className="w-full max-w-md relative">
+      <div
+        className={`w-full max-w-md relative z-10 transition-all duration-700 ${
+          mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        }`}
+      >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-4">
-            <OrbitGridIcon size={48} />
+          <div
+            className={`inline-flex items-center justify-center mb-5 transition-all duration-700 delay-100 ${
+              mounted ? "opacity-100 scale-100" : "opacity-0 scale-75"
+            }`}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 w-16 h-16 rounded-2xl bg-[#e8553d]/20 blur-xl" />
+              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-[#e8553d]/10 to-transparent border border-[rgba(232,85,61,0.2)] flex items-center justify-center">
+                <OrbitGridIcon size={36} />
+              </div>
+            </div>
           </div>
 
-          {success ? (
-            <>
-              <div className="flex justify-center mb-4">
-                <CheckCircle className="w-12 h-12 text-emerald-400" />
-              </div>
-              <h1 className="text-2xl font-bold">Email verified!</h1>
-              <p className="text-[var(--muted)] text-sm mt-2">
-                Welcome to NextNote. Redirecting to your dashboard...
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 rounded-full bg-[rgba(232,85,61,0.1)] border border-[rgba(232,85,61,0.2)] flex items-center justify-center">
-                  <Mail className="w-6 h-6 text-[var(--accent)]" />
-                </div>
-              </div>
-              <h1 className="text-2xl font-bold">Verify your email</h1>
-              <p className="text-[var(--muted)] text-sm mt-2 leading-relaxed">
-                {sent
-                  ? "We sent a 6-digit code to your email. Enter it below to verify your account."
-                  : "Sending verification code to your email..."}
-              </p>
-            </>
-          )}
+          <div
+            className={`mx-auto w-14 h-14 rounded-full bg-[rgba(232,85,61,0.1)] border border-[rgba(232,85,61,0.2)] flex items-center justify-center mb-5 transition-all duration-700 delay-200 ${
+              mounted ? "opacity-100 scale-100" : "opacity-0 scale-75"
+            }`}
+          >
+            <Mail className="w-7 h-7 text-[var(--accent)]" />
+          </div>
+
+          <h1
+            className={`text-3xl font-bold tracking-tight transition-all duration-700 delay-300 ${
+              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+          >
+            Check your email
+          </h1>
+          <p
+            className={`text-[var(--muted)] text-sm mt-3 leading-relaxed max-w-sm mx-auto transition-all duration-700 delay-400 ${
+              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+          >
+            {sent
+              ? "We sent a verification link to your email. Click it to verify your account."
+              : "Sending verification link..."}
+          </p>
         </div>
 
-        {!success && (
-          <div className="space-y-6">
-            {error && (
-              <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
-                {error}
-              </div>
-            )}
+        <div
+          className={`glass-card rounded-2xl p-6 space-y-5 transition-all duration-700 delay-500 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          }`}
+        >
+          {error && (
+            <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
+              {error}
+            </div>
+          )}
 
-            {/* OTP Input */}
-            <div className="flex justify-center gap-3" onPaste={handlePaste}>
-              {code.map((digit, i) => (
+          {/* Email display */}
+          <div className="bg-[var(--background)] rounded-xl p-4 border border-[var(--border)]">
+            {editEmail ? (
+              <div className="flex gap-2">
                 <input
-                  key={i}
-                  ref={(el) => { inputRefs.current[i] = el; }}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleChange(i, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(i, e)}
-                  disabled={loading}
-                  className="w-12 h-14 text-center text-xl font-bold bg-[var(--card)] border border-[var(--border)] rounded-lg text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[rgba(232,85,61,0.5)] focus:border-[rgba(232,85,61,0.5)] transition-colors disabled:opacity-50"
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-[var(--card)] border border-[var(--border)] rounded-lg text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[rgba(232,85,61,0.4)]"
+                  autoFocus
                 />
-              ))}
-            </div>
-
-            {loading && (
-              <div className="flex items-center justify-center gap-2 text-sm text-[var(--muted)]">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Verifying...
+                <button
+                  onClick={handleUpdateEmail}
+                  className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => { setEditEmail(false); setNewEmail(email); }}
+                  className="px-3 py-2 rounded-lg border border-[var(--border)] text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-[var(--muted)] mb-1">Sending to</p>
+                  <p className="text-sm font-medium text-[var(--foreground)]">{email || "Loading..."}</p>
+                </div>
+                <button
+                  onClick={() => setEditEmail(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-[var(--accent)] hover:bg-[rgba(232,85,61,0.1)] transition-colors"
+                >
+                  <Pencil className="w-3 h-3" />
+                  Edit
+                </button>
               </div>
             )}
-
-            {/* Resend */}
-            <div className="text-center">
-              <p className="text-sm text-[var(--muted)]">
-                Didn&apos;t receive the code?{" "}
-                {cooldown > 0 ? (
-                  <span className="text-[var(--muted)]">
-                    Resend in {cooldown}s
-                  </span>
-                ) : (
-                  <button
-                    onClick={sendCode}
-                    disabled={resending}
-                    className="text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors inline-flex items-center gap-1"
-                  >
-                    {resending ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-3 h-3" />
-                    )}
-                    Resend code
-                  </button>
-                )}
-              </p>
-            </div>
-
-            <div className="text-center">
-              <button
-                onClick={() => { window.location.href = "/dashboard"; }}
-                className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-              >
-                Skip for now
-              </button>
-            </div>
           </div>
-        )}
+
+          {/* Animated email icon */}
+          {sent && (
+            <div className="flex justify-center py-2">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full bg-[rgba(232,85,61,0.05)] border border-[rgba(232,85,61,0.1)] flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-emerald-400 animate-[fadeIn_0.5s_ease-out]" />
+                </div>
+                <div className="absolute inset-0 w-20 h-20 rounded-full border border-[rgba(232,85,61,0.2)] animate-ping opacity-20" />
+              </div>
+            </div>
+          )}
+
+          {/* Resend */}
+          <div className="text-center space-y-3">
+            <p className="text-sm text-[var(--muted)]">
+              Didn&apos;t receive it?{" "}
+              {cooldown > 0 ? (
+                <span className="text-[var(--muted)]">Resend in {cooldown}s</span>
+              ) : (
+                <button
+                  onClick={sendVerification}
+                  disabled={sending}
+                  className="text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors inline-flex items-center gap-1.5 font-medium"
+                >
+                  {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  Resend email
+                </button>
+              )}
+            </p>
+            <p className="text-xs text-[var(--muted)]/60">
+              Check your spam folder if you don&apos;t see it
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
