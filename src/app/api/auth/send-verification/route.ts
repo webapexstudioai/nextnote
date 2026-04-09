@@ -6,7 +6,7 @@ import { getAuthSession } from "@/lib/session";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const session = await getAuthSession();
     if (!session.isLoggedIn || !session.userId) {
@@ -42,7 +42,10 @@ export async function POST() {
       .from("email_verification_tokens")
       .insert({ user_id: user.id, token, expires_at: expiresAt, used: false });
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nextnote.to";
+    const requestOrigin = new URL((req.headers.get("origin") || req.nextUrl.origin)).origin;
+    const appUrl = process.env.NODE_ENV === "development"
+      ? requestOrigin
+      : process.env.NEXT_PUBLIC_APP_URL || requestOrigin || "https://nextnote.to";
     const verifyUrl = `${appUrl}/auth/verify-callback?token=${token}`;
     const fromEmail = process.env.RESEND_FROM_EMAIL || "noreply@nextnote.app";
 
