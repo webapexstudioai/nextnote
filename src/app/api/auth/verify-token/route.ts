@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const token = req.nextUrl.searchParams.get("token");
+    const { token } = await req.json();
     if (!token) {
       return NextResponse.json({ error: "Token is required" }, { status: 400 });
     }
