@@ -139,3 +139,6 @@ ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 
 -- Migration: Add theme_mode column if it doesn't exist yet
 -- ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS theme_mode TEXT NOT NULL DEFAULT 'dark';
+
+-- Migration: Add preferred_provider column for user-specific AI provider selection
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS preferred_provider TEXT NOT NULL DEFAULT 'anthropic';

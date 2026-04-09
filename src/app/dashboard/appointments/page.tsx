@@ -40,6 +40,7 @@ export default function AppointmentsPage() {
   const [activeNotesId, setActiveNotesId] = useState<string | null>(null);
   const [notesInput, setNotesInput] = useState("");
   const [summarizing, setSummarizing] = useState(false);
+  const [summarizeError, setSummarizeError] = useState("");
 
   // Cancel flow
   const [cancelTarget, setCancelTarget] = useState<{ prospectId: string; apptId: string } | null>(null);
@@ -154,6 +155,7 @@ export default function AppointmentsPage() {
   const handleSummarize = async (prospectId: string, apptId: string, name: string, service: string) => {
     if (!notesInput.trim()) return;
     setSummarizing(true);
+    setSummarizeError("");
     try {
       const res = await fetch("/api/summarize-notes", {
         method: "POST",
@@ -163,9 +165,11 @@ export default function AppointmentsPage() {
       const data = await res.json();
       if (res.ok && data.summary) {
         updateMeetingNotes(prospectId, apptId, notesInput, data.summary);
+      } else if (data.error) {
+        setSummarizeError(data.error);
       }
     } catch {
-      // silently fail
+      setSummarizeError("Failed to summarize notes. Check your AI settings.");
     } finally {
       setSummarizing(false);
     }
@@ -354,6 +358,9 @@ export default function AppointmentsPage() {
                 {summarizing ? "Summarizing..." : "AI Summarize"}
               </button>
             </div>
+            {summarizeError && (
+              <p className="text-xs text-red-400 mt-1">{summarizeError}</p>
+            )}
             {appt.summarizedNotes && (
               <div className="p-3 rounded-lg bg-[rgba(232,85,61,0.05)] border border-[rgba(232,85,61,0.1)]">
                 <div className="flex items-center gap-1.5 mb-1.5">

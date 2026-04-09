@@ -1,38 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { getAuthSession } from "@/lib/session";
+import { getUserAIConfig, aiChat } from "@/lib/ai";
 
 export async function POST(req: NextRequest) {
   try {
-    const { notes, prospectName, service } = await req.json();
+    const session = await getAuthSession();
+    if (!session.isLoggedIn || !session.userId) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
 
+    const { notes, prospectName, service } = await req.json();
     if (!notes) {
       return NextResponse.json({ error: "No notes provided" }, { status: 400 });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey || apiKey === "your-api-key-here") {
-      return NextResponse.json({ error: "Anthropic API key not configured. Add your key in Settings." }, { status: 500 });
+    const result = await getUserAIConfig(session.userId);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 512,
-      messages: [
-        {
-          role: "user",
-          content: `Summarize these meeting/call notes for a prospect named "${prospectName}" interested in "${service}". Keep it concise, professional, and actionable. Highlight key takeaways, next steps, and any objections or concerns mentioned.
+    const prompt = `Summarize these meeting/call notes for a prospect named "${prospectName}" interested in "${service}". Keep it concise, professional, and actionable. Highlight key takeaways, next steps, and any objections or concerns mentioned.
 
 Notes:
 ${notes}
 
-Return a clean, bulleted summary (3-6 bullets max). No preamble.`,
-        },
-      ],
-    });
+Return a clean, bulleted summary (3-6 bullets max). No preamble.`;
 
-    const summary = message.content[0].type === "text" ? message.content[0].text : "";
+    let summary: string;
+    try {
+      summary = await aiChat(result.config, undefined, prompt, 512);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      if (msg.includes("401") || msg.includes("Unauthorized") || msg.includes("invalid") || msg.includes("API key")) {
+        return NextResponse.json(
+          { error: "Your AI API key is invalid or expired. Please update it in Settings." },
+          { status: 400 }
+        );
+      }
+      throw err;
+    }
 
     return NextResponse.json({ summary });
   } catch (error) {

@@ -48,6 +48,7 @@ export async function GET() {
         openai_api_key: null,
         anthropic_connected: false,
         openai_connected: false,
+        preferred_provider: "anthropic",
         theme_mode: "dark",
       });
     }
@@ -61,6 +62,7 @@ export async function GET() {
         : null,
       anthropic_connected: !!settings.anthropic_api_key_encrypted,
       openai_connected: !!settings.openai_api_key_encrypted,
+      preferred_provider: settings.preferred_provider || "anthropic",
       theme_mode: settings.theme_mode || "dark",
     });
   } catch (err) {
@@ -124,6 +126,11 @@ export async function PUT(req: NextRequest) {
       } else {
         settingsUpdates.openai_api_key_encrypted = encrypt(body.openai_api_key);
       }
+    }
+
+    // Handle preferred provider
+    if (body.preferred_provider === "anthropic" || body.preferred_provider === "openai") {
+      settingsUpdates.preferred_provider = body.preferred_provider;
     }
 
     // Handle theme

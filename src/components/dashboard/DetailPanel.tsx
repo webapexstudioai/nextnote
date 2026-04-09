@@ -60,6 +60,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   const [activeNotesApptId, setActiveNotesApptId] = useState<string | null>(null);
   const [meetingNotesValue, setMeetingNotesValue] = useState("");
   const [summarizing, setSummarizing] = useState(false);
+  const [summarizeError, setSummarizeError] = useState("");
 
   // Appointment history
   const [showHistory, setShowHistory] = useState(false);
@@ -145,6 +146,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   const handleSummarizeNotes = async (apptId: string) => {
     if (!meetingNotesValue.trim()) return;
     setSummarizing(true);
+    setSummarizeError("");
     try {
       const res = await fetch("/api/summarize-notes", {
         method: "POST",
@@ -158,9 +160,11 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
       const data = await res.json();
       if (res.ok && data.summary) {
         updateMeetingNotes(prospect.id, apptId, meetingNotesValue, data.summary);
+      } else if (data.error) {
+        setSummarizeError(data.error);
       }
     } catch {
-      // silently fail
+      setSummarizeError("Failed to summarize notes. Check your AI settings.");
     } finally {
       setSummarizing(false);
     }
@@ -576,6 +580,10 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
                 {summarizing ? "Summarizing..." : "Summarize with AI"}
               </button>
             </div>
+
+            {summarizeError && (
+              <p className="text-xs text-red-400 mt-1">{summarizeError}</p>
+            )}
 
             {appt.summarizedNotes && (
               <div className="p-3 rounded-lg bg-[rgba(232,85,61,0.05)] border border-[rgba(232,85,61,0.1)]">

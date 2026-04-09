@@ -22,6 +22,7 @@ interface SettingsData {
   openai_api_key: string | null;
   anthropic_connected: boolean;
   openai_connected: boolean;
+  preferred_provider: string;
   theme_mode: string;
 }
 
@@ -45,8 +46,10 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsData>({
     anthropic_api_key: null, openai_api_key: null,
     anthropic_connected: false, openai_connected: false,
+    preferred_provider: "anthropic",
     theme_mode: "dark",
   });
+  const [preferredProvider, setPreferredProvider] = useState("anthropic");
 
   // API key input state
   const [anthropicKey, setAnthropicKey] = useState("");
@@ -83,6 +86,7 @@ export default function SettingsPage() {
           const s = await settingsRes.json();
           setSettings(s);
           setThemeMode(s.theme_mode || "dark");
+          setPreferredProvider(s.preferred_provider || "anthropic");
         }
       } catch (err) {
         console.error("Failed to load settings:", err);
@@ -126,6 +130,7 @@ export default function SettingsPage() {
         name: profile.name,
         email: profile.email,
         agency_name: profile.agencyName,
+        preferred_provider: preferredProvider,
         theme_mode: themeMode,
       };
       if (anthropicKey && anthropicValidation === "valid") body.anthropic_api_key = anthropicKey;
@@ -308,6 +313,40 @@ export default function SettingsPage() {
           <p className="text-xs text-[var(--muted)] mb-4">
             Add your own API keys to power AI features like summaries, parsing, and insights.
           </p>
+
+          {/* Preferred Provider */}
+          <div className="mb-5">
+            <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2 block">
+              Preferred AI Provider
+            </label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setPreferredProvider("anthropic")}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                  preferredProvider === "anthropic"
+                    ? "bg-[rgba(232,85,61,0.1)] border border-[rgba(232,85,61,0.3)] text-[var(--accent)]"
+                    : "bg-[var(--background)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]/30"
+                }`}
+              >
+                Anthropic
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreferredProvider("openai")}
+                className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                  preferredProvider === "openai"
+                    ? "bg-[rgba(232,85,61,0.1)] border border-[rgba(232,85,61,0.3)] text-[var(--accent)]"
+                    : "bg-[var(--background)] border border-[var(--border)] text-[var(--muted)] hover:border-[var(--accent)]/30"
+                }`}
+              >
+                OpenAI
+              </button>
+            </div>
+            <p className="text-[10px] text-[var(--muted)] mt-1.5">
+              AI features will use your {preferredProvider === "anthropic" ? "Anthropic" : "OpenAI"} key. Make sure the key for your selected provider is connected below.
+            </p>
+          </div>
 
           {/* Anthropic */}
           <div className="mb-4">

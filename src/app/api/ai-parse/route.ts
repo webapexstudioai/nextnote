@@ -1,25 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { getAuthSession } from "@/lib/session";
+import { getUserAIConfig, aiChat } from "@/lib/ai";
 
 export async function POST(req: NextRequest) {
   try {
-    const { rows, headers } = await req.json();
+    const session = await getAuthSession();
+    if (!session.isLoggedIn || !session.userId) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
 
+    const { rows, headers } = await req.json();
     if (!rows || !headers) {
       return NextResponse.json({ error: "Missing rows or headers" }, { status: 400 });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey || apiKey === "your-api-key-here") {
-      return NextResponse.json(
-        { error: "Anthropic API key not configured. Add your key in Settings." },
-        { status: 500 }
-      );
+    const result = await getUserAIConfig(session.userId);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const client = new Anthropic({ apiKey });
-
-    // Send a sample of data (first 5 rows) to Claude for column mapping
     const sampleRows = rows.slice(0, 5);
     const prompt = `You are analyzing a spreadsheet of business leads/prospects. Here are the column headers and sample data:
 
@@ -44,15 +43,20 @@ Be smart about detecting fields even with unusual header names. If a column cont
 
 Return ONLY the JSON mapping, nothing else.`;
 
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
-    });
+    let responseText: string;
+    try {
+      responseText = await aiChat(result.config, undefined, prompt, 1024);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      if (msg.includes("401") || msg.includes("Unauthorized") || msg.includes("invalid") || msg.includes("API key")) {
+        return NextResponse.json(
+          { error: "Your AI API key is invalid or expired. Please update it in Settings." },
+          { status: 400 }
+        );
+      }
+      throw err;
+    }
 
-    const responseText = message.content[0].type === "text" ? message.content[0].text : "";
-
-    // Parse the JSON mapping from Claude's response
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });
@@ -60,7 +64,6 @@ Return ONLY the JSON mapping, nothing else.`;
 
     const columnMapping = JSON.parse(jsonMatch[0]);
 
-    // Now map all rows using the AI-detected mapping
     const mappedProspects = rows.map((row: Record<string, string>, index: number) => {
       const prospect: Record<string, string> = {
         id: `import-${Date.now()}-${index}`,
@@ -78,7 +81,6 @@ Return ONLY the JSON mapping, nothing else.`;
         const value = String(row[header]).trim();
 
         if (field === "status") {
-          // Normalize status values
           const normalized = value.toLowerCase();
           if (normalized.includes("contact")) prospect.status = "Contacted";
           else if (normalized.includes("qualif")) prospect.status = "Qualified";
@@ -86,7 +88,6 @@ Return ONLY the JSON mapping, nothing else.`;
           else if (normalized.includes("close") || normalized.includes("won")) prospect.status = "Closed";
           else prospect.status = "New";
         } else if (typeof field === "string" && field in prospect) {
-          // Append to notes if field already has data (multiple columns mapped to same field)
           if (prospect[field] && field === "notes") {
             prospect[field] += ` | ${value}`;
           } else {
@@ -95,9 +96,7 @@ Return ONLY the JSON mapping, nothing else.`;
         }
       }
 
-      // Set a fallback name if empty
       if (!prospect.name) prospect.name = `Lead #${index + 1}`;
-
       return prospect;
     });
 
