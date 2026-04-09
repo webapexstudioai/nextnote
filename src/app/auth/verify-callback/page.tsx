@@ -39,6 +39,9 @@ export default function VerifyCallbackPage() {
 
       if (data.success) {
         setStatus("success");
+        setTimeout(() => {
+          window.location.href = "/pricing";
+        }, 1500);
       } else {
         setStatus("error");
         setErrorMsg(data.error || "Verification failed");
@@ -109,7 +112,7 @@ export default function VerifyCallbackPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Your account is now verified!</h1>
-              <p className="text-[var(--muted)] text-sm mt-3 leading-relaxed">You can close out of this window now.</p>
+              <p className="text-[var(--muted)] text-sm mt-3 leading-relaxed">Redirecting you to pricing now...</p>
             </div>
           </div>
         )}

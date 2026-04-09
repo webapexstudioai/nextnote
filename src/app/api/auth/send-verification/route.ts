@@ -27,13 +27,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email already verified" }, { status: 400 });
     }
 
-    // Invalidate previous tokens
-    await supabaseAdmin
-      .from("email_verification_tokens")
-      .update({ used: true })
-      .eq("user_id", user.id)
-      .eq("used", false);
-
     // Generate a secure token
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 1000 * 60 * 60).toISOString(); // 1 hour

@@ -17,29 +17,22 @@ export async function POST(req: NextRequest) {
     }
 
     // Get user
-    const { data: user } = await supabaseAdmin
+    const { data: user, error: userError } = await supabaseAdmin
       .from("users")
-      .select("id, email, stripe_customer_id")
+      .select("id, email")
       .eq("id", session.userId)
       .single();
 
-    if (!user) {
+    if (userError || !user) {
+      console.error("Create checkout user lookup error:", userError);
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Create or reuse Stripe customer
-    let customerId = user.stripe_customer_id;
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { userId: user.id },
-      });
-      customerId = customer.id;
-      await supabaseAdmin
-        .from("users")
-        .update({ stripe_customer_id: customerId })
-        .eq("id", user.id);
-    }
+    const customer = await stripe.customers.create({
+      email: user.email,
+      metadata: { userId: user.id },
+    });
+    const customerId = customer.id;
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nextnote.to";
 
