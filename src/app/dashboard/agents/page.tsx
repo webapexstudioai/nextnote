@@ -26,7 +26,7 @@ interface ElevenAgent {
   };
 }
 
-type NavSection = "agents" | "test-agent" | "phone-numbers" | "call-history" | "analytics" | "settings";
+type NavSection = "agents" | "test-agent" | "phone-numbers" | "call-history" | "analytics";
 
 interface Conversation {
   conversation_id: string;
@@ -63,7 +63,6 @@ const NAV: { id: NavSection; label: string; icon: React.ElementType }[] = [
   { id: "phone-numbers", label: "Phone Numbers", icon: Phone },
   { id: "call-history", label: "Call History", icon: MessageSquare },
   { id: "analytics", label: "Analytics", icon: BarChart2 },
-  { id: "settings", label: "Settings", icon: Settings2 },
 ];
 
 function formatTs(ts?: number | null) {
@@ -807,26 +806,6 @@ export default function AgentsPage() {
             </div>
           )}
 
-          {/* ── Settings ── */}
-          {!loading && !error && nav === "settings" && (
-            <div className="space-y-5">
-              <h2 className="text-sm font-semibold">Agent Settings</h2>
-              <div className="liquid-glass rounded-2xl p-5 space-y-3">
-                <p className="text-sm font-medium">ElevenLabs Connection</p>
-                <p className="text-xs text-[var(--muted)]">Connected using your ElevenLabs API key. To update the key or permissions, go to Settings → API Keys.</p>
-                <Link href="/dashboard/settings" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--border)] text-sm hover:bg-white/[0.04] transition-colors">
-                  <Settings2 className="w-4 h-4" /> Open Settings
-                </Link>
-              </div>
-              <div className="liquid-glass rounded-2xl p-5 space-y-3">
-                <p className="text-sm font-medium">Build New Agent</p>
-                <p className="text-xs text-[var(--muted)]">Generate a new AI receptionist from a prospect in your CRM. The AI will extract business context and create a production-ready agent.</p>
-                <Link href="/dashboard" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#e8553d] to-[#d44429] text-white text-sm font-semibold shadow-lg shadow-[#e8553d]/20 hover:from-[#f06a54] hover:to-[#e8553d] transition-all">
-                  <Bot className="w-4 h-4" /> Go to Dashboard → Build Receptionist
-                </Link>
-              </div>
-            </div>
-          )}
         </main>
       </div>
 
