@@ -110,8 +110,15 @@ Return ONLY the JSON mapping, nothing else.`;
         }
       }
 
-      if (!prospect.name) prospect.name = `Lead #${index + 1}`;
       return prospect;
+    }).filter((p: Record<string, string>) => {
+      // Drop rows the AI couldn't extract any identifying field from —
+      // these were historically filled with placeholder names like
+      // "Lead #1" and would show up as empty cards in the pipeline.
+      // Also drop rows that still match that legacy placeholder name
+      // pattern in case it exists in older exports or user sheets.
+      if (/^Lead\s*#?\s*\d+$/i.test(p.name || "")) return false;
+      return !!(p.name?.trim() || p.email?.trim() || p.phone?.trim());
     });
 
     await deductCredits(session.userId, AI_PARSE_CREDITS, {
