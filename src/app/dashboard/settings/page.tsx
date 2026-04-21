@@ -4,12 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import {
   Settings, User, Bell, Palette, Save, CheckCircle, Loader2,
   Crown, Sun, Moon, AlertCircle,
-  Shield, Camera, ArrowUpRight, ArrowDownRight, Phone, Coins,
+  Shield, Camera, ArrowUpRight, ArrowDownRight, Phone, Coins, Link2, Calendar,
 } from "lucide-react";
 import { TIERS } from "@/lib/subscriptions";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 
-type SettingsTab = "profile" | "subscription" | "credits" | "caller_id" | "appearance" | "notifications";
+type SettingsTab = "profile" | "subscription" | "credits" | "caller_id" | "integrations" | "appearance" | "notifications";
 
 interface CallerId {
   id: string;
@@ -39,6 +39,7 @@ const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: "subscription", label: "Subscription", icon: Crown },
   { id: "credits", label: "Credits", icon: Coins },
   { id: "caller_id", label: "Caller ID", icon: Phone },
+  { id: "integrations", label: "Integrations", icon: Link2 },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "notifications", label: "Notifications", icon: Bell },
 ];
@@ -170,6 +171,51 @@ export default function SettingsPage() {
       await loadCallerIds();
     } catch {
       setCallerIdError("Failed to remove");
+    }
+  }
+
+  // Google Calendar integration state
+  const [googleStatus, setGoogleStatus] = useState<{ connected: boolean; email: string } | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [disconnectingGoogle, setDisconnectingGoogle] = useState(false);
+
+  async function loadGoogleStatus() {
+    setGoogleLoading(true);
+    try {
+      const res = await fetch("/api/auth/status");
+      if (res.ok) {
+        const data = await res.json();
+        setGoogleStatus({ connected: !!data.connected, email: data.email || "" });
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === "integrations") loadGoogleStatus();
+  }, [activeTab]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connected") === "true") {
+      setActiveTab("integrations");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  function handleConnectGoogle() {
+    const returnTo = "/dashboard/settings?connected=true";
+    window.location.href = `/api/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
+  }
+
+  async function handleDisconnectGoogle() {
+    setDisconnectingGoogle(true);
+    try {
+      await fetch("/api/auth/disconnect", { method: "POST" });
+      await loadGoogleStatus();
+    } finally {
+      setDisconnectingGoogle(false);
     }
   }
 
@@ -917,6 +963,77 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Integrations Tab ─── */}
+          {activeTab === "integrations" && (
+            <div className="space-y-6">
+              <div className="rounded-xl liquid-glass p-5">
+                <h3 className="text-sm font-medium mb-1 flex items-center gap-2 text-[var(--foreground)]">
+                  <Link2 className="w-4 h-4 text-[var(--accent)]" /> Integrations
+                </h3>
+                <p className="text-xs text-[var(--muted)] mb-5">
+                  Connect third-party services to automate your workflow.
+                </p>
+
+                {/* Google Calendar card */}
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500/15 to-emerald-500/15 border border-blue-500/20 flex items-center justify-center shrink-0">
+                      <Calendar className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-sm font-semibold text-[var(--foreground)]">Google Calendar</h4>
+                        {googleStatus?.connected && (
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            Connected
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[var(--muted)] mt-1">
+                        Auto-book appointments with Google Meet links, send invites to prospects, and keep your calendar in sync.
+                      </p>
+                      {googleStatus?.connected && googleStatus.email && (
+                        <p className="text-[11px] text-[var(--muted)] mt-2">
+                          Signed in as <span className="text-[var(--foreground)] font-medium">{googleStatus.email}</span>
+                        </p>
+                      )}
+                      <div className="mt-4">
+                        {googleLoading ? (
+                          <div className="flex items-center gap-2 text-xs text-[var(--muted)]">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...
+                          </div>
+                        ) : googleStatus?.connected ? (
+                          <button
+                            onClick={handleDisconnectGoogle}
+                            disabled={disconnectingGoogle}
+                            className="px-4 py-2 rounded-lg border border-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/10 transition-colors disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {disconnectingGoogle ? (
+                              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Disconnecting...</>
+                            ) : (
+                              "Disconnect"
+                            )}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleConnectGoogle}
+                            className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-xs font-medium hover:bg-[var(--accent-hover)] transition-colors flex items-center gap-2"
+                          >
+                            <Link2 className="w-3.5 h-3.5" /> Connect Google Calendar
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-[var(--muted)] mt-4">
+                  More integrations coming soon — Slack, Zapier, and HubSpot.
+                </p>
               </div>
             </div>
           )}
