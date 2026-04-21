@@ -78,7 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto relative z-[1]">
+        <main className="flex-1 overflow-y-auto relative z-[1]" style={{ isolation: "isolate" }}>
           {/* Mobile Header */}
           <div className="lg:hidden sticky top-0 z-30 liquid-glass-strong border-b border-white/5 px-4 py-3">
             <button

@@ -509,6 +509,10 @@ body {
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
+  /* Same GPU-layer stabilization as .dashboard-stage. */
+  transform: translateZ(0);
+  will-change: transform;
+  contain: strict;
 }
 .ambient-bg::before,
 .ambient-bg::after {
@@ -744,6 +748,13 @@ body {
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
+  /* Force a stable GPU layer so scrolling-induced backdrop-filter
+     repaints don't invalidate the gradient background. Without this,
+     heavy scroll in the main content made the whole ambient
+     background flicker/disappear for a frame on slower hardware. */
+  transform: translateZ(0);
+  will-change: transform;
+  contain: strict;
   background:
     /* top-left warm wash */
     radial-gradient(ellipse 60% 45% at 8% 0%, rgba(var(--accent-rgb), 0.28) 0%, transparent 60%),
