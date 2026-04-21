@@ -1,33 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getAuthSession } from "@/lib/session";
-
-const ENCRYPTION_KEY = process.env.API_KEY_ENCRYPTION_SECRET || process.env.SESSION_SECRET || "nextnote_default_encryption_key_32ch";
-
-function encrypt(text: string): string {
-  const iv = crypto.randomBytes(16);
-  const key = crypto.scryptSync(ENCRYPTION_KEY, "salt", 32);
-  const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
-  let encrypted = cipher.update(text, "utf8", "hex");
-  encrypted += cipher.final("hex");
-  return iv.toString("hex") + ":" + encrypted;
-}
-
-function decrypt(encrypted: string): string {
-  const [ivHex, encHex] = encrypted.split(":");
-  const iv = Buffer.from(ivHex, "hex");
-  const key = crypto.scryptSync(ENCRYPTION_KEY, "salt", 32);
-  const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
-  let decrypted = decipher.update(encHex, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-  return decrypted;
-}
-
-function maskKey(key: string): string {
-  if (key.length <= 8) return "****";
-  return key.slice(0, 7) + "..." + key.slice(-4);
-}
+import { encrypt, decrypt, maskKey } from "@/lib/crypto";
 
 export async function GET() {
   try {
@@ -50,7 +24,9 @@ export async function GET() {
         openai_connected: false,
         preferred_provider: "anthropic",
         theme_mode: "dark",
-      });
+        accent_color: "#e8553d",
+        background_intensity: "balanced",
+        });
     }
 
     return NextResponse.json({
@@ -64,6 +40,17 @@ export async function GET() {
       openai_connected: !!settings.openai_api_key_encrypted,
       preferred_provider: settings.preferred_provider || "anthropic",
       theme_mode: settings.theme_mode || "dark",
+      accent_color: settings.accent_color || "#e8553d",
+      background_intensity: settings.background_intensity || "balanced",
+      cal_api_key: settings.cal_api_key_encrypted
+        ? maskKey(decrypt(settings.cal_api_key_encrypted))
+        : null,
+      cal_connected: !!settings.cal_api_key_encrypted,
+      cal_event_type_id: settings.cal_event_type_id || "",
+      cal_timezone: settings.cal_timezone || "America/New_York",
+      google_calendar_connected: !!settings.google_refresh_token_encrypted,
+      google_calendar_id: settings.google_calendar_id || "primary",
+      calendar_provider: settings.calendar_provider || null,
     });
   } catch (err) {
     console.error("Get settings error:", err);
@@ -128,13 +115,46 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Handle preferred provider
     if (body.preferred_provider === "anthropic" || body.preferred_provider === "openai") {
       settingsUpdates.preferred_provider = body.preferred_provider;
     }
 
-    // Handle theme
+    if ("cal_api_key" in body) {
+      if (body.cal_api_key === null || body.cal_api_key === "") {
+        settingsUpdates.cal_api_key_encrypted = null;
+      } else if (typeof body.cal_api_key === "string" && !body.cal_api_key.includes("...")) {
+        settingsUpdates.cal_api_key_encrypted = encrypt(body.cal_api_key);
+      }
+    }
+    if (typeof body.cal_event_type_id === "string") {
+      settingsUpdates.cal_event_type_id = body.cal_event_type_id.trim() || null;
+    }
+    if (typeof body.cal_timezone === "string" && body.cal_timezone.trim()) {
+      settingsUpdates.cal_timezone = body.cal_timezone.trim();
+    }
+
+    if (body.google_disconnect === true) {
+      settingsUpdates.google_access_token_encrypted = null;
+      settingsUpdates.google_refresh_token_encrypted = null;
+      settingsUpdates.google_token_expiry = null;
+    }
+    if (typeof body.google_calendar_id === "string" && body.google_calendar_id.trim()) {
+      settingsUpdates.google_calendar_id = body.google_calendar_id.trim();
+    }
+    if (body.calendar_provider === "cal" || body.calendar_provider === "google") {
+      settingsUpdates.calendar_provider = body.calendar_provider;
+    } else if (body.calendar_provider === null) {
+      settingsUpdates.calendar_provider = null;
+    }
+
+    // Handle theme + appearance
     if (body.theme_mode) settingsUpdates.theme_mode = body.theme_mode;
+    if (typeof body.accent_color === "string" && /^#[0-9a-fA-F]{6}$/.test(body.accent_color)) {
+      settingsUpdates.accent_color = body.accent_color.toLowerCase();
+    }
+    if (body.background_intensity === "minimal" || body.background_intensity === "balanced" || body.background_intensity === "cinematic") {
+      settingsUpdates.background_intensity = body.background_intensity;
+    }
 
     // Upsert settings
     const { data: existing } = await supabaseAdmin

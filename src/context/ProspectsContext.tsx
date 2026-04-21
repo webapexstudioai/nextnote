@@ -49,6 +49,10 @@ interface ProspectsContextType {
   updateFolder: (id: string, updates: Partial<Folder>) => void;
   deleteFolder: (id: string) => void;
   addFileToFolder: (folderId: string, file: ProspectFile) => void;
+  createFile: (folderId: string, name: string) => ProspectFile;
+  renameFile: (folderId: string, fileId: string, name: string) => void;
+  deleteFile: (folderId: string, fileId: string) => void;
+  moveProspectToFile: (prospectId: string, fileId: string | null) => void;
 }
 
 const ProspectsContext = createContext<ProspectsContextType | null>(null);
@@ -187,6 +191,10 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
 
   const updateAppointmentOutcome = useCallback(
     (prospectId: string, appointmentId: string, outcome: AppointmentOutcome, cancelReason?: CancelReason) => {
+      // Find the appointment to pull the calendarEventId before state update
+      const prospect = prospects.find((p) => p.id === prospectId);
+      const appt = prospect?.appointments.find((a) => a.id === appointmentId);
+
       setProspects((prev) =>
         prev.map((p) =>
           p.id === prospectId
@@ -199,8 +207,17 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
             : p
         )
       );
+
+      // Delete the Google Calendar event when cancelling
+      if (outcome === "cancelled" && appt?.calendarEventId && googleConnected) {
+        fetch("/api/appointments/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ calendarEventId: appt.calendarEventId }),
+        }).catch((err) => console.error("Failed to cancel calendar event:", err));
+      }
     },
-    []
+    [prospects, googleConnected]
   );
 
   const updateMeetingNotes = useCallback(
@@ -286,6 +303,49 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const createFile = useCallback((folderId: string, name: string): ProspectFile => {
+    const file: ProspectFile = {
+      id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name,
+      folderId,
+      createdAt: new Date().toISOString().split("T")[0],
+      source: "manual",
+      prospectCount: 0,
+    };
+    setFolders((prev) =>
+      prev.map((f) => (f.id === folderId ? { ...f, files: [...f.files, file] } : f))
+    );
+    return file;
+  }, []);
+
+  const renameFile = useCallback((folderId: string, fileId: string, name: string) => {
+    setFolders((prev) =>
+      prev.map((f) =>
+        f.id === folderId
+          ? { ...f, files: f.files.map((file) => (file.id === fileId ? { ...file, name } : file)) }
+          : f
+      )
+    );
+  }, []);
+
+  const deleteFile = useCallback((folderId: string, fileId: string) => {
+    setFolders((prev) =>
+      prev.map((f) =>
+        f.id === folderId ? { ...f, files: f.files.filter((file) => file.id !== fileId) } : f
+      )
+    );
+    // Unassign prospects from the deleted file (keep them in the folder)
+    setProspects((prev) =>
+      prev.map((p) => (p.fileId === fileId ? { ...p, fileId: undefined } : p))
+    );
+  }, []);
+
+  const moveProspectToFile = useCallback((prospectId: string, fileId: string | null) => {
+    setProspects((prev) =>
+      prev.map((p) => (p.id === prospectId ? { ...p, fileId: fileId ?? undefined } : p))
+    );
+  }, []);
+
   return (
     <ProspectsContext.Provider
       value={{
@@ -306,6 +366,10 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
         updateFolder,
         deleteFolder,
         addFileToFolder,
+        createFile,
+        renameFile,
+        deleteFile,
+        moveProspectToFile,
       }}
     >
       {children}

@@ -179,7 +179,7 @@ function Navbar() {
               href="/auth/signup"
               className="cta-primary !py-2 !px-5 !text-sm !shadow-md"
             >
-              Start Free Trial
+              Get Started
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -211,7 +211,7 @@ function Navbar() {
                 Login
               </Link>
               <Link href="/auth/signup" className="text-sm font-medium text-center py-2.5 rounded-lg bg-gradient-to-r from-[#e8553d] to-[#d44429] text-white">
-                Start Free Trial
+                Get Started
               </Link>
             </div>
           </div>
@@ -232,7 +232,7 @@ function Hero() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[rgba(232,85,61,0.2)] bg-[rgba(232,85,61,0.06)] text-xs text-[var(--accent)] mb-8 fade-in-up backdrop-blur-sm">
           <Sparkles className="w-3 h-3" />
-          AI-Powered Sales OS — 14-Day Free Trial
+          AI-Powered Sales OS
         </div>
 
         <h1
@@ -259,7 +259,7 @@ function Hero() {
           style={{ animationDelay: "0.3s" }}
         >
           <Link href="/auth/signup" className="cta-primary">
-            Get Started Free
+            Get Started
             <ArrowRight className="w-4 h-4" />
           </Link>
           <a href="#how-it-works" className="cta-secondary">
@@ -582,10 +582,12 @@ const plans = [
       "Appointment booking",
       "Google Calendar sync",
       "CSV / XLSX import",
+      "150 AI credits included",
       "Email support",
     ],
-    cta: "Start Free Trial",
+    cta: "Get Started",
     featured: false,
+    creditBadge: "150 free credits",
   },
   {
     name: "Pro",
@@ -600,30 +602,13 @@ const plans = [
       "Voicemail drops",
       "Pipeline analytics",
       "Google Sheets import",
+      "250 AI credits included",
       "Priority support",
     ],
-    cta: "Start Free Trial",
+    cta: "Get Started",
     featured: true,
     badge: "Most Popular",
-  },
-  {
-    name: "Agency",
-    price: "$199",
-    period: "/month",
-    desc: "For agencies managing multiple campaigns and teams at scale.",
-    features: [
-      "Everything in Pro",
-      "Team seats (up to 10)",
-      "Custom branding",
-      "API access",
-      "Advanced analytics",
-      "Dedicated account manager",
-      "SSO & compliance",
-      "Onboarding call",
-    ],
-    cta: "Contact Sales",
-    featured: false,
-    badge: "Best Value",
+    creditBadge: "250 free credits",
   },
 ];
 
@@ -643,13 +628,24 @@ function Pricing() {
             Invest in closing, not software
           </h2>
           <p className="text-[var(--muted)] max-w-xl mx-auto">
-            Start free for 14 days. No credit card required. Cancel anytime.
+            Choose the plan that fits your workflow and get started right away.
           </p>
+
+          {/* Credit offer CTA */}
+          <div className="mt-8 inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-gradient-to-r from-[rgba(232,85,61,0.15)] to-[rgba(255,138,106,0.1)] border border-[rgba(232,85,61,0.25)] backdrop-blur-sm">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#e8553d] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#e8553d]" />
+            </span>
+            <span className="text-sm font-medium text-[var(--foreground)]">
+              Limited offer — free AI credits on every plan. Start building today.
+            </span>
+          </div>
         </div>
 
         <div
           ref={gridRef}
-          className="grid lg:grid-cols-3 gap-6 max-w-5xl mx-auto items-start reveal-stagger"
+          className="grid lg:grid-cols-2 gap-6 max-w-4xl mx-auto items-start reveal-stagger"
         >
           {plans.map((plan) => (
             <div
@@ -673,7 +669,14 @@ function Pricing() {
               )}
 
               <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
-              <p className="text-sm text-[var(--muted)] mb-6">{plan.desc}</p>
+              <p className="text-sm text-[var(--muted)] mb-4">{plan.desc}</p>
+
+              {plan.creditBadge && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium mb-4">
+                  <Sparkles className="w-3 h-3" />
+                  {plan.creditBadge}
+                </div>
+              )}
 
               <div className="flex items-baseline gap-1 mb-8">
                 <span className="text-4xl sm:text-5xl font-bold">{plan.price}</span>
@@ -707,7 +710,7 @@ function Pricing() {
         <div className="text-center mt-12">
           <p className="text-sm text-[var(--muted)]">
             <Shield className="w-4 h-4 inline-block mr-1.5 text-[var(--accent)] -mt-0.5" />
-            14-day free trial. No credit card required. Cancel anytime.
+            All plans include free AI credits. Buy more anytime. Cancel your subscription whenever.
           </p>
         </div>
       </div>
@@ -719,7 +722,7 @@ function Pricing() {
 const faqs = [
   {
     q: "Do I need a credit card to start?",
-    a: "No. You can sign up and start using NextNote immediately with our 14-day free trial. No credit card required.",
+    a: "No. NextNote is a paid platform, and you can choose the plan that fits your workflow when you sign up.",
   },
   {
     q: "Can I import my existing leads?",
@@ -822,7 +825,7 @@ function FinalCTA() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link href="/auth/signup" className="cta-primary !px-10 !py-4">
-            Get Started Free
+            Get Started
             <ArrowRight className="w-4 h-4" />
           </Link>
           <a href="#pricing" className="cta-secondary">
@@ -831,7 +834,7 @@ function FinalCTA() {
         </div>
 
         <p className="text-xs text-[var(--muted)] mt-6">
-          No credit card required. Set up in under 2 minutes.
+          Set up in under 2 minutes.
         </p>
       </div>
     </section>

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ArrowRight, ArrowLeft, Loader2, MessageSquare, Star, Target } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
+
+const MIN_CHARS = 15;
 
 const steps = [
   {
@@ -31,6 +33,8 @@ const steps = [
   },
 ];
 
+type TransitionDir = "forward" | "backward";
+
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [form, setForm] = useState({
@@ -42,37 +46,80 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
+  const [transitionDir, setTransitionDir] = useState<TransitionDir>("forward");
+  const [visible, setVisible] = useState(true);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        const user = data.user;
+        if (!user) { window.location.href = "/auth/login"; return; }
+        if (!user.emailVerified) { window.location.href = "/auth/verify-email"; return; }
+        if (user.subscriptionStatus !== "active") { window.location.href = "/pricing"; return; }
+        setCheckingAccess(false);
+      })
+      .catch(() => { window.location.href = "/auth/login"; });
+  }, []);
 
-  function goToStep(step: number) {
-    if (step === currentStep) return;
+  // Focus textarea when step changes
+  useEffect(() => {
+    if (!checkingAccess && textareaRef.current && steps[currentStep].field !== "dedication_score") {
+      setTimeout(() => textareaRef.current?.focus(), 350);
+    }
+  }, [currentStep, checkingAccess]);
+
+  function goToStep(nextStep: number, dir: TransitionDir = "forward") {
+    if (nextStep === currentStep || transitioning) return;
+    setTransitionDir(dir);
     setTransitioning(true);
+    setVisible(false);
     setTimeout(() => {
-      setCurrentStep(step);
+      setCurrentStep(nextStep);
+      setError("");
+      setVisible(true);
       setTransitioning(false);
-    }, 300);
+    }, 320);
   }
 
-  function handleNext() {
+  const validate = useCallback(() => {
     const step = steps[currentStep];
     if (step.field === "dedication_score") {
       if (form.dedication_score < 1 || form.dedication_score > 10) {
         setError("Please select a score between 1 and 10");
-        return;
+        return false;
       }
     } else {
-      if (!form[step.field].trim()) {
+      const val = form[step.field as "reason_chose" | "what_stood_out"].trim();
+      if (!val) {
         setError("This field is required");
-        return;
+        return false;
+      }
+      if (val.length < MIN_CHARS) {
+        setError(`Please write at least ${MIN_CHARS} characters (${val.length}/${MIN_CHARS})`);
+        return false;
       }
     }
-    setError("");
+    return true;
+  }, [currentStep, form]);
 
+  function handleNext() {
+    if (!validate()) return;
+    setError("");
     if (currentStep < steps.length - 1) {
-      goToStep(currentStep + 1);
+      goToStep(currentStep + 1, "forward");
     } else {
       submitOnboarding();
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleNext();
     }
   }
 
@@ -101,6 +148,24 @@ export default function OnboardingPage() {
   const step = steps[currentStep];
   const Icon = step.icon;
   const progress = ((currentStep + 1) / steps.length) * 100;
+  const currentFieldValue = step.field !== "dedication_score" ? form[step.field as "reason_chose" | "what_stood_out"] : "";
+  const charCount = currentFieldValue.length;
+
+  const slideIn = "translate-x-0 opacity-100";
+  const slideOutClass = transitionDir === "forward" ? "translate-x-8 opacity-0" : "-translate-x-8 opacity-0";
+
+  if (checkingAccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 relative overflow-hidden">
+        <div className="grid-bg" />
+        <div className="glow-hero pointer-events-none absolute inset-0" />
+        <div className="relative z-10 text-center space-y-4">
+          <Loader2 className="w-10 h-10 text-[var(--accent)] animate-spin mx-auto" />
+          <p className="text-sm text-[var(--muted)]">Checking your access...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)] px-4 relative overflow-hidden">
@@ -132,100 +197,109 @@ export default function OnboardingPage() {
         {/* Progress bar */}
         <div className="w-full h-1 bg-[var(--border)] rounded-full mb-8 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-[#e8553d] to-[#ff8a6a] rounded-full transition-all duration-500 ease-out"
+            className="h-full bg-gradient-to-r from-[#e8553d] to-[#ff8a6a] rounded-full transition-all duration-600 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
 
-        {/* Step content */}
-        <div
-          className={`glass-card rounded-2xl p-8 transition-all duration-300 ${
-            transitioning ? "opacity-0 translate-x-4" : "opacity-100 translate-x-0"
-          }`}
-        >
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 bg-[rgba(232,85,61,0.1)] text-[var(--accent)]`}>
-            <Icon className="w-6 h-6" />
-          </div>
-
-          <h2 className="text-2xl font-bold tracking-tight mb-2">{step.title}</h2>
-          <p className="text-[var(--muted)] text-sm mb-6">{step.subtitle}</p>
-
-          {error && (
-            <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-              {error}
+        {/* Step content with slide transition */}
+        <div className="overflow-hidden">
+          <div
+            className={`glass-card rounded-2xl p-8 transition-all duration-320 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              visible ? slideIn : slideOutClass
+            }`}
+          >
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 bg-[rgba(232,85,61,0.1)] text-[var(--accent)]">
+              <Icon className="w-6 h-6" />
             </div>
-          )}
 
-          {step.field === "dedication_score" ? (
-            <div className="space-y-6">
-              {/* Slider */}
-              <div className="text-center">
-                <div className="text-6xl font-bold text-[var(--accent)] mb-4">
-                  {form.dedication_score}
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={form.dedication_score}
-                  onChange={(e) => setForm({ ...form, dedication_score: parseInt(e.target.value) })}
-                  className="w-full h-2 bg-[var(--border)] rounded-full appearance-none cursor-pointer accent-[#e8553d]"
-                  style={{
-                    background: `linear-gradient(to right, #e8553d 0%, #e8553d ${(form.dedication_score - 1) * 11.1}%, var(--border) ${(form.dedication_score - 1) * 11.1}%, var(--border) 100%)`,
-                  }}
-                />
-                <div className="flex justify-between mt-2 text-xs text-[var(--muted)]">
-                  <span>1 - Just exploring</span>
-                  <span>10 - All in</span>
-                </div>
+            <h2 className="text-2xl font-bold tracking-tight mb-2">{step.title}</h2>
+            <p className="text-[var(--muted)] text-sm mb-6">{step.subtitle}</p>
+
+            {error && (
+              <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm animate-[fadeInUp_0.3s_ease-out]">
+                {error}
               </div>
-            </div>
-          ) : (
-            <textarea
-              value={form[step.field]}
-              onChange={(e) => setForm({ ...form, [step.field]: e.target.value })}
-              placeholder={step.placeholder}
-              rows={4}
-              className="w-full px-4 py-3.5 bg-[var(--background)] border border-[var(--border)] rounded-xl text-sm text-[var(--foreground)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[rgba(232,85,61,0.4)] focus:border-[rgba(232,85,61,0.4)] transition-all duration-300 resize-none"
-            />
-          )}
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-8 gap-4">
-            {currentStep > 0 ? (
-              <button
-                onClick={() => goToStep(currentStep - 1)}
-                className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[var(--border)] text-sm text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[rgba(232,85,61,0.3)] transition-all"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </button>
-            ) : (
-              <div />
             )}
 
-            <button
-              onClick={handleNext}
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#e8553d] to-[#d44429] text-white font-semibold text-sm hover:from-[#f06a54] hover:to-[#e8553d] transition-all shadow-lg shadow-[#e8553d]/25 hover:shadow-xl hover:shadow-[#e8553d]/30 hover:-translate-y-0.5 disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Finishing...
-                </>
-              ) : currentStep === steps.length - 1 ? (
-                <>
-                  Complete
-                  <ArrowRight className="w-4 h-4" />
-                </>
+            {step.field === "dedication_score" ? (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="text-6xl font-bold text-[var(--accent)] mb-4 transition-all duration-200">
+                    {form.dedication_score}
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={form.dedication_score}
+                    onChange={(e) => setForm({ ...form, dedication_score: parseInt(e.target.value) })}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleNext(); }}
+                    className="w-full h-2 bg-[var(--border)] rounded-full appearance-none cursor-pointer accent-[#e8553d]"
+                    style={{
+                      background: `linear-gradient(to right, #e8553d 0%, #e8553d ${(form.dedication_score - 1) * 11.1}%, var(--border) ${(form.dedication_score - 1) * 11.1}%, var(--border) 100%)`,
+                    }}
+                  />
+                  <div className="flex justify-between mt-2 text-xs text-[var(--muted)]">
+                    <span>1 — Just exploring</span>
+                    <span>10 — All in</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  value={form[step.field as "reason_chose" | "what_stood_out"]}
+                  onChange={(e) => setForm({ ...form, [step.field]: e.target.value })}
+                  onKeyDown={handleKeyDown}
+                  placeholder={step.placeholder}
+                  rows={4}
+                  className="w-full px-4 py-3.5 bg-[var(--background)] border border-[var(--border)] rounded-xl text-sm text-[var(--foreground)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[rgba(232,85,61,0.4)] focus:border-[rgba(232,85,61,0.4)] transition-all duration-300 resize-none"
+                />
+                <div className={`flex items-center justify-between mt-1.5 text-xs transition-colors ${
+                  charCount >= MIN_CHARS ? "text-emerald-400/70" : "text-[var(--muted)]/60"
+                }`}>
+                  <span>{charCount >= MIN_CHARS ? "✓ Good to go" : `${MIN_CHARS - charCount} more characters needed`}</span>
+                  <span>{charCount}</span>
+                </div>
+              </div>
+            )}
+
+            {step.field !== "dedication_score" && (
+              <p className="text-xs text-[var(--muted)]/50 mt-3">
+                Press <kbd className="px-1.5 py-0.5 rounded border border-[var(--border)] bg-[var(--card)] text-[var(--muted)] font-mono text-[10px]">Enter</kbd> to continue
+              </p>
+            )}
+
+            {/* Navigation */}
+            <div className="flex items-center justify-between mt-8 gap-4">
+              {currentStep > 0 ? (
+                <button
+                  onClick={() => goToStep(currentStep - 1, "backward")}
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[var(--border)] text-sm text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[rgba(232,85,61,0.3)] transition-all"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </button>
               ) : (
-                <>
-                  Continue
-                  <ArrowRight className="w-4 h-4" />
-                </>
+                <div />
               )}
-            </button>
+
+              <button
+                onClick={handleNext}
+                disabled={loading || transitioning}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#e8553d] to-[#d44429] text-white font-semibold text-sm hover:from-[#f06a54] hover:to-[#e8553d] transition-all shadow-lg shadow-[#e8553d]/25 hover:shadow-xl hover:shadow-[#e8553d]/30 hover:-translate-y-0.5 disabled:opacity-50"
+              >
+                {loading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Finishing...</>
+                ) : currentStep === steps.length - 1 ? (
+                  <><ArrowRight className="w-4 h-4" /> Complete</>
+                ) : (
+                  <>Continue <ArrowRight className="w-4 h-4" /></>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

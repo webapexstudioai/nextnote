@@ -143,6 +143,19 @@ ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 -- Migration: Add preferred_provider column for user-specific AI provider selection
 ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS preferred_provider TEXT NOT NULL DEFAULT 'anthropic';
 
+-- Migration: Cal.com integration so agents can book/reschedule appointments into the user's calendar
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cal_api_key_encrypted TEXT;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cal_event_type_id TEXT;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS cal_timezone TEXT NOT NULL DEFAULT 'America/New_York';
+
+-- Migration: Google Calendar integration (alternative to Cal.com). Tokens live in user_settings
+-- so webhook tool calls (which carry no session cookie) can still act on behalf of the user.
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS google_access_token_encrypted TEXT;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS google_refresh_token_encrypted TEXT;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS google_token_expiry BIGINT;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS google_calendar_id TEXT NOT NULL DEFAULT 'primary';
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS calendar_provider TEXT; -- 'cal' | 'google' | null
+
 -- Migration: Add Stripe and onboarding fields to users
 ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
@@ -173,3 +186,72 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_verification_tokens_token ON email_verification_tokens (token);
 ALTER TABLE email_verification_tokens ENABLE ROW LEVEL SECURITY;
+
+-- 11. User-owned ElevenLabs agents (per-user isolation on a shared ElevenLabs account)
+CREATE TABLE IF NOT EXISTS user_agents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  elevenlabs_agent_id TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_agents_user ON user_agents (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_agents_agent_id ON user_agents (elevenlabs_agent_id);
+ALTER TABLE user_agents ENABLE ROW LEVEL SECURITY;
+
+-- 12. User-owned ElevenLabs phone numbers
+CREATE TABLE IF NOT EXISTS user_phone_numbers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  elevenlabs_phone_number_id TEXT NOT NULL UNIQUE,
+  phone_number TEXT NOT NULL DEFAULT '',
+  label TEXT NOT NULL DEFAULT '',
+  twilio_sid TEXT,
+  next_renewal_at TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '30 days'),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Safe for existing installs.
+ALTER TABLE user_phone_numbers
+  ADD COLUMN IF NOT EXISTS next_renewal_at TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '30 days');
+
+CREATE INDEX IF NOT EXISTS idx_user_phone_numbers_user ON user_phone_numbers (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_phone_numbers_phone_id ON user_phone_numbers (elevenlabs_phone_number_id);
+CREATE INDEX IF NOT EXISTS idx_user_phone_numbers_renewal ON user_phone_numbers (next_renewal_at);
+ALTER TABLE user_phone_numbers ENABLE ROW LEVEL SECURITY;
+
+-- 13. Credit balances (prepaid voice minutes / AI usage)
+CREATE TABLE IF NOT EXISTS credit_balances (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  balance INT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE credit_balances ENABLE ROW LEVEL SECURITY;
+
+-- 14. Credit ledger (every add/deduct)
+CREATE TABLE IF NOT EXISTS credit_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  delta INT NOT NULL,                       -- positive for add, negative for deduct
+  reason TEXT NOT NULL,                     -- 'purchase' | 'conversation' | 'tts' | 'voicemail' | 'refund' | 'adjustment'
+  ref_id TEXT,                              -- stripe session id, conversation id, etc.
+  metadata JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_credit_tx_user ON credit_transactions (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_credit_tx_ref ON credit_transactions (ref_id);
+ALTER TABLE credit_transactions ENABLE ROW LEVEL SECURITY;
+
+-- 15. AI-generated landing pages for prospects
+CREATE TABLE IF NOT EXISTS generated_websites (
+  id TEXT PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  prospect_id TEXT,
+  prospect_name TEXT NOT NULL DEFAULT '',
+  html_content TEXT NOT NULL,
+  tier TEXT NOT NULL DEFAULT 'standard',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_generated_websites_user ON generated_websites (user_id);
+ALTER TABLE generated_websites ENABLE ROW LEVEL SECURITY;

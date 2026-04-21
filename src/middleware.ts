@@ -18,7 +18,7 @@ export async function middleware(req: NextRequest) {
     "/api/auth/forgot-password",
     "/api/auth/reset-password",
   ];
-  if (publicPaths.some((p) => pathname === p) || pathname.startsWith("/api/auth/")) {
+  if (publicPaths.some((p) => pathname === p) || pathname.startsWith("/api/auth/") || pathname.startsWith("/api/websites/")) {
     return NextResponse.next();
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Loader2, Mail, RefreshCw, CheckCircle, Pencil } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 
@@ -13,22 +14,39 @@ export default function VerifyEmailPage() {
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     setMounted(true);
+    const emailFromQuery = searchParams.get("email");
+
     fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.user?.email) {
-          setEmail(d.user.email);
-          setNewEmail(d.user.email);
+      .then(async (r) => ({ ok: r.ok, data: await r.json().catch(() => ({})) }))
+      .then(({ ok, data }) => {
+        if (data.user?.email) {
+          setEmail(data.user.email);
+          setNewEmail(data.user.email);
+        } else if (emailFromQuery) {
+          setEmail(emailFromQuery);
+          setNewEmail(emailFromQuery);
         }
-        if (d.user?.emailVerified) {
+
+        if (data.user?.emailVerified) {
           window.location.href = "/pricing";
+          return;
+        }
+
+        if (!ok && !emailFromQuery) {
+          setError("We couldn't load your account details. Please sign in again.");
         }
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => {
+        if (emailFromQuery) {
+          setEmail(emailFromQuery);
+          setNewEmail(emailFromQuery);
+        }
+      });
+  }, [searchParams]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -48,7 +66,15 @@ export default function VerifyEmailPage() {
     setSending(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/send-verification", { method: "POST" });
+      if (!email && !newEmail) {
+        setError("We couldn't determine which email to verify.");
+        return;
+      }
+      const res = await fetch("/api/auth/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newEmail || email }),
+      });
       const data = await res.json();
       if (!res.ok) {
         if (data.error === "Email already verified") {

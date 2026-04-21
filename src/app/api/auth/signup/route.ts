@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getAuthSession } from "@/lib/session";
 import { isPasswordStrong } from "@/lib/password";
+import { addCredits, SIGNUP_BONUS_CREDITS } from "@/lib/credits";
 
 export async function POST(req: NextRequest) {
   try {
@@ -64,6 +65,11 @@ export async function POST(req: NextRequest) {
     session.email = user.email;
     session.isLoggedIn = true;
     await session.save();
+
+    await addCredits(user.id, SIGNUP_BONUS_CREDITS, {
+      reason: "signup_bonus",
+      metadata: { email: user.email },
+    });
 
     return NextResponse.json({
       success: true,

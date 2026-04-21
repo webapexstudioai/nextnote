@@ -3,22 +3,60 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
+import CursorSpotlight from "@/components/dashboard/CursorSpotlight";
+import OnboardingTour from "@/components/dashboard/OnboardingTour";
 import { ProspectsProvider } from "@/context/ProspectsContext";
+
+function applyAccent(hex: string) {
+  const clean = /^#?([0-9a-fA-F]{6})$/.exec(hex)?.[1];
+  if (!clean) return;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  // Nudge hover 10% lighter
+  const lighten = (c: number) => Math.min(255, Math.round(c + (255 - c) * 0.15));
+  const hover = `#${[lighten(r), lighten(g), lighten(b)].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+  const root = document.documentElement;
+  root.style.setProperty("--accent", `#${clean}`);
+  root.style.setProperty("--accent-hover", hover);
+  root.style.setProperty("--accent-rgb", `${r}, ${g}, ${b}`);
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Load and apply user customization on mount
   useEffect(() => {
+    // Instant: apply cached values from localStorage to avoid flash
+    const root = document.documentElement;
+    try {
+      const cached = window.localStorage.getItem("nextnote_theme");
+      if (cached === "light" || cached === "dark") {
+        root.setAttribute("data-theme", cached);
+      }
+      const cachedAccent = window.localStorage.getItem("nextnote_accent");
+      if (cachedAccent) applyAccent(cachedAccent);
+      const cachedIntensity = window.localStorage.getItem("nextnote_bg_intensity");
+      if (cachedIntensity === "minimal" || cachedIntensity === "balanced" || cachedIntensity === "cinematic") {
+        root.setAttribute("data-bg-intensity", cachedIntensity);
+      }
+    } catch {}
+
     async function loadCustomization() {
       try {
         const res = await fetch("/api/settings");
         if (!res.ok) return;
         const s = await res.json();
-
-        // Apply theme mode
         const theme = s.theme_mode || "dark";
-        document.documentElement.setAttribute("data-theme", theme);
+        root.setAttribute("data-theme", theme);
+        if (s.accent_color) applyAccent(s.accent_color);
+        const intensity = s.background_intensity || "balanced";
+        root.setAttribute("data-bg-intensity", intensity);
+        try {
+          window.localStorage.setItem("nextnote_theme", theme);
+          if (s.accent_color) window.localStorage.setItem("nextnote_accent", s.accent_color);
+          window.localStorage.setItem("nextnote_bg_intensity", intensity);
+        } catch {}
       } catch {
         // Silently ignore — defaults apply
       }
@@ -28,16 +66,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ProspectsProvider>
-      <div className="flex h-screen bg-[var(--background)]">
+      <div className="relative flex h-screen bg-[var(--background)]">
+        <div className="dashboard-stage" aria-hidden />
+        <div className="ambient-bg" aria-hidden>
+          <div className="ambient-mid" />
+        </div>
+        <CursorSpotlight />
         {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
+        <div className="hidden lg:block relative z-10">
           <Sidebar />
         </div>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto relative z-[1]">
           {/* Mobile Header */}
-          <div className="lg:hidden sticky top-0 z-30 bg-[var(--header-bg)] backdrop-blur-xl border-b border-[var(--border)] px-4 py-3">
+          <div className="lg:hidden sticky top-0 z-30 liquid-glass-strong border-b border-white/5 px-4 py-3">
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="p-2 rounded-lg hover:bg-[var(--card)] transition-colors"
@@ -48,6 +91,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {children}
         </main>
+
+        <OnboardingTour />
 
         {/* Mobile Menu Overlay */}
         {showMobileMenu && (

@@ -1,16 +1,30 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getAuthSession } from "@/lib/session";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const limit = rateLimit(`send-verif:${session.userId}`, 3, 60_000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { error: `Please wait ${limit.retryAfterSec}s before requesting another code.` },
+        { status: 429 }
+      );
+    }
+    // also rate-limit by IP to protect the endpoint from distributed spray
+    const ipLimit = rateLimit(clientKey(req, "send-verif"), 10, 60_000);
+    if (!ipLimit.ok) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     const { data: user } = await supabaseAdmin

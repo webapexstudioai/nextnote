@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
+import { addCredits, hasBeenProcessed } from "@/lib/credits";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -28,8 +29,23 @@ export async function POST(req: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId;
-        const plan = session.metadata?.plan;
+        const kind = session.metadata?.kind;
 
+        // Credit pack purchase
+        if (userId && kind === "credit_purchase") {
+          const credits = parseInt(session.metadata?.credits || "0", 10);
+          if (credits > 0 && !(await hasBeenProcessed(session.id))) {
+            await addCredits(userId, credits, {
+              reason: "purchase",
+              refId: session.id,
+              metadata: { packId: session.metadata?.packId },
+            });
+          }
+          break;
+        }
+
+        // Subscription checkout
+        const plan = session.metadata?.plan;
         if (userId && plan) {
           const subscriptionId = typeof session.subscription === "string"
             ? session.subscription
@@ -43,6 +59,14 @@ export async function POST(req: NextRequest) {
               stripe_subscription_id: subscriptionId,
             })
             .eq("id", userId);
+
+          if (plan === "pro" && !(await hasBeenProcessed(`sub_bonus_${session.id}`))) {
+            await addCredits(userId, 100, {
+              reason: "pro_upgrade_bonus",
+              refId: `sub_bonus_${session.id}`,
+              metadata: { plan },
+            });
+          }
         }
         break;
       }
@@ -50,6 +74,7 @@ export async function POST(req: NextRequest) {
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         const userId = subscription.metadata?.userId;
+        const plan = subscription.metadata?.plan;
 
         if (userId) {
           let status: string = "active";
@@ -57,9 +82,14 @@ export async function POST(req: NextRequest) {
           else if (subscription.status === "canceled") status = "canceled";
           else if (subscription.status === "trialing") status = "trialing";
 
+          const updateData: Record<string, string> = { subscription_status: status };
+          if (plan && ["starter", "pro"].includes(plan)) {
+            updateData.subscription_tier = plan;
+          }
+
           await supabaseAdmin
             .from("users")
-            .update({ subscription_status: status })
+            .update(updateData)
             .eq("id", userId);
         }
         break;

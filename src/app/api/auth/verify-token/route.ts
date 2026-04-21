@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getAuthSession } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,6 +35,22 @@ export async function POST(req: NextRequest) {
       .from("users")
       .update({ email_verified: true })
       .eq("id", record.user_id);
+
+    const { data: user } = await supabaseAdmin
+      .from("users")
+      .select("id, name, agency_name, email")
+      .eq("id", record.user_id)
+      .single();
+
+    if (user) {
+      const session = await getAuthSession();
+      session.userId = user.id;
+      session.name = user.name;
+      session.agencyName = user.agency_name;
+      session.email = user.email;
+      session.isLoggedIn = true;
+      await session.save();
+    }
 
     return NextResponse.json({ success: true, message: "Email verified successfully" });
   } catch (err) {

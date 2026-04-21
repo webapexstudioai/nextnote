@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, Loader2, ArrowRight, Sparkles, Crown, Zap } from "lucide-react";
+import { Check, Loader2, ArrowRight, Sparkles, Zap } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 
 const plans = [
@@ -12,6 +12,7 @@ const plans = [
     tagline: "For solo agents getting started",
     icon: Zap,
     featured: false,
+    creditBadge: "150 free AI credits",
     features: [
       "Basic CRM / prospect pipeline",
       "Folders + lead organization",
@@ -19,6 +20,7 @@ const plans = [
       "Appointment booking",
       "Up to 100 prospects",
       "5 folders",
+      "150 AI credits included",
     ],
   },
   {
@@ -28,32 +30,16 @@ const plans = [
     tagline: "For growing agencies",
     icon: Sparkles,
     featured: true,
+    creditBadge: "250 free AI credits",
     features: [
       "Everything in Starter",
       "AI summaries & insights",
       "Spreadsheet import (XLSX)",
       "Google Calendar sync",
       "Voicemail tools",
-      "API key support",
       "Up to 1,000 prospects",
       "25 folders",
-    ],
-  },
-  {
-    id: "agency",
-    name: "Agency",
-    price: 199,
-    tagline: "For teams and power users",
-    icon: Crown,
-    featured: false,
-    features: [
-      "Everything in Pro",
-      "Advanced customization",
-      "Team / multi-user",
-      "Up to 10,000 prospects",
-      "100 folders",
-      "Priority support",
-      "Automation-ready architecture",
+      "250 AI credits included",
     ],
   },
 ];
@@ -121,6 +107,17 @@ export default function PricingPage() {
           <p className="text-[var(--muted)] text-lg max-w-lg mx-auto">
             Select the plan that fits your agency. Upgrade or downgrade anytime.
           </p>
+
+          {/* Credit offer CTA */}
+          <div className="mt-6 inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-gradient-to-r from-[rgba(232,85,61,0.15)] to-[rgba(255,138,106,0.1)] border border-[rgba(232,85,61,0.25)] backdrop-blur-sm">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#e8553d] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#e8553d]" />
+            </span>
+            <span className="text-sm font-medium text-[var(--foreground)]">
+              Limited offer — free AI credits on every plan
+            </span>
+          </div>
         </div>
 
         {error && (
@@ -130,7 +127,7 @@ export default function PricingPage() {
         )}
 
         {/* Plans Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
           {plans.map((plan, i) => {
             const Icon = plan.icon;
             const isSelected = selectedPlan === plan.id;
@@ -169,6 +166,14 @@ export default function PricingPage() {
                     <h3 className="text-xl font-bold">{plan.name}</h3>
                     <p className="text-[var(--muted)] text-sm mt-1">{plan.tagline}</p>
                   </div>
+
+                  {/* Credit badge */}
+                  {plan.creditBadge && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium mb-4">
+                      <Sparkles className="w-3 h-3" />
+                      {plan.creditBadge}
+                    </div>
+                  )}
 
                   {/* Price */}
                   <div className="mb-6">
@@ -224,7 +229,7 @@ export default function PricingPage() {
             mounted ? "opacity-100" : "opacity-0"
           }`}
         >
-          All plans include a secure payment via Stripe. Cancel anytime.
+          All plans include free AI credits. Secure payment via Stripe. Cancel anytime.
         </p>
       </div>
     </div>

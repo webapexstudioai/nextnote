@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { getUserAIConfig, aiChat } from "@/lib/ai";
+import { getBalance, deductCredits, NOTE_SUMMARIZE_CREDITS } from "@/lib/credits";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +13,11 @@ export async function POST(req: NextRequest) {
     const { notes, prospectName, service } = await req.json();
     if (!notes) {
       return NextResponse.json({ error: "No notes provided" }, { status: 400 });
+    }
+
+    const balance = await getBalance(session.userId);
+    if (balance < NOTE_SUMMARIZE_CREDITS) {
+      return NextResponse.json({ error: "Insufficient credits", required: NOTE_SUMMARIZE_CREDITS, balance }, { status: 402 });
     }
 
     const result = await getUserAIConfig(session.userId);
@@ -28,7 +34,7 @@ Return a clean, bulleted summary (3-6 bullets max). No preamble.`;
 
     let summary: string;
     try {
-      summary = await aiChat(result.config, undefined, prompt, 512);
+      summary = await aiChat(result.config, undefined, prompt, 512, "fast");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       if (msg.includes("401") || msg.includes("Unauthorized") || msg.includes("invalid") || msg.includes("API key")) {
@@ -39,6 +45,11 @@ Return a clean, bulleted summary (3-6 bullets max). No preamble.`;
       }
       throw err;
     }
+
+    await deductCredits(session.userId, NOTE_SUMMARIZE_CREDITS, {
+      reason: "note_summarize",
+      metadata: { prospectName },
+    });
 
     return NextResponse.json({ summary });
   } catch (error) {

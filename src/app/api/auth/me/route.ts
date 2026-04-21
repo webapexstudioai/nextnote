@@ -13,7 +13,7 @@ export async function GET() {
     // Fetch fresh user data from Supabase
     const { data: user, error } = await supabaseAdmin
       .from("users")
-      .select("id, name, agency_name, email, email_verified, subscription_tier, subscription_status")
+      .select("id, name, agency_name, email, email_verified, subscription_tier, subscription_status, profile_image_url")
       .eq("id", session.userId)
       .single();
 
@@ -32,6 +32,7 @@ export async function GET() {
         emailVerified: user.email_verified ?? false,
         subscriptionTier: user.subscription_tier ?? "starter",
         subscriptionStatus: user.subscription_status ?? "active",
+        profileImageUrl: (user as Record<string, unknown>).profile_image_url as string | null ?? null,
       },
     });
   } catch (err) {

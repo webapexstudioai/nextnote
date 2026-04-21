@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
+import { ANTHROPIC_VALIDATE_MODEL } from "@/lib/models";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
+          model: ANTHROPIC_VALIDATE_MODEL,
           max_tokens: 1,
           messages: [{ role: "user", content: "hi" }],
         }),

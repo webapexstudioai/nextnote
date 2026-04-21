@@ -34,8 +34,12 @@ export interface AuthSessionData {
   isLoggedIn?: boolean;
 }
 
+if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
+  throw new Error("SESSION_SECRET environment variable must be set and at least 32 characters long.");
+}
+
 const authSessionOptions = {
-  password: process.env.SESSION_SECRET || "complex_password_at_least_32_characters_long_nextnote_2024",
+  password: process.env.SESSION_SECRET,
   cookieName: "nextnote_auth_session",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",

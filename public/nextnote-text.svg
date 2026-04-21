@@ -1,0 +1,6 @@
+<svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="800" fill="#050507"/>
+  <text x="400" y="420" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif" font-weight="700" font-size="100" letter-spacing="-1">
+    <tspan fill="white">Next</tspan><tspan fill="#e8553d">Note</tspan>
+  </text>
+</svg>

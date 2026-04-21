@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/phone-numbers/monthly-renew",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}

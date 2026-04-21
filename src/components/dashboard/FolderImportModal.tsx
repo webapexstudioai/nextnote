@@ -50,9 +50,45 @@ export default function FolderImportModal({ folderId, onClose }: FolderImportMod
       }));
       setParsedProspects(prospects);
       setStep("preview");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Analysis failed");
-      setStep("error");
+    } catch {
+      // AI failed — fall back to manual column mapping
+      setRawHeaders(headers);
+      const fileId = `file-${Date.now()}`;
+      // Build a best-guess mapping without AI
+      const autoMapping: Record<string, string> = {};
+      const guessMap: Record<string, string> = {
+        name: "name", "full name": "name", fullname: "name", company: "name", "business name": "name", "company name": "name",
+        "contact name": "contactName", "contact": "contactName", "owner": "contactName", "first name": "contactName",
+        email: "email", "email address": "email",
+        phone: "phone", mobile: "phone", cell: "phone", "phone number": "phone",
+        service: "service", business: "service", niche: "service",
+        address: "address", "street address": "address", location: "address", "business address": "address", city: "address",
+        "google maps": "mapsUrl", "maps link": "mapsUrl", "maps url": "mapsUrl", "google maps link": "mapsUrl", "gmaps": "mapsUrl", "map link": "mapsUrl",
+        website: "website", url: "website", site: "website", web: "website",
+        notes: "notes", note: "notes", comments: "notes",
+        status: "status", stage: "status",
+      };
+      headers.forEach((h) => {
+        const lower = h.toLowerCase().trim();
+        autoMapping[h] = guessMap[lower] || "skip";
+      });
+      setMapping(autoMapping);
+      // Build prospects from auto-mapping
+      const prospects: Prospect[] = rows.map((row, index) => {
+        const p: Record<string, string> = {
+          id: `import-${Date.now()}-${index}`,
+          name: "", email: "", phone: "", service: "", notes: "", status: "New",
+          createdAt: new Date().toISOString().split("T")[0],
+          folderId, fileId,
+        };
+        Object.entries(autoMapping).forEach(([col, field]) => {
+          if (field !== "skip" && row[col]) p[field] = String(row[col]).trim();
+        });
+        if (!p.name) p.name = `Lead #${index + 1}`;
+        return { ...p, appointments: [] } as unknown as Prospect;
+      });
+      setParsedProspects(prospects);
+      setStep("preview");
     }
   };
 
@@ -61,17 +97,34 @@ export default function FolderImportModal({ folderId, onClose }: FolderImportMod
     if (!file) return;
     if (!fileName.trim()) setFileName(file.name.replace(/\.\w+$/, ""));
 
+    setStep("analyzing");
     try {
       const XLSX = await import("xlsx");
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      let workbook;
+
+      if (ext === "csv") {
+        const text = await file.text();
+        workbook = XLSX.read(text, { type: "string" });
+      } else {
+        const data = await file.arrayBuffer();
+        workbook = XLSX.read(data, { type: "array" });
+      }
+
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet);
+      const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
       const headers = Object.keys(rows[0] || {});
-      if (rows.length === 0) { setError("File is empty"); setStep("error"); return; }
+
+      if (!rows.length || !headers.length) {
+        setError("File is empty or has no columns.");
+        setStep("error");
+        return;
+      }
+
       await analyzeWithAI(headers, rows);
-    } catch {
-      setError("Could not read the file.");
+    } catch (err) {
+      console.error("File read error:", err);
+      setError("Could not read the file. Make sure it is a valid .xlsx, .xls, or .csv file.");
       setStep("error");
     }
   };
@@ -115,7 +168,9 @@ export default function FolderImportModal({ folderId, onClose }: FolderImportMod
   };
 
   const fieldLabels: Record<string, string> = {
-    name: "Name", email: "Email", phone: "Phone", service: "Service", notes: "Notes", status: "Status", skip: "Skipped",
+    name: "Company / Name", contactName: "Contact Name", email: "Email", phone: "Phone",
+    service: "Service", address: "Address", mapsUrl: "Google Maps Link", website: "Website",
+    notes: "Notes", status: "Status", skip: "Skipped",
   };
 
   return (

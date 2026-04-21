@@ -1,4 +1,4 @@
-export type SubscriptionTier = "starter" | "pro" | "agency";
+export type SubscriptionTier = "starter" | "pro";
 export type SubscriptionStatus = "active" | "trialing" | "past_due" | "canceled";
 
 export interface TierConfig {
@@ -6,12 +6,12 @@ export interface TierConfig {
   tier: SubscriptionTier;
   tagline: string;
   features: string[];
+  bonusCredits: number;
   limits: {
     prospects: number;
     folders: number;
     aiSummariesPerMonth: number;
     customization: boolean;
-    apiKeySupport: boolean;
     spreadsheetImport: boolean;
     googleCalendar: boolean;
     voicemailTools: boolean;
@@ -24,11 +24,13 @@ export const TIERS: Record<SubscriptionTier, TierConfig> = {
     name: "Starter",
     tier: "starter",
     tagline: "For solo agents getting started",
+    bonusCredits: 150,
     features: [
       "Basic CRM / prospect pipeline",
       "Folders + lead organization",
       "Manual lead entry",
       "Appointment booking",
+      "150 AI credits included",
       "Limited customization",
     ],
     limits: {
@@ -36,7 +38,6 @@ export const TIERS: Record<SubscriptionTier, TierConfig> = {
       folders: 5,
       aiSummariesPerMonth: 0,
       customization: false,
-      apiKeySupport: false,
       spreadsheetImport: false,
       googleCalendar: false,
       voicemailTools: false,
@@ -47,13 +48,14 @@ export const TIERS: Record<SubscriptionTier, TierConfig> = {
     name: "Pro",
     tier: "pro",
     tagline: "For growing agencies",
+    bonusCredits: 250,
     features: [
       "Everything in Starter",
       "AI summaries & insights",
       "Spreadsheet import",
       "Google Calendar support",
       "Voicemail tools",
-      "User API key support",
+      "250 AI credits included",
       "Full customization",
     ],
     limits: {
@@ -61,35 +63,10 @@ export const TIERS: Record<SubscriptionTier, TierConfig> = {
       folders: 25,
       aiSummariesPerMonth: 200,
       customization: true,
-      apiKeySupport: true,
       spreadsheetImport: true,
       googleCalendar: true,
       voicemailTools: true,
       teamMembers: 1,
-    },
-  },
-  agency: {
-    name: "Agency",
-    tier: "agency",
-    tagline: "For teams and power users",
-    features: [
-      "Everything in Pro",
-      "Advanced customization",
-      "Team / multi-user readiness",
-      "Higher usage limits",
-      "Priority support",
-      "Automation-ready architecture",
-    ],
-    limits: {
-      prospects: 10000,
-      folders: 100,
-      aiSummariesPerMonth: 2000,
-      customization: true,
-      apiKeySupport: true,
-      spreadsheetImport: true,
-      googleCalendar: true,
-      voicemailTools: true,
-      teamMembers: 10,
     },
   },
 };

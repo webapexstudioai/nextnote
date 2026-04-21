@@ -28,11 +28,18 @@ export interface Prospect {
   email: string;
   service: string;
   notes: string;
+  address?: string;
+  website?: string;
+  contactName?: string;
+  mapsUrl?: string;
   status: ProspectStatus;
   createdAt: string;
   folderId: string;
   fileId?: string;
   appointments: AppointmentRecord[];
+  dealValue?: number;
+  closedAt?: string;
+  generatedWebsiteId?: string;
 }
 
 export interface ProspectFile {

@@ -1,6 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthSession } from "@/lib/session";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  const session = await getAuthSession();
+  if (!session.isLoggedIn || !session.userId) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const userLimit = rateLimit(`sly:${session.userId}`, 60, 60 * 60_000); // 60/hour/user
+  if (!userLimit.ok) {
+    return NextResponse.json(
+      { error: `Voicemail rate limit reached. Try again in ${Math.ceil(userLimit.retryAfterSec / 60)} min.` },
+      { status: 429 }
+    );
+  }
+  const ipLimit = rateLimit(clientKey(req, "sly"), 120, 60 * 60_000);
+  if (!ipLimit.ok) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const { phone, audioUrl, message, campaignName, callerId, prospectName, audioFileName } = await req.json();
 
   // If Make webhook is configured, use it instead of direct API

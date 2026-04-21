@@ -34,7 +34,10 @@ export async function POST(req: NextRequest) {
     });
     const customerId = customer.id;
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nextnote.to";
+    const requestOrigin = new URL(req.headers.get("origin") || req.nextUrl.origin).origin;
+    const appUrl = process.env.NODE_ENV === "development"
+      ? requestOrigin
+      : process.env.NEXT_PUBLIC_APP_URL || requestOrigin || "https://nextnote.to";
 
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,

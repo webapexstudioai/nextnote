@@ -118,7 +118,7 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[var(--border)]">
+            <tr className="border-b border-white/5 bg-white/[0.02]">
               <th className="py-3 px-2 w-10">
                 <input
                   type="checkbox"
@@ -140,14 +140,20 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
               <tr
                 key={prospect.id}
                 onClick={() => onSelect(prospect)}
-                className={`border-b border-[var(--border)] cursor-pointer transition-colors ${
+                className={`border-b border-white/5 cursor-pointer transition-colors ${
                   selectedId === prospect.id
-                    ? "bg-[var(--accent-subtle)]"
+                    ? ""
                     : selectedIds.has(prospect.id)
-                    ? "bg-[var(--accent-subtle)]"
-                    : "hover:bg-[var(--card-hover)]"
+                    ? ""
+                    : "hover:bg-white/[0.035]"
                 }`}
-                style={selectedId === prospect.id ? { background: "rgba(232, 85, 61, 0.1)" } : selectedIds.has(prospect.id) ? { background: "rgba(232, 85, 61, 0.05)" } : undefined}
+                style={
+                  selectedId === prospect.id
+                    ? { background: "linear-gradient(90deg, rgba(232,85,61,0.14), rgba(232,85,61,0.04))", boxShadow: "inset 3px 0 0 rgba(232,85,61,0.9)" }
+                    : selectedIds.has(prospect.id)
+                    ? { background: "rgba(232, 85, 61, 0.06)" }
+                    : undefined
+                }
               >
                 <td className="py-3 px-2" onClick={(e) => toggleSelect(prospect.id, e)}>
                   <input
@@ -181,7 +187,7 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
       {/* Bulk Voicemail Modal */}
       {showBulkVm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 w-full max-w-md mx-4 space-y-4 shadow-2xl">
+          <div className="liquid-glass-strong rounded-2xl p-5 w-full max-w-md mx-4 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold flex items-center gap-2">
                 <Voicemail className="w-4 h-4 text-amber-400" /> Bulk Voicemail Drop

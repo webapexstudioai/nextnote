@@ -1,22 +1,6 @@
-import crypto from "crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
-import { supabaseAdmin } from "@/lib/supabase";
-
-const ENCRYPTION_KEY =
-  process.env.API_KEY_ENCRYPTION_SECRET ||
-  process.env.SESSION_SECRET ||
-  "nextnote_default_encryption_key_32ch";
-
-function decrypt(encrypted: string): string {
-  const [ivHex, encHex] = encrypted.split(":");
-  const iv = Buffer.from(ivHex, "hex");
-  const key = crypto.scryptSync(ENCRYPTION_KEY, "salt", 32);
-  const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
-  let decrypted = decipher.update(encHex, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-  return decrypted;
-}
+import { ANTHROPIC_CHAT_MODEL, ANTHROPIC_CHEAP_MODEL, OPENAI_CHAT_MODEL, OPENAI_CHEAP_MODEL } from "@/lib/models";
 
 export type AIProvider = "anthropic" | "openai";
 
@@ -25,47 +9,22 @@ interface UserAIConfig {
   apiKey: string;
 }
 
-/**
- * Load the logged-in user's AI settings from Supabase.
- * Returns provider + decrypted key, or an error message.
- */
 export async function getUserAIConfig(
-  userId: string
+  _userId: string
 ): Promise<{ ok: true; config: UserAIConfig } | { ok: false; error: string }> {
-  const { data: settings } = await supabaseAdmin
-    .from("user_settings")
-    .select("preferred_provider, anthropic_api_key_encrypted, openai_api_key_encrypted")
-    .eq("user_id", userId)
-    .single();
+  const platformAnthropicKey = process.env.ANTHROPIC_API_KEY;
+  const platformOpenaiKey = process.env.OPENAI_API_KEY;
 
-  const provider: AIProvider = settings?.preferred_provider === "openai" ? "openai" : "anthropic";
-
-  // Try to get the key for the preferred provider
-  const encryptedKey =
-    provider === "anthropic"
-      ? settings?.anthropic_api_key_encrypted
-      : settings?.openai_api_key_encrypted;
-
-  if (encryptedKey) {
-    try {
-      const apiKey = decrypt(encryptedKey);
-      return { ok: true, config: { provider, apiKey } };
-    } catch {
-      return {
-        ok: false,
-        error: `Your saved ${provider === "anthropic" ? "Anthropic" : "OpenAI"} API key could not be decrypted. Please update it in Settings.`,
-      };
-    }
+  if (platformAnthropicKey) {
+    return { ok: true, config: { provider: "anthropic", apiKey: platformAnthropicKey } };
   }
-
-  // Fallback: try the env key for Anthropic only
-  if (provider === "anthropic" && process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== "your-api-key-here") {
-    return { ok: true, config: { provider: "anthropic", apiKey: process.env.ANTHROPIC_API_KEY } };
+  if (platformOpenaiKey) {
+    return { ok: true, config: { provider: "openai", apiKey: platformOpenaiKey } };
   }
 
   return {
     ok: false,
-    error: `No ${provider === "anthropic" ? "Anthropic" : "OpenAI"} API key found. Add your key in Settings → AI API Keys.`,
+    error: "AI service is temporarily unavailable. Please try again later.",
   };
 }
 
@@ -76,20 +35,24 @@ export async function aiChat(
   config: UserAIConfig,
   systemPrompt: string | undefined,
   userPrompt: string,
-  maxTokens: number
+  maxTokens: number,
+  quality: "high" | "fast" = "high"
 ): Promise<string> {
   if (config.provider === "anthropic") {
     const client = new Anthropic({ apiKey: config.apiKey });
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+    // Stream for any request that could plausibly exceed 10 minutes — the SDK
+    // otherwise refuses non-streaming requests at high max_tokens.
+    const stream = client.messages.stream({
+      model: quality === "fast" ? ANTHROPIC_CHEAP_MODEL : ANTHROPIC_CHAT_MODEL,
       max_tokens: maxTokens,
       ...(systemPrompt ? { system: systemPrompt } : {}),
       messages: [{ role: "user", content: userPrompt }],
     });
-    return message.content[0].type === "text" ? message.content[0].text : "";
+    const finalMessage = await stream.finalMessage();
+    const firstBlock = finalMessage.content[0];
+    return firstBlock && firstBlock.type === "text" ? firstBlock.text : "";
   }
 
-  // OpenAI
   const client = new OpenAI({ apiKey: config.apiKey });
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
   if (systemPrompt) {
@@ -98,7 +61,7 @@ export async function aiChat(
   messages.push({ role: "user", content: userPrompt });
 
   const completion = await client.chat.completions.create({
-    model: "gpt-4o",
+    model: quality === "fast" ? OPENAI_CHEAP_MODEL : OPENAI_CHAT_MODEL,
     max_tokens: maxTokens,
     messages,
   });

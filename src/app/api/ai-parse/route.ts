@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { getUserAIConfig, aiChat } from "@/lib/ai";
+import { getBalance, deductCredits, AI_PARSE_CREDITS } from "@/lib/credits";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +13,11 @@ export async function POST(req: NextRequest) {
     const { rows, headers } = await req.json();
     if (!rows || !headers) {
       return NextResponse.json({ error: "Missing rows or headers" }, { status: 400 });
+    }
+
+    const balance = await getBalance(session.userId);
+    if (balance < AI_PARSE_CREDITS) {
+      return NextResponse.json({ error: "Insufficient credits", required: AI_PARSE_CREDITS, balance }, { status: 402 });
     }
 
     const result = await getUserAIConfig(session.userId);
@@ -32,12 +38,16 @@ Your job is to map each header to one of these prospect fields:
 - "email" (email address)
 - "phone" (phone number)
 - "service" (service they're interested in, or business type, or product)
+- "address" (street address, business address, location, city+state, or any mappable postal address — will be used to generate a Google Maps link)
+- "mapsUrl" (a column containing a Google Maps URL like "https://www.google.com/maps/place/..." or "https://maps.app.goo.gl/...")
+- "website" (company website or URL — NOT a Google Maps URL)
+- "contactName" (the person's name when the "name" column is the company/business name)
 - "notes" (any additional notes, comments, or descriptions)
 - "status" (their status like New, Contacted, Qualified, Booked, Closed)
 - "skip" (columns that don't map to any field)
 
 Return ONLY a valid JSON object mapping each original header to its field. Example:
-{"Full Name": "name", "Email Address": "email", "Phone #": "phone", "Interest": "service", "Comments": "notes", "Stage": "status", "ID": "skip"}
+{"Full Name": "name", "Email Address": "email", "Phone #": "phone", "Interest": "service", "Address": "address", "Website": "website", "Comments": "notes", "Stage": "status", "ID": "skip"}
 
 Be smart about detecting fields even with unusual header names. If a column contains phone-number-like data, map it to "phone" even if the header is ambiguous. Same for emails, names, etc.
 
@@ -45,7 +55,7 @@ Return ONLY the JSON mapping, nothing else.`;
 
     let responseText: string;
     try {
-      responseText = await aiChat(result.config, undefined, prompt, 1024);
+      responseText = await aiChat(result.config, undefined, prompt, 1024, "fast");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       if (msg.includes("401") || msg.includes("Unauthorized") || msg.includes("invalid") || msg.includes("API key")) {
@@ -71,6 +81,10 @@ Return ONLY the JSON mapping, nothing else.`;
         email: "",
         phone: "",
         service: "",
+        address: "",
+        website: "",
+        contactName: "",
+        mapsUrl: "",
         notes: "",
         status: "New",
         createdAt: new Date().toISOString().split("T")[0],
@@ -98,6 +112,11 @@ Return ONLY the JSON mapping, nothing else.`;
 
       if (!prospect.name) prospect.name = `Lead #${index + 1}`;
       return prospect;
+    });
+
+    await deductCredits(session.userId, AI_PARSE_CREDITS, {
+      reason: "ai_parse",
+      metadata: { totalRows: rows.length },
     });
 
     return NextResponse.json({

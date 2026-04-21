@@ -1,9 +1,11 @@
 "use client";
 
-import { Prospect, ProspectStatus, AppointmentRecord, AppointmentDuration, CancelReason } from "@/types";
-import { X, Phone, Mail, Briefcase, FileText, Calendar, ArrowRight, Video, Sparkles, Loader2, Save, Check, ChevronDown, ChevronUp, Clock, XCircle, RefreshCw, UserX, Voicemail, Upload, Music, Trash2, Play } from "lucide-react";
+import { Prospect, ProspectStatus, AppointmentDuration, CancelReason } from "@/types";
+import { X, Phone, Mail, Briefcase, FileText, Calendar, ArrowRight, Video, Sparkles, Loader2, Save, Check, XCircle, RefreshCw, UserX, Voicemail, Upload, Music, Trash2, Play, Bot, DollarSign, ExternalLink, User as UserIcon, Building2, MapPin, Globe, Pencil, Plus } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useProspects } from "@/context/ProspectsContext";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface DetailPanelProps {
   prospect: Prospect;
@@ -33,8 +35,69 @@ const outcomeStyles: Record<string, { label: string; cls: string }> = {
   cancelled: { label: "Cancelled", cls: "bg-zinc-500/15 text-zinc-400" },
 };
 
+function extractMapsName(url: string): string {
+  if (!url) return url;
+  try {
+    const placeMatch = url.match(/\/maps\/place\/([^/@?]+)/);
+    if (placeMatch) {
+      return decodeURIComponent(placeMatch[1].replace(/\+/g, " ")).trim();
+    }
+    const qMatch = url.match(/[?&]q=([^&]+)/);
+    if (qMatch) {
+      return decodeURIComponent(qMatch[1].replace(/\+/g, " ")).trim();
+    }
+    const queryMatch = url.match(/[?&]query=([^&]+)/);
+    if (queryMatch) {
+      return decodeURIComponent(queryMatch[1].replace(/\+/g, " ")).trim();
+    }
+    if (/maps\.app\.goo\.gl|goo\.gl\/maps/.test(url)) {
+      return "Open in Google Maps";
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
-  const { updateStatus, bookAppointment, updateProspect, updateMeetingNotes, updateAppointmentOutcome, rescheduleAppointment, googleConnected } = useProspects();
+  const { updateStatus, bookAppointment, updateProspect, updateMeetingNotes, updateAppointmentOutcome, rescheduleAppointment, googleConnected, deleteProspect } = useProspects();
+  const router = useRouter();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Contact field inline editing
+  type ContactKey = "name" | "contactName" | "phone" | "email" | "service" | "address" | "website" | "mapsUrl";
+  const [editingField, setEditingField] = useState<ContactKey | null>(null);
+  const [fieldDraft, setFieldDraft] = useState("");
+
+  const startEditField = (key: ContactKey) => {
+    setEditingField(key);
+    const current = (prospect[key] as string | undefined) ?? "";
+    setFieldDraft(current);
+  };
+
+  const saveField = (key: ContactKey) => {
+    const trimmed = fieldDraft.trim();
+    // Required fields (name, phone, service) fall back to existing value if empty.
+    if (!trimmed && (key === "name" || key === "phone" || key === "service")) {
+      setEditingField(null);
+      return;
+    }
+    updateProspect(prospect.id, { [key]: trimmed } as Partial<Prospect>);
+    setEditingField(null);
+  };
+
+  // Deal value
+  const [editingDeal, setEditingDeal] = useState(false);
+  const [dealInput, setDealInput] = useState(prospect.dealValue?.toString() ?? "");
+
+  const saveDeal = () => {
+    const parsed = parseFloat(dealInput);
+    const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+    const patch: Partial<Prospect> = { dealValue: value };
+    if (value && !prospect.closedAt) patch.closedAt = new Date().toISOString();
+    updateProspect(prospect.id, patch);
+    setEditingDeal(false);
+  };
 
   // Booking form
   const [showBooking, setShowBooking] = useState(false);
@@ -63,7 +126,8 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   const [summarizeError, setSummarizeError] = useState("");
 
   // Appointment history
-  const [showHistory, setShowHistory] = useState(false);
+  const [apptTab, setApptTab] = useState<"upcoming" | "past">("upcoming");
+  const [expandedApptId, setExpandedApptId] = useState<string | null>(null);
 
   // Voicemail drop
   const [showVoicemailModal, setShowVoicemailModal] = useState(false);
@@ -87,6 +151,40 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   // Library state
   const [libraryFileName, setLibraryFileName] = useState("");
 
+  // Build Receptionist
+  const [showReceptionistBuilder, setShowReceptionistBuilder] = useState(false);
+  const [buildingReceptionist, setBuildingReceptionist] = useState(false);
+  const [receptionistError, setReceptionistError] = useState("");
+  const [creatingAgent, setCreatingAgent] = useState(false);
+  const [createdAgent, setCreatedAgent] = useState<{ agentId: string; agentName: string } | null>(null);
+  const [createAgentError, setCreateAgentError] = useState("");
+  const [receptionistDraft, setReceptionistDraft] = useState<null | {
+    agentName: string;
+    firstMessage: string;
+    tone: string;
+    systemPrompt: string;
+    knowledge: string;
+    bookingFlow: string[];
+    faqExamples: string[];
+  }>(null);
+  const [receptionistForm, setReceptionistForm] = useState<{
+    businessName: string;
+    niche: string;
+    services: string;
+    notes: string;
+    mapsDescription: string;
+    reviews: string;
+    gender: "female" | "male" | "auto";
+  }>({
+    businessName: prospect.name || "",
+    niche: prospect.service || "",
+    services: prospect.service || "",
+    notes: prospect.notes || "",
+    mapsDescription: "",
+    reviews: "",
+    gender: "auto",
+  });
+
   const currentIndex = pipeline.indexOf(prospect.status);
 
   // Get latest pending appointment
@@ -95,6 +193,49 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
     .sort((a, b) => new Date(`${b.date}T${b.time}`).getTime() - new Date(`${a.date}T${a.time}`).getTime())[0];
 
   const pastAppointments = prospect.appointments.filter((a) => a.outcome !== "pending");
+  const upcomingAppointments = [...prospect.appointments]
+    .filter((a) => a.outcome === "pending")
+    .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
+
+  // Stats
+  const apptStats = (() => {
+    const total = prospect.appointments.length;
+    const completed = prospect.appointments.filter((a) => a.outcome === "completed").length;
+    const noShow = prospect.appointments.filter((a) => a.outcome === "no-show").length;
+    const scored = completed + noShow;
+    const showRate = scored > 0 ? Math.round((completed / scored) * 100) : null;
+    const sorted = [...prospect.appointments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    let avgGapDays: number | null = null;
+    if (sorted.length >= 2) {
+      const gaps: number[] = [];
+      for (let i = 1; i < sorted.length; i++) {
+        gaps.push((new Date(sorted[i].date).getTime() - new Date(sorted[i - 1].date).getTime()) / 86400000);
+      }
+      avgGapDays = Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+    }
+    return { total, completed, noShow, showRate, avgGapDays };
+  })();
+
+  const countdownTo = (date: string, time: string): string => {
+    const ms = new Date(`${date}T${time}`).getTime() - Date.now();
+    if (ms < 0) return "Now";
+    const days = Math.floor(ms / 86400000);
+    const hours = Math.floor((ms % 86400000) / 3600000);
+    const mins = Math.floor((ms % 3600000) / 60000);
+    if (days >= 1) return `in ${days}d ${hours}h`;
+    if (hours >= 1) return `in ${hours}h ${mins}m`;
+    return `in ${mins}m`;
+  };
+
+  const applyQuickSlot = (daysFromToday: number, hour: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysFromToday);
+    const iso = d.toISOString().split("T")[0];
+    const hh = String(hour).padStart(2, "0");
+    setBookDate(iso);
+    setBookTime(`${hh}:00`);
+    setShowBooking(true);
+  };
 
   const handleBook = () => {
     if (bookDate && bookTime) {
@@ -447,174 +588,108 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
     </div>
   );
 
-  const renderAppointmentCard = (appt: AppointmentRecord) => {
-    const style = outcomeStyles[appt.outcome];
-    return (
-      <div key={appt.id} className="space-y-2">
-        <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Calendar className="w-4 h-4 text-emerald-400" />
-              <div>
-                <p className="text-sm font-medium text-emerald-400">
-                  {new Date(appt.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                </p>
-                <p className="text-xs text-emerald-400/70">{appt.time} &middot; {durationLabels[appt.duration]}</p>
-              </div>
-            </div>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${style.cls}`}>{style.label}</span>
-          </div>
-          {appt.agenda && (
-            <div className="mt-2 pt-2 border-t border-emerald-500/20">
-              <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-0.5">Agenda</p>
-              <p className="text-xs text-emerald-400/70">{appt.agenda}</p>
-            </div>
-          )}
-          {appt.meetLink && (
-            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-emerald-500/20">
-              <Video className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-xs text-emerald-400">Google Meet invitation sent</span>
-            </div>
-          )}
-        </div>
+  async function handleBuildReceptionist() {
+    setBuildingReceptionist(true);
+    setReceptionistError("");
+    try {
+      const res = await fetch("/api/agents/build-receptionist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(receptionistForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to build receptionist");
+      setReceptionistDraft(data.draft || null);
+    } catch (err) {
+      setReceptionistError(err instanceof Error ? err.message : "Failed to build receptionist");
+    } finally {
+      setBuildingReceptionist(false);
+    }
+  }
 
-        {/* Action buttons for pending appointments */}
-        {appt.outcome === "pending" && (
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => updateAppointmentOutcome(prospect.id, appt.id, "completed")}
-              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-[10px] font-medium hover:bg-emerald-500/20"
-            >
-              <Check className="w-3 h-3" /> Completed
-            </button>
-            <button
-              onClick={() => updateAppointmentOutcome(prospect.id, appt.id, "no-show")}
-              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 text-[10px] font-medium hover:bg-rose-500/20"
-            >
-              <UserX className="w-3 h-3" /> No-show
-            </button>
-            <button
-              onClick={() => {
-                setRescheduleApptId(appt.id);
-                setShowBooking(true);
-                setBookDuration(appt.duration);
-              }}
-              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 text-[10px] font-medium hover:bg-blue-500/20"
-            >
-              <RefreshCw className="w-3 h-3" /> Reschedule
-            </button>
-            <button
-              onClick={() => setCancelApptId(appt.id)}
-              className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-zinc-500/10 text-zinc-400 text-[10px] font-medium hover:bg-zinc-500/20"
-            >
-              <XCircle className="w-3 h-3" /> Cancel
-            </button>
-          </div>
-        )}
 
-        {/* Cancel reason dropdown */}
-        {cancelApptId === appt.id && (
-          <div className="p-3 rounded-lg bg-[var(--background)] space-y-2">
-            <label className="text-xs text-[var(--muted)]">Cancel Reason</label>
-            <select
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value as CancelReason)}
-              className="w-full px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)]"
-            >
-              {cancelReasons.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-            <div className="flex gap-2">
-              <button onClick={handleCancel} className="flex-1 px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 text-xs font-medium hover:bg-rose-500/30">
-                Confirm Cancel
-              </button>
-              <button onClick={() => setCancelApptId(null)} className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs hover:bg-[var(--card-hover)]">
-                Back
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Meeting Notes toggle */}
-        <button
-          onClick={() => {
-            if (activeNotesApptId === appt.id) {
-              setActiveNotesApptId(null);
-            } else {
-              setActiveNotesApptId(appt.id);
-              setMeetingNotesValue(appt.meetingNotes || "");
-            }
-          }}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--border)] text-xs text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--accent)] transition-colors flex items-center justify-center gap-2"
-        >
-          <FileText className="w-3 h-3" />
-          {activeNotesApptId === appt.id ? "Hide" : "Meeting Notes & AI Summary"}
-        </button>
-
-        {activeNotesApptId === appt.id && (
-          <div className="space-y-3 p-3 rounded-lg bg-[var(--background)]">
-            <div>
-              <label className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-1 block">Call / Meeting Notes</label>
-              <textarea
-                value={meetingNotesValue}
-                onChange={(e) => setMeetingNotesValue(e.target.value)}
-                rows={4}
-                placeholder="Type your notes from the call or meeting here..."
-                className="w-full px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs focus:outline-none focus:border-[var(--accent)] resize-none"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleSaveMeetingNotes(appt.id)}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs hover:bg-[var(--card-hover)]"
-              >
-                <Save className="w-3 h-3" /> Save Notes
-              </button>
-              <button
-                onClick={() => handleSummarizeNotes(appt.id)}
-                disabled={summarizing || !meetingNotesValue.trim()}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[rgba(232,85,61,0.1)] text-[var(--accent)] text-xs font-medium hover:bg-[rgba(232,85,61,0.2)] disabled:opacity-50"
-              >
-                {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                {summarizing ? "Summarizing..." : "Summarize with AI"}
-              </button>
-            </div>
-
-            {summarizeError && (
-              <p className="text-xs text-red-400 mt-1">{summarizeError}</p>
-            )}
-
-            {appt.summarizedNotes && (
-              <div className="p-3 rounded-lg bg-[rgba(232,85,61,0.05)] border border-[rgba(232,85,61,0.1)]">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Sparkles className="w-3 h-3 text-[var(--accent)]" />
-                  <span className="text-[10px] font-medium text-[var(--accent)] uppercase tracking-wider">AI Summary</span>
-                </div>
-                <div className="text-xs text-[var(--muted)] leading-relaxed whitespace-pre-wrap">
-                  {appt.summarizedNotes}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
+  const stageTheme: Record<string, { rgb: string; label: string; ring: string; strip: string }> = {
+    New:       { rgb: "148, 163, 184", label: "slate",   ring: "0 0 0 1px rgba(148,163,184,0.14), 0 20px 60px rgba(0,0,0,0.40), 0 1px 0 rgba(255,255,255,0.04) inset", strip: "linear-gradient(90deg, transparent, rgba(148,163,184,0.55), transparent)" },
+    Contacted: { rgb: "245, 158, 11",  label: "amber",   ring: "0 0 0 1px rgba(245,158,11,0.16),  0 20px 60px rgba(0,0,0,0.42), 0 1px 0 rgba(255,255,255,0.04) inset", strip: "linear-gradient(90deg, transparent, rgba(245,158,11,0.65), transparent)" },
+    Qualified: { rgb: "168, 85, 247",  label: "violet",  ring: "0 0 0 1px rgba(168,85,247,0.18),  0 20px 60px rgba(0,0,0,0.44), 0 1px 0 rgba(255,255,255,0.05) inset", strip: "linear-gradient(90deg, transparent, rgba(168,85,247,0.7), transparent)" },
+    Booked:    { rgb: "16, 185, 129",  label: "emerald", ring: "0 0 0 1px rgba(16,185,129,0.20),  0 22px 64px rgba(0,0,0,0.46), 0 1px 0 rgba(255,255,255,0.05) inset", strip: "linear-gradient(90deg, transparent, rgba(16,185,129,0.75), transparent)" },
+    Closed:    { rgb: "var(--accent-rgb)", label: "accent", ring: "0 0 0 1px rgba(var(--accent-rgb),0.28), 0 24px 72px rgba(0,0,0,0.48), 0 1px 0 rgba(255,255,255,0.06) inset", strip: "linear-gradient(90deg, transparent, rgba(var(--accent-rgb),0.85), transparent)" },
   };
+  const theme = stageTheme[prospect.status] || stageTheme.New;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-[var(--card)] border-l border-[var(--border)] shadow-2xl z-50 slide-in overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-sm transition-opacity duration-300" onClick={onClose} />
+      <div
+        className="relative w-full max-w-5xl max-h-[92vh] overflow-y-auto rounded-[28px] border border-[var(--border)] animate-[fadeIn_0.28s_ease-out] transition-shadow duration-500"
+        style={{
+          boxShadow: theme.ring,
+          backgroundImage: `linear-gradient(180deg, rgba(${typeof theme.rgb === "string" && theme.rgb.startsWith("var") ? "var(--accent-rgb)" : theme.rgb},0.06), transparent 240px), linear-gradient(180deg, var(--card-hover, var(--card)), var(--card))`,
+        }}
+      >
+        <div
+          className="pointer-events-none absolute top-0 left-0 right-0 h-[2px] rounded-t-[28px] transition-all duration-500"
+          style={{ background: theme.strip }}
+        />
+        {prospect.status === "Closed" && (
+          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[28px]">
+            <div
+              className="absolute inset-x-0 top-0 h-56 opacity-80"
+              style={{ background: "radial-gradient(ellipse at top, rgba(var(--accent-rgb),0.26), transparent 65%)" }}
+            />
+            <div
+              className="absolute -left-1/3 top-0 h-full w-[160%] animate-[liquid-sheen_2.4s_ease-out_1]"
+              style={{ background: "linear-gradient(110deg, transparent 35%, rgba(var(--accent-rgb),0.14) 50%, transparent 65%)" }}
+            />
+            <div className="absolute inset-x-0 top-0 h-full">
+              {Array.from({ length: 36 }).map((_, i) => {
+                const colors = ["var(--accent)", "#f59e0b", "#10b981", "#a855f7", "#3b82f6", "#ec4899"];
+                const left = (i * 137.5) % 100;
+                const delay = (i % 12) * 120;
+                const duration = 2400 + ((i * 173) % 1600);
+                const size = 6 + (i % 3) * 2;
+                const rotate = (i * 53) % 360;
+                return (
+                  <span
+                    key={i}
+                    className="absolute top-[-20px]"
+                    style={{
+                      left: `${left}%`,
+                      width: `${size}px`,
+                      height: `${size * 0.4}px`,
+                      background: colors[i % colors.length],
+                      transform: `rotate(${rotate}deg)`,
+                      animation: `confettiFall ${duration}ms ${delay}ms cubic-bezier(0.23, 0.94, 0.64, 1) forwards`,
+                      opacity: 0,
+                      borderRadius: "1px",
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
       {/* Header */}
-      <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--border)] p-5 flex items-center justify-between z-10">
+      <div className="sticky top-0 bg-[var(--card)] border-b border-[var(--border)] p-5 flex items-center justify-between z-10 rounded-t-[28px]">
         <div>
           <h2 className="text-lg font-bold">{prospect.name}</h2>
           <p className="text-sm text-[var(--muted)]">
             Added {new Date(prospect.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
           </p>
         </div>
-        <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--background)] transition-colors">
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors"
+            aria-label="Delete prospect"
+            title="Delete prospect"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--background)] transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <div className="p-5 space-y-6">
@@ -643,23 +718,225 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
           </div>
         </div>
 
-        {/* Contact Info */}
+        {/* Contact Details */}
         <div className="space-y-3">
-          <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Contact Info</h3>
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--background)]">
-              <Phone className="w-4 h-4 text-[var(--accent)]" />
-              <span className="text-sm">{prospect.phone || "\u2014"}</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--background)]">
-              <Mail className="w-4 h-4 text-[var(--accent)]" />
-              <span className="text-sm">{prospect.email || "\u2014"}</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--background)]">
-              <Briefcase className="w-4 h-4 text-[var(--accent)]" />
-              <span className="text-sm">{prospect.service || "\u2014"}</span>
-            </div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Contact Details</h3>
+            <span className="text-[10px] text-[var(--muted)]">Click any field to edit</span>
           </div>
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)]/60 divide-y divide-[var(--border)] overflow-hidden">
+            {([
+              { key: "name", label: "Company Name", icon: Building2, type: "text", placeholder: "Business name", multiline: false, linkHref: null as ((v: string) => string) | null, displayValue: null as ((v: string) => string) | null },
+              { key: "contactName", label: "Contact Name", icon: UserIcon, type: "text", placeholder: "Who you speak with", multiline: false, linkHref: null as ((v: string) => string) | null, displayValue: null as ((v: string) => string) | null },
+              { key: "phone", label: "Phone", icon: Phone, type: "tel", placeholder: "+1 555 555 5555", multiline: false, linkHref: (v: string) => `tel:${v}`, displayValue: null as ((v: string) => string) | null },
+              { key: "email", label: "Email", icon: Mail, type: "email", placeholder: "name@company.com", multiline: false, linkHref: (v: string) => `mailto:${v}`, displayValue: null as ((v: string) => string) | null },
+              { key: "service", label: "Service", icon: Briefcase, type: "text", placeholder: "What they need", multiline: false, linkHref: null as ((v: string) => string) | null, displayValue: null as ((v: string) => string) | null },
+              { key: "address", label: "Address", icon: MapPin, type: "text", placeholder: "Street, city, state", multiline: true, linkHref: (v: string) => `https://maps.google.com/?q=${encodeURIComponent(v)}`, displayValue: null as ((v: string) => string) | null },
+              { key: "website", label: "Website", icon: Globe, type: "url", placeholder: "https://example.com", multiline: false, linkHref: (v: string) => (v.startsWith("http") ? v : `https://${v}`), displayValue: null as ((v: string) => string) | null },
+              { key: "mapsUrl", label: "Google Maps Link", icon: MapPin, type: "url", placeholder: "Paste Google Maps URL", multiline: false, linkHref: (v: string) => v, displayValue: (v: string) => extractMapsName(v) },
+            ] as const).map(({ key, label, icon: Icon, type, placeholder, multiline, linkHref, displayValue }) => {
+              const value = (prospect[key] as string | undefined) ?? "";
+              const isEditing = editingField === key;
+              const isEmpty = !value.trim();
+              return (
+                <div key={key} className="group relative flex items-start gap-3 p-3 hover:bg-[var(--card)]/40 transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <Icon className="w-4 h-4 text-[var(--accent)]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-medium">{label}</div>
+                    {isEditing ? (
+                      <div className="mt-1 flex items-center gap-2">
+                        {multiline ? (
+                          <textarea
+                            autoFocus
+                            value={fieldDraft}
+                            onChange={(e) => setFieldDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") setEditingField(null);
+                              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) saveField(key);
+                            }}
+                            rows={2}
+                            placeholder={placeholder}
+                            className="flex-1 bg-[var(--card)] border border-[var(--accent)]/40 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-[var(--accent)] resize-none"
+                          />
+                        ) : (
+                          <input
+                            autoFocus
+                            type={type}
+                            value={fieldDraft}
+                            onChange={(e) => setFieldDraft(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") setEditingField(null);
+                              if (e.key === "Enter") saveField(key);
+                            }}
+                            placeholder={placeholder}
+                            className="flex-1 bg-[var(--card)] border border-[var(--accent)]/40 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-[var(--accent)]"
+                          />
+                        )}
+                        <button
+                          onClick={() => saveField(key)}
+                          className="p-1.5 rounded-md bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+                          aria-label="Save"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setEditingField(null)}
+                          className="p-1.5 rounded-md bg-[var(--card)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                          aria-label="Cancel"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-0.5 flex items-center gap-2">
+                        {isEmpty ? (
+                          <button
+                            onClick={() => startEditField(key)}
+                            className="inline-flex items-center gap-1 text-xs text-[var(--accent)] hover:underline"
+                          >
+                            <Plus className="w-3 h-3" /> Add {label.toLowerCase()}
+                          </button>
+                        ) : (
+                          <>
+                            {linkHref ? (
+                              <a
+                                href={linkHref(value)}
+                                target={key === "address" || key === "website" || key === "mapsUrl" ? "_blank" : undefined}
+                                rel="noopener noreferrer"
+                                className="text-sm text-[var(--foreground)] hover:text-[var(--accent)] transition-colors truncate"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {displayValue ? displayValue(value) : value}
+                              </a>
+                            ) : (
+                              <span className="text-sm text-[var(--foreground)] truncate">{value}</span>
+                            )}
+                            <button
+                              onClick={() => startEditField(key)}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded text-[var(--muted)] hover:text-[var(--accent)] transition-all"
+                              aria-label={`Edit ${label}`}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Quick actions */}
+          <div className="flex flex-wrap gap-2">
+            {prospect.phone && (
+              <a href={`tel:${prospect.phone}`} className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/40 transition-colors">
+                <Phone className="w-3 h-3" /> Call
+              </a>
+            )}
+            {prospect.phone && (
+              <a href={`sms:${prospect.phone}`} className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/40 transition-colors">
+                <FileText className="w-3 h-3" /> Text
+              </a>
+            )}
+            {prospect.email && (
+              <a href={`mailto:${prospect.email}`} className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/40 transition-colors">
+                <Mail className="w-3 h-3" /> Email
+              </a>
+            )}
+            {prospect.website && (
+              <a href={prospect.website.startsWith("http") ? prospect.website : `https://${prospect.website}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/40 transition-colors">
+                <ExternalLink className="w-3 h-3" /> Visit site
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Deal Value */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Deal Value</h3>
+            {!editingDeal ? (
+              <button
+                onClick={() => { setEditingDeal(true); setDealInput(prospect.dealValue?.toString() ?? ""); }}
+                className="text-[10px] text-[var(--accent)] hover:underline"
+              >
+                {prospect.dealValue ? "Edit" : "Add"}
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={saveDeal} className="flex items-center gap-1 text-[10px] text-emerald-400 hover:underline">
+                  <Check className="w-3 h-3" /> Save
+                </button>
+                <button onClick={() => setEditingDeal(false)} className="text-[10px] text-[var(--muted)] hover:underline">
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="p-3 rounded-lg bg-[var(--background)] flex items-center gap-3">
+            <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
+            {editingDeal ? (
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                autoFocus
+                value={dealInput}
+                onChange={(e) => setDealInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && saveDeal()}
+                placeholder="e.g., 2500"
+                className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-zinc-600"
+              />
+            ) : prospect.dealValue ? (
+              <div className="flex-1 flex items-center justify-between">
+                <span className="text-sm font-semibold text-emerald-400">
+                  {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(prospect.dealValue)}
+                </span>
+                {prospect.closedAt && (
+                  <span className="text-[10px] text-[var(--muted)]">
+                    Closed {new Date(prospect.closedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="text-sm text-[var(--muted)]">No deal value logged yet</span>
+            )}
+          </div>
+        </div>
+
+        {/* Landing Page shortcut */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Landing Page</h3>
+            {prospect.generatedWebsiteId && (
+              <a
+                href={`/api/websites/${prospect.generatedWebsiteId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[10px] text-[var(--accent)] hover:underline"
+              >
+                <ExternalLink className="w-3 h-3" /> View site
+              </a>
+            )}
+          </div>
+          <button
+            onClick={() => router.push(`/dashboard/websites`)}
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--background)]/60 p-4 flex items-center gap-3 hover:bg-[var(--card)]/40 transition-colors text-left group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+              <Globe className="w-5 h-5 text-[var(--accent)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">{prospect.generatedWebsiteId ? "Manage Landing Page" : "Generate a Landing Page"}</p>
+              <p className="text-[11px] text-[var(--muted)] mt-0.5">
+                {prospect.generatedWebsiteId ? "Open, copy URL, or regenerate" : "AI creates a professional site from this prospect\u2019s info"}
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-[var(--muted)] group-hover:text-[var(--accent)] transition-colors shrink-0" />
+          </button>
         </div>
 
         {/* Editable Notes */}
@@ -700,81 +977,239 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
           )}
         </div>
 
-        {/* Appointment */}
-        <div>
-          <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2">Appointment</h3>
-
-          {/* Current / Latest pending appointment */}
-          {latestPending && !showBooking ? (
-            renderAppointmentCard(latestPending)
-          ) : showBooking ? (
-            renderBookingForm(!!rescheduleApptId)
-          ) : (
-            <button
-              onClick={() => setShowBooking(true)}
-              className="w-full px-4 py-3 rounded-lg border border-dashed border-[var(--border)] text-sm text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--accent)] transition-colors flex items-center justify-center gap-2"
-            >
-              <Calendar className="w-4 h-4" />
-              Book Appointment
-            </button>
-          )}
-
-          {/* Book new even if one exists */}
-          {!showBooking && !latestPending && prospect.appointments.length > 0 && (
-            <button
-              onClick={() => setShowBooking(true)}
-              className="w-full mt-2 px-4 py-2 rounded-lg border border-dashed border-[var(--border)] text-xs text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--accent)] transition-colors flex items-center justify-center gap-2"
-            >
-              <Calendar className="w-3 h-3" />
-              Book New Appointment
-            </button>
-          )}
-        </div>
-
-        {/* Appointment History */}
-        {pastAppointments.length > 0 && (
-          <div>
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-2 text-xs font-medium text-[var(--muted)] uppercase tracking-wider hover:text-[var(--foreground)] transition-colors"
-            >
-              <Clock className="w-3.5 h-3.5" />
-              Past Appointments ({pastAppointments.length})
-              {showHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            </button>
-            {showHistory && (
-              <div className="mt-2 space-y-2">
-                {pastAppointments
-                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                  .map((appt) => {
-                    const style = outcomeStyles[appt.outcome];
-                    return (
-                      <div key={appt.id} className="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] opacity-70">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-3.5 h-3.5 text-[var(--muted)]" />
-                            <span className="text-xs">
-                              {new Date(appt.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at {appt.time}
-                            </span>
-                            <span className="text-[10px] text-[var(--muted)]">{durationLabels[appt.duration]}</span>
-                          </div>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${style.cls}`}>{style.label}</span>
-                        </div>
-                        {appt.cancelReason && (
-                          <p className="text-[10px] text-[var(--muted)] mt-1">Reason: {appt.cancelReason}</p>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
+        {/* Appointments */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Appointments</h3>
+            {!showBooking && prospect.appointments.length > 0 && (
+              <button
+                onClick={() => setShowBooking(true)}
+                className="inline-flex items-center gap-1 text-[11px] text-[var(--accent)] hover:underline"
+              >
+                <Plus className="w-3 h-3" /> Book new
+              </button>
             )}
           </div>
-        )}
+
+          {/* Stats strip */}
+          {prospect.appointments.length > 0 && (
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { label: "Booked", value: apptStats.total, tone: "text-[var(--foreground)]" },
+                { label: "Show rate", value: apptStats.showRate === null ? "—" : `${apptStats.showRate}%`, tone: apptStats.showRate !== null && apptStats.showRate < 60 ? "text-rose-400" : "text-emerald-400" },
+                { label: "No-shows", value: apptStats.noShow, tone: apptStats.noShow > 0 ? "text-rose-400" : "text-[var(--muted)]" },
+                { label: "Avg gap", value: apptStats.avgGapDays === null ? "—" : `${apptStats.avgGapDays}d`, tone: "text-[var(--foreground)]" },
+              ].map((s) => (
+                <div key={s.label} className="rounded-lg bg-[var(--background)]/60 border border-[var(--border)] px-2 py-1.5">
+                  <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">{s.label}</div>
+                  <div className={`text-sm font-semibold ${s.tone}`}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Hero: booking form, latest pending w/ countdown, or empty CTA */}
+          {showBooking ? (
+            renderBookingForm(!!rescheduleApptId)
+          ) : latestPending ? (
+            <div className="relative overflow-hidden rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-4">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-[var(--foreground)]">
+                      {new Date(latestPending.date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
+                    </div>
+                    <div className="text-xs text-[var(--muted)]">{latestPending.time} · {durationLabels[latestPending.duration]}</div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-emerald-400/70 uppercase tracking-wider">Upcoming</div>
+                  <div className="text-xs font-semibold text-emerald-400">{countdownTo(latestPending.date, latestPending.time)}</div>
+                </div>
+              </div>
+              {latestPending.agenda && (
+                <div className="text-xs text-[var(--muted)] mb-3 line-clamp-2">{latestPending.agenda}</div>
+              )}
+              <div className="flex flex-wrap gap-1.5">
+                {latestPending.meetLink && (
+                  <a href={latestPending.meetLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600 transition-colors">
+                    <Video className="w-3 h-3" /> Join Meet
+                  </a>
+                )}
+                <button onClick={() => updateAppointmentOutcome(prospect.id, latestPending.id, "completed")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs hover:border-emerald-500/40 transition-colors">
+                  <Check className="w-3 h-3" /> Complete
+                </button>
+                <button onClick={() => updateAppointmentOutcome(prospect.id, latestPending.id, "no-show")} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs hover:border-rose-500/40 transition-colors">
+                  <UserX className="w-3 h-3" /> No-show
+                </button>
+                <button onClick={() => { setRescheduleApptId(latestPending.id); setShowBooking(true); setBookDuration(latestPending.duration); }} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs hover:border-blue-500/40 transition-colors">
+                  <RefreshCw className="w-3 h-3" /> Reschedule
+                </button>
+                <button onClick={() => setCancelApptId(latestPending.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs hover:border-zinc-500/40 text-[var(--muted)] transition-colors">
+                  <XCircle className="w-3 h-3" /> Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (activeNotesApptId === latestPending.id) setActiveNotesApptId(null);
+                    else { setActiveNotesApptId(latestPending.id); setMeetingNotesValue(latestPending.meetingNotes || ""); }
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs hover:border-[var(--accent)]/40 transition-colors"
+                >
+                  <FileText className="w-3 h-3" /> Notes
+                </button>
+              </div>
+              {cancelApptId === latestPending.id && (
+                <div className="mt-3 p-3 rounded-lg bg-[var(--background)] space-y-2">
+                  <label className="text-xs text-[var(--muted)]">Cancel reason</label>
+                  <select value={cancelReason} onChange={(e) => setCancelReason(e.target.value as CancelReason)} className="w-full px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)]">
+                    {cancelReasons.map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                  <div className="flex gap-2">
+                    <button onClick={handleCancel} className="flex-1 px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-400 text-xs font-medium hover:bg-rose-500/30">Confirm</button>
+                    <button onClick={() => setCancelApptId(null)} className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs hover:bg-[var(--card-hover)]">Back</button>
+                  </div>
+                </div>
+              )}
+              {activeNotesApptId === latestPending.id && (
+                <div className="mt-3 space-y-2 p-3 rounded-lg bg-[var(--background)]">
+                  <textarea value={meetingNotesValue} onChange={(e) => setMeetingNotesValue(e.target.value)} rows={4} placeholder="Meeting notes..." className="w-full px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs focus:outline-none focus:border-[var(--accent)] resize-none" />
+                  <div className="flex gap-2">
+                    <button onClick={() => handleSaveMeetingNotes(latestPending.id)} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs hover:bg-[var(--card-hover)]">
+                      <Save className="w-3 h-3" /> Save
+                    </button>
+                    <button onClick={() => handleSummarizeNotes(latestPending.id)} disabled={summarizing || !meetingNotesValue.trim()} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[rgba(232,85,61,0.1)] text-[var(--accent)] text-xs font-medium hover:bg-[rgba(232,85,61,0.2)] disabled:opacity-50">
+                      {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} AI Summary
+                    </button>
+                  </div>
+                  {summarizeError && <p className="text-[10px] text-rose-400">{summarizeError}</p>}
+                  {latestPending.summarizedNotes && (
+                    <div className="p-2 rounded bg-[rgba(232,85,61,0.05)] border border-[rgba(232,85,61,0.1)]">
+                      <div className="text-[10px] text-[var(--accent)] uppercase tracking-wider mb-1 font-medium">AI Summary</div>
+                      <div className="text-xs text-[var(--muted)] whitespace-pre-wrap">{latestPending.summarizedNotes}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[var(--border)] p-5 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center mx-auto mb-3">
+                <Calendar className="w-5 h-5 text-[var(--accent)]" />
+              </div>
+              <p className="text-sm font-medium mb-1">No upcoming appointments</p>
+              <p className="text-[11px] text-[var(--muted)] mb-3">Book a call or pick a quick slot below</p>
+              <div className="flex flex-wrap gap-1.5 justify-center mb-3">
+                <button onClick={() => applyQuickSlot(0, 15)} className="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[11px] hover:border-[var(--accent)]/40 transition-colors">Today 3pm</button>
+                <button onClick={() => applyQuickSlot(1, 10)} className="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[11px] hover:border-[var(--accent)]/40 transition-colors">Tomorrow 10am</button>
+                <button onClick={() => applyQuickSlot(1, 14)} className="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[11px] hover:border-[var(--accent)]/40 transition-colors">Tomorrow 2pm</button>
+                <button onClick={() => applyQuickSlot(2, 11)} className="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[11px] hover:border-[var(--accent)]/40 transition-colors">+2 days 11am</button>
+              </div>
+              <button onClick={() => setShowBooking(true)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-xs font-medium hover:bg-[var(--accent-hover)] transition-colors">
+                <Plus className="w-3.5 h-3.5" /> Custom booking
+              </button>
+            </div>
+          )}
+
+          {/* Tabs + list */}
+          {prospect.appointments.length > 0 && !showBooking && (
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)]/40 overflow-hidden">
+              <div className="flex items-center border-b border-[var(--border)]">
+                {([
+                  { key: "upcoming" as const, label: "Upcoming", count: upcomingAppointments.length },
+                  { key: "past" as const, label: "Past", count: pastAppointments.length },
+                ]).map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setApptTab(t.key)}
+                    className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${apptTab === t.key ? "text-[var(--accent)] bg-[var(--accent)]/5 border-b-2 border-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--foreground)]"}`}
+                  >
+                    {t.label} <span className="text-[10px] opacity-60">({t.count})</span>
+                  </button>
+                ))}
+              </div>
+              <div className="divide-y divide-[var(--border)] max-h-80 overflow-y-auto">
+                {(apptTab === "upcoming" ? upcomingAppointments : pastAppointments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())).map((appt) => {
+                  const style = outcomeStyles[appt.outcome];
+                  const dotColor = appt.outcome === "completed" ? "bg-emerald-400" : appt.outcome === "no-show" ? "bg-rose-400" : appt.outcome === "rescheduled" ? "bg-blue-400" : appt.outcome === "cancelled" ? "bg-zinc-400" : "bg-amber-400";
+                  const isExpanded = expandedApptId === appt.id;
+                  const d = new Date(appt.date);
+                  return (
+                    <div key={appt.id}>
+                      <button
+                        onClick={() => setExpandedApptId(isExpanded ? null : appt.id)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[var(--card)]/40 transition-colors text-left"
+                      >
+                        <div className="w-8 shrink-0 text-center leading-none">
+                          <div className="text-[8px] text-[var(--muted)] uppercase font-medium tracking-wide">{d.toLocaleDateString("en-US", { month: "short" })}</div>
+                          <div className="text-[13px] font-bold mt-0.5">{d.getDate()}</div>
+                        </div>
+                        <span className={`w-1.5 h-1.5 rounded-full ${dotColor} shrink-0`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium truncate">{appt.time} · {durationLabels[appt.duration]}</div>
+                          {appt.agenda && <div className="text-[11px] text-[var(--muted)] truncate">{appt.agenda}</div>}
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${style.cls}`}>{style.label}</span>
+                      </button>
+                      {isExpanded && (appt.agenda || appt.meetingNotes || appt.summarizedNotes || appt.cancelReason || appt.meetLink) && (
+                        <div className="px-3 pb-3 space-y-2 bg-[var(--background)]/40">
+                          {appt.agenda && (
+                            <div>
+                              <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider font-medium mb-0.5">Agenda</div>
+                              <div className="text-xs text-[var(--foreground)]">{appt.agenda}</div>
+                            </div>
+                          )}
+                          {appt.cancelReason && (
+                            <div className="text-[11px] text-[var(--muted)]">Cancel reason: <span className="text-[var(--foreground)]">{appt.cancelReason}</span></div>
+                          )}
+                          {appt.meetLink && (
+                            <a href={appt.meetLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 hover:underline">
+                              <Video className="w-3 h-3" /> Meeting link
+                            </a>
+                          )}
+                          {appt.meetingNotes && (
+                            <div>
+                              <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider font-medium mb-0.5">Notes</div>
+                              <div className="text-xs text-[var(--foreground)] whitespace-pre-wrap">{appt.meetingNotes}</div>
+                            </div>
+                          )}
+                          {appt.summarizedNotes && (
+                            <div className="p-2 rounded-lg bg-[rgba(232,85,61,0.05)] border border-[rgba(232,85,61,0.1)]">
+                              <div className="text-[10px] text-[var(--accent)] uppercase tracking-wider mb-1 font-medium flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" /> AI Summary
+                              </div>
+                              <div className="text-xs text-[var(--muted)] whitespace-pre-wrap">{appt.summarizedNotes}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {(apptTab === "upcoming" ? upcomingAppointments : pastAppointments).length === 0 && (
+                  <div className="py-6 text-center text-[11px] text-[var(--muted)]">
+                    {apptTab === "upcoming" ? "Nothing scheduled" : "No past appointments yet"}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Quick Actions */}
         <div>
           <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2">Quick Actions</h3>
           <div className="space-y-2">
+            <button
+              onClick={() => setShowReceptionistBuilder(true)}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[rgba(232,85,61,0.2)] bg-[rgba(232,85,61,0.08)] text-[var(--accent)] text-sm font-medium hover:bg-[rgba(232,85,61,0.12)] transition-colors"
+            >
+              <Bot className="w-4 h-4" />
+              Build Receptionist
+            </button>
             {currentIndex < pipeline.length - 1 && (
               <button
                 onClick={() => updateStatus(prospect.id, pipeline[currentIndex + 1])}
@@ -1028,6 +1463,148 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
           </div>
         )}
       </div>
+      </div>
+
+      {showReceptionistBuilder && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={() => setShowReceptionistBuilder(false)} />
+          <div className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[28px] border border-[var(--border)] bg-[var(--card)] p-6 shadow-[0_25px_80px_rgba(0,0,0,0.45)] animate-[fadeInUp_0.35s_ease-out] space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold flex items-center gap-2"><Bot className="w-5 h-5 text-[var(--accent)]" /> Build Receptionist</h3>
+                <p className="text-sm text-[var(--muted)] mt-1">Generate a draft AI receptionist from this prospect&apos;s business details.</p>
+              </div>
+              <button onClick={() => setShowReceptionistBuilder(false)} className="p-2 rounded-lg hover:bg-[var(--card-hover)] transition-colors"><X className="w-4 h-4" /></button>
+            </div>
+
+            {receptionistError && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{receptionistError}</div>}
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <input value={receptionistForm.businessName} onChange={(e) => setReceptionistForm((p) => ({ ...p, businessName: e.target.value }))} placeholder="Business Name" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm" />
+              <input value={receptionistForm.niche} onChange={(e) => setReceptionistForm((p) => ({ ...p, niche: e.target.value }))} placeholder="Niche" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm" />
+              <div className="md:col-span-2">
+                <p className="text-[11px] uppercase tracking-wider text-[var(--muted)] mb-2">Receptionist Gender</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["female", "male", "auto"] as const).map((g) => {
+                    const active = receptionistForm.gender === g;
+                    const label = g === "auto" ? "Auto (pick by niche)" : g === "female" ? "Female" : "Male";
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setReceptionistForm((p) => ({ ...p, gender: g }))}
+                        className={`px-3 py-2.5 rounded-xl border text-sm transition-colors ${
+                          active
+                            ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--foreground)]"
+                            : "border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--muted)]"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <input value={receptionistForm.services} onChange={(e) => setReceptionistForm((p) => ({ ...p, services: e.target.value }))} placeholder="Services" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm md:col-span-2" />
+              <textarea value={receptionistForm.notes} onChange={(e) => setReceptionistForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Business notes" rows={4} className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm resize-none md:col-span-2" />
+              <textarea value={receptionistForm.mapsDescription} onChange={(e) => setReceptionistForm((p) => ({ ...p, mapsDescription: e.target.value }))} placeholder="Google Maps description (optional)" rows={4} className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm resize-none" />
+              <textarea value={receptionistForm.reviews} onChange={(e) => setReceptionistForm((p) => ({ ...p, reviews: e.target.value }))} placeholder="Google review snippets (optional)" rows={4} className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm resize-none" />
+            </div>
+
+            <div className="flex gap-3">
+              <button onClick={() => setShowReceptionistBuilder(false)} className="px-4 py-3 rounded-xl border border-[var(--border)] text-sm hover:bg-[var(--card-hover)] transition-colors">Close</button>
+              <button onClick={handleBuildReceptionist} disabled={buildingReceptionist} className="px-4 py-3 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors inline-flex items-center gap-2 disabled:opacity-50">
+                {buildingReceptionist ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Generate Draft
+              </button>
+            </div>
+
+            {receptionistDraft && (
+              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider text-[var(--muted)]">Generated Receptionist</p>
+                    <p className="text-lg font-semibold mt-1">{receptionistDraft.agentName}</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!receptionistDraft) return;
+                      setCreatingAgent(true);
+                      setCreateAgentError("");
+                      setCreatedAgent(null);
+                      try {
+                        const res = await fetch("/api/agents/elevenlabs/create", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            agentName: receptionistDraft.agentName,
+                            firstMessage: receptionistDraft.firstMessage,
+                            systemPrompt: (receptionistDraft as { fullPrompt?: string }).fullPrompt || receptionistDraft.systemPrompt,
+                          }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || "Failed to create agent");
+                        setCreatedAgent({ agentId: data.agentId, agentName: data.agentName });
+                        setTimeout(() => {
+                          router.push("/dashboard/agents");
+                        }, 1800);
+                      } catch (err) {
+                        setCreateAgentError(err instanceof Error ? err.message : "Failed to create agent");
+                      } finally {
+                        setCreatingAgent(false);
+                      }
+                    }}
+                    disabled={creatingAgent}
+                    className="px-4 py-2.5 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors whitespace-nowrap inline-flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {creatingAgent ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+                    {creatingAgent ? "Creating..." : "Make AI Receptionist"}
+                  </button>
+                </div>
+
+                {createAgentError && (
+                  <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{createAgentError}</div>
+                )}
+                {createdAgent && (
+                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 space-y-1">
+                    <p className="text-sm font-semibold text-emerald-400 flex items-center gap-2"><Bot className="w-4 h-4" /> AI Receptionist Created!</p>
+                    <p className="text-xs text-emerald-300">{createdAgent.agentName}</p>
+                    <p className="text-[10px] font-mono text-emerald-400/60">ID: {createdAgent.agentId}</p>
+                  </div>
+                )}
+                <div className="rounded-2xl border border-[rgba(232,85,61,0.18)] bg-[linear-gradient(180deg,rgba(232,85,61,0.08),rgba(255,255,255,0.02))] p-5">
+                  <pre className="whitespace-pre-wrap text-sm leading-6 text-[var(--foreground)] font-sans">{(receptionistDraft as { fullPrompt?: string }).fullPrompt || receptionistDraft.systemPrompt}</pre>
+                </div>
+
+                {('extractedBusinessProfile' in receptionistDraft) && (receptionistDraft as { extractedBusinessProfile?: { summary?: string; reviewInsights?: string[] } }).extractedBusinessProfile && (
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-4 space-y-2">
+                    <p className="text-[11px] uppercase tracking-wider text-[var(--muted)]">Extracted Business Profile</p>
+                    <p className="text-sm">{(receptionistDraft as { extractedBusinessProfile?: { summary?: string } }).extractedBusinessProfile?.summary}</p>
+                    <ul className="space-y-1 text-sm text-[var(--muted)] list-disc pl-5">
+                      {((receptionistDraft as { extractedBusinessProfile?: { reviewInsights?: string[] } }).extractedBusinessProfile?.reviewInsights || []).map((insight, idx) => (
+                        <li key={idx}>{insight}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title={`Delete prospect "${prospect.name}"?`}
+        message="This prospect and all associated data will be permanently deleted. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          deleteProspect(prospect.id);
+          onClose();
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

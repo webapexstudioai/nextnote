@@ -159,7 +159,7 @@ export default function ImportPage() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-[var(--header-bg)] backdrop-blur-xl border-b border-[var(--border)]">
+      <header className="sticky top-0 z-30 liquid-glass-strong border-b border-white/5">
         <div className="px-4 sm:px-6 py-4">
           <h1 className="text-xl font-bold">Import Prospects</h1>
           <p className="text-xs text-[var(--muted)]">Import from XLSX files or Google Sheets — AI auto-detects your columns</p>
@@ -194,7 +194,7 @@ export default function ImportPage() {
             {importMode === "file" ? (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--card)] p-12 text-center cursor-pointer hover:border-[var(--accent)] hover:bg-[var(--card-hover)] transition-all group"
+                className="liquid-glass rounded-xl border-dashed p-12 text-center cursor-pointer hover:border-[var(--accent)] hover:bg-white/[0.04] transition-all group"
               >
                 <Upload className="w-10 h-10 mx-auto mb-4 text-[var(--muted)] group-hover:text-[var(--accent)] transition-colors" />
                 <p className="text-sm font-medium mb-1">Drop your spreadsheet here or click to browse</p>
@@ -208,7 +208,7 @@ export default function ImportPage() {
                 />
               </div>
             ) : (
-              <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 space-y-4">
+              <div className="rounded-xl liquid-glass p-6 space-y-4">
                 <div>
                   <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2 block">
                     Google Sheets URL
@@ -234,7 +234,7 @@ export default function ImportPage() {
             )}
 
             {/* How it works */}
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+            <div className="rounded-xl liquid-glass p-5">
               <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[var(--accent)]" /> How AI Import Works
               </h3>
@@ -258,7 +258,7 @@ export default function ImportPage() {
 
         {/* Step: Analyzing */}
         {step === "analyzing" && (
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-12 text-center">
+          <div className="rounded-xl liquid-glass p-12 text-center">
             <Loader2 className="w-10 h-10 mx-auto mb-4 text-[var(--accent)] animate-spin" />
             <p className="text-sm font-medium mb-1">Claude AI is analyzing your data...</p>
             <p className="text-xs text-[var(--muted)]">Detecting columns and mapping fields for {fileName}</p>
@@ -269,7 +269,7 @@ export default function ImportPage() {
         {step === "preview" && (
           <>
             {/* Column Mapping */}
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+            <div className="rounded-xl liquid-glass p-5">
               <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[var(--accent)]" /> AI Column Mapping
               </h3>
@@ -289,7 +289,7 @@ export default function ImportPage() {
             </div>
 
             {/* Preview Table */}
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+            <div className="rounded-xl liquid-glass overflow-hidden">
               <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
                 <h3 className="text-sm font-medium flex items-center gap-2">
                   <Eye className="w-4 h-4 text-[var(--muted)]" />
@@ -335,7 +335,7 @@ export default function ImportPage() {
             <div className="flex gap-3">
               <button
                 onClick={handleReset}
-                className="flex-1 px-4 py-3 rounded-lg border border-[var(--border)] text-sm font-medium hover:bg-[var(--card)] transition-colors"
+                className="flex-1 px-4 py-3 rounded-lg border border-[var(--border)] text-sm font-medium hover:bg-white/[0.04] transition-colors"
               >
                 Cancel
               </button>
@@ -361,7 +361,7 @@ export default function ImportPage() {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={handleReset}
-                className="px-6 py-2.5 rounded-lg border border-[var(--border)] text-sm hover:bg-[var(--card)] transition-colors"
+                className="px-6 py-2.5 rounded-lg border border-[var(--border)] text-sm hover:bg-white/[0.04] transition-colors"
               >
                 Import More
               </button>
@@ -383,7 +383,7 @@ export default function ImportPage() {
             <p className="text-xs text-[var(--muted)] mb-4">{error}</p>
             <button
               onClick={handleReset}
-              className="px-6 py-2.5 rounded-lg border border-[var(--border)] text-sm hover:bg-[var(--card)] transition-colors"
+              className="px-6 py-2.5 rounded-lg border border-[var(--border)] text-sm hover:bg-white/[0.04] transition-colors"
             >
               Try Again
             </button>

@@ -10,9 +10,10 @@ interface AddProspectModalProps {
   onClose: () => void;
   folders: Folder[];
   defaultFolderId?: string | null;
+  defaultFileId?: string | null;
 }
 
-export default function AddProspectModal({ onClose, folders, defaultFolderId }: AddProspectModalProps) {
+export default function AddProspectModal({ onClose, folders, defaultFolderId, defaultFileId }: AddProspectModalProps) {
   const { addProspect } = useProspects();
   const [form, setForm] = useState({
     name: "",
@@ -21,7 +22,11 @@ export default function AddProspectModal({ onClose, folders, defaultFolderId }: 
     service: "",
     notes: "",
     folderId: defaultFolderId || folders[0]?.id || "",
+    fileId: defaultFileId || "",
   });
+
+  const activeFolder = folders.find((f) => f.id === form.folderId);
+  const availableFiles = activeFolder?.files ?? [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +38,7 @@ export default function AddProspectModal({ onClose, folders, defaultFolderId }: 
       service: form.service,
       notes: form.notes,
       folderId: form.folderId,
+      fileId: form.fileId || undefined,
       status: "New",
       createdAt: new Date().toISOString().split("T")[0],
       appointments: [],
@@ -61,17 +67,32 @@ export default function AddProspectModal({ onClose, folders, defaultFolderId }: 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Folder Select */}
           {folders.length > 0 && (
-            <div>
-              <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1.5 block">Folder</label>
-              <select
-                value={form.folderId}
-                onChange={(e) => setForm((prev) => ({ ...prev, folderId: e.target.value }))}
-                className="w-full px-4 py-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
-              >
-                {folders.map((f) => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1.5 block">Folder</label>
+                <select
+                  value={form.folderId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, folderId: e.target.value, fileId: "" }))}
+                  className="w-full px-4 py-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+                >
+                  {folders.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1.5 block">File (optional)</label>
+                <select
+                  value={form.fileId}
+                  onChange={(e) => setForm((prev) => ({ ...prev, fileId: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+                >
+                  <option value="">Unfiled</option>
+                  {availableFiles.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
