@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Plus, FolderPlus, Folder as FolderIcon, FileSpreadsheet, FilePlus, ChevronRight,
-  Upload, Pencil, Trash2, MoreVertical, List, ArrowLeft, Search, X, Inbox,
+  Upload, Pencil, Trash2, MoreVertical, List, ArrowLeft, Search, X, Inbox, Mic,
 } from "lucide-react";
 import { FOLDER_COLORS, ProspectStatus } from "@/types";
 import { useProspects } from "@/context/ProspectsContext";
@@ -13,6 +13,7 @@ import ProspectKanban from "@/components/dashboard/ProspectKanban";
 import DetailPanel from "@/components/dashboard/DetailPanel";
 import AddProspectModal from "@/components/dashboard/AddProspectModal";
 import FolderImportModal from "@/components/dashboard/FolderImportModal";
+import VoicedropModal from "@/components/dashboard/VoicedropModal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
 function ProspectsPageInner() {
@@ -25,12 +26,13 @@ function ProspectsPageInner() {
     prospects, folders,
     createFolder, updateFolder, deleteFolder,
     createFile, renameFile, deleteFile,
-    moveProspectToFile,
+    moveProspectToFile, updateStatus,
   } = useProspects();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addStatus, setAddStatus] = useState<ProspectStatus | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showVoicedrop, setShowVoicedrop] = useState(false);
 
   // Folder / file creation
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -151,6 +153,15 @@ function ProspectsPageInner() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setShowVoicedrop(true)}
+                disabled={kanbanProspects.filter((p) => p.phone?.trim()).length === 0}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border)] text-sm hover:bg-white/[0.04] transition-colors disabled:opacity-50"
+                title="Send a voicemail drop to these prospects"
+              >
+                <Mic className="w-4 h-4" />
+                <span className="hidden sm:inline">Voicedrop</span>
+              </button>
               <Link
                 href="/dashboard/import"
                 className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border)] text-sm hover:bg-white/[0.04] transition-colors"
@@ -217,6 +228,15 @@ function ProspectsPageInner() {
               setMovingProspectId(null);
             }}
             onClose={() => setMovingProspectId(null)}
+          />
+        )}
+        {showVoicedrop && (
+          <VoicedropModal
+            prospects={kanbanProspects}
+            onClose={() => setShowVoicedrop(false)}
+            onSent={(ids) => {
+              ids.forEach((id) => updateStatus(id, "Contacted"));
+            }}
           />
         )}
       </>

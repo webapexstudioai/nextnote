@@ -9,7 +9,15 @@ import {
 import { TIERS } from "@/lib/subscriptions";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 
-type SettingsTab = "profile" | "subscription" | "credits" | "appearance" | "notifications";
+type SettingsTab = "profile" | "subscription" | "credits" | "caller_id" | "appearance" | "notifications";
+
+interface CallerId {
+  id: string;
+  phone_number: string;
+  friendly_name: string | null;
+  verified: boolean;
+  verified_at: string | null;
+}
 
 interface UserProfile {
   name: string;
@@ -30,6 +38,7 @@ const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: "profile", label: "Profile", icon: User },
   { id: "subscription", label: "Subscription", icon: Crown },
   { id: "credits", label: "Credits", icon: Coins },
+  { id: "caller_id", label: "Caller ID", icon: Phone },
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "notifications", label: "Notifications", icon: Bell },
 ];
@@ -71,6 +80,98 @@ export default function SettingsPage() {
   const [changingPlan, setChangingPlan] = useState(false);
   const [planError, setPlanError] = useState("");
   const [planSuccess, setPlanSuccess] = useState("");
+
+  // Caller ID state (for voicemail drops)
+  const [callerIds, setCallerIds] = useState<CallerId[]>([]);
+  const [callerIdsLoading, setCallerIdsLoading] = useState(false);
+  const [callerIdError, setCallerIdError] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [startingVerification, setStartingVerification] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState<{ phone: string; code: string } | null>(null);
+  const [checkingVerification, setCheckingVerification] = useState(false);
+
+  async function loadCallerIds() {
+    setCallerIdsLoading(true);
+    try {
+      const res = await fetch("/api/voicemail/caller-ids");
+      if (res.ok) {
+        const data = await res.json();
+        setCallerIds(data.caller_ids || []);
+      }
+    } finally {
+      setCallerIdsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === "caller_id") loadCallerIds();
+  }, [activeTab]);
+
+  async function handleStartVerification() {
+    setCallerIdError("");
+    setStartingVerification(true);
+    try {
+      const res = await fetch("/api/voicemail/caller-ids/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone_number: newPhone, friendly_name: newLabel || "My Phone" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCallerIdError(data.error || "Failed to start verification");
+        return;
+      }
+      setPendingVerification({ phone: data.phone_number, code: data.validation_code });
+    } catch {
+      setCallerIdError("Network error");
+    } finally {
+      setStartingVerification(false);
+    }
+  }
+
+  async function handleCheckVerification() {
+    if (!pendingVerification) return;
+    setCallerIdError("");
+    setCheckingVerification(true);
+    try {
+      const res = await fetch("/api/voicemail/caller-ids/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone_number: pendingVerification.phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCallerIdError(data.error || "Check failed");
+        return;
+      }
+      if (data.verified) {
+        setPendingVerification(null);
+        setNewPhone("");
+        setNewLabel("");
+        await loadCallerIds();
+      } else {
+        setCallerIdError(data.message || "Not verified yet — answer the call and enter the code.");
+      }
+    } catch {
+      setCallerIdError("Network error");
+    } finally {
+      setCheckingVerification(false);
+    }
+  }
+
+  async function handleRemoveCallerId(phone: string) {
+    try {
+      await fetch("/api/voicemail/caller-ids", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone_number: phone }),
+      });
+      await loadCallerIds();
+    } catch {
+      setCallerIdError("Failed to remove");
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -684,6 +785,138 @@ export default function SettingsPage() {
                 >
                   Buy Credits
                 </a>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Caller ID Tab ─── */}
+          {activeTab === "caller_id" && (
+            <div className="space-y-6">
+              <div className="rounded-xl liquid-glass p-5">
+                <h3 className="text-sm font-medium mb-1 flex items-center gap-2 text-[var(--foreground)]">
+                  <Phone className="w-4 h-4 text-[var(--accent)]" /> Verified Caller IDs
+                </h3>
+                <p className="text-xs text-[var(--muted)] mb-4">
+                  Verify your personal phone number so voicemail drops appear to come from you. Twilio will call the number with a 6-digit code — enter it on your keypad to verify.
+                </p>
+
+                {callerIdError && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm mb-4">
+                    <AlertCircle className="w-4 h-4 shrink-0" /> {callerIdError}
+                    <button onClick={() => setCallerIdError("")} className="ml-auto text-red-400/60 hover:text-red-400">&times;</button>
+                  </div>
+                )}
+
+                {pendingVerification ? (
+                  <div className="rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-5 space-y-4">
+                    <div>
+                      <p className="text-xs text-[var(--muted)] uppercase tracking-wider mb-1">Verifying</p>
+                      <p className="text-sm font-medium text-[var(--foreground)]">{pendingVerification.phone}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[var(--muted)] uppercase tracking-wider mb-2">Enter this code on your phone</p>
+                      <div className="text-4xl font-bold font-mono tracking-[0.5em] text-[var(--accent)] text-center py-4 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+                        {pendingVerification.code}
+                      </div>
+                      <p className="text-[11px] text-[var(--muted)] mt-2 text-center">
+                        Twilio is calling now. Answer the call and enter these digits on your keypad.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCheckVerification}
+                        disabled={checkingVerification}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50"
+                      >
+                        {checkingVerification ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" /> Checking...</>
+                        ) : (
+                          <><CheckCircle className="w-4 h-4" /> I&apos;ve entered the code</>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setPendingVerification(null)}
+                        className="px-4 py-2.5 rounded-lg border border-[var(--border)] text-[var(--muted)] text-sm hover:text-[var(--foreground)] hover:bg-white/[0.04] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 mb-4">
+                    <div className="space-y-2">
+                      <input
+                        type="tel"
+                        value={newPhone}
+                        onChange={(e) => setNewPhone(e.target.value)}
+                        placeholder="+1 555 123 4567"
+                        className={inputClass}
+                      />
+                      <input
+                        type="text"
+                        value={newLabel}
+                        onChange={(e) => setNewLabel(e.target.value)}
+                        placeholder="Label (e.g. My Cell)"
+                        className={inputClass}
+                      />
+                    </div>
+                    <button
+                      onClick={handleStartVerification}
+                      disabled={startingVerification || !newPhone.trim()}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 h-fit"
+                    >
+                      {startingVerification ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Calling...</>
+                      ) : (
+                        <><Phone className="w-4 h-4" /> Verify Number</>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-xl liquid-glass p-5">
+                <h3 className="text-sm font-medium mb-3 text-[var(--foreground)]">Your Numbers</h3>
+                {callerIdsLoading ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="w-5 h-5 animate-spin text-[var(--muted)]" />
+                  </div>
+                ) : callerIds.length === 0 ? (
+                  <p className="text-xs text-[var(--muted)] text-center py-6">
+                    No verified numbers yet. Add one above to start sending voicemail drops.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {callerIds.map((c) => (
+                      <div key={c.id} className="flex items-center justify-between px-3 py-3 rounded-lg bg-[var(--background)] border border-[var(--border)]">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Phone className="w-4 h-4 text-[var(--muted)] shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-[var(--foreground)] truncate">{c.phone_number}</p>
+                            {c.friendly_name && (
+                              <p className="text-[11px] text-[var(--muted)] truncate">{c.friendly_name}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                            c.verified
+                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                              : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          }`}>
+                            {c.verified ? "Verified" : "Pending"}
+                          </span>
+                          <button
+                            onClick={() => handleRemoveCallerId(c.phone_number)}
+                            className="text-xs px-2 py-1 rounded-md border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
