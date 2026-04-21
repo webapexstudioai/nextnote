@@ -1,11 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Mail, RefreshCw, CheckCircle, Pencil } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 
 export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyEmailInner />
+    </Suspense>
+  );
+}
+
+function VerifyEmailInner() {
   const [email, setEmail] = useState("");
   const [editEmail, setEditEmail] = useState(false);
   const [newEmail, setNewEmail] = useState("");

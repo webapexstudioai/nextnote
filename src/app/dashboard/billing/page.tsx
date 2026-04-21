@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Coins, Loader2, CheckCircle, AlertCircle, Zap, RefreshCw } from "lucide-react";
 
@@ -13,6 +13,14 @@ interface Pack {
 }
 
 export default function BillingPage() {
+  return (
+    <Suspense fallback={null}>
+      <BillingInner />
+    </Suspense>
+  );
+}
+
+function BillingInner() {
   const search = useSearchParams();
   const [balance, setBalance] = useState<number | null>(null);
   const [packs, setPacks] = useState<Pack[]>([]);
