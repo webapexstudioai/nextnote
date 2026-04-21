@@ -59,10 +59,11 @@ export async function POST(req: NextRequest) {
     }
 
     // 2) Import into ElevenLabs so they own the Twilio voice webhook routing
-    const importRes = await fetch("https://api.elevenlabs.io/v1/convai/phone-numbers/twilio", {
+    const importRes = await fetch("https://api.elevenlabs.io/v1/convai/phone-numbers", {
       method: "POST",
       headers: { "xi-api-key": elevenKey, "Content-Type": "application/json" },
       body: JSON.stringify({
+        provider: "twilio",
         label,
         phone_number: purchaseData.phone_number,
         sid,
