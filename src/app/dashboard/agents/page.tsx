@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Bot, Plus, Search, Trash2, Loader2, RefreshCw, AlertCircle,
   MoreVertical, Phone, MessageSquare, BarChart2, Settings2,
@@ -99,7 +100,31 @@ export default function AgentsPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [menuId, setMenuId] = useState<string | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<{ top: number; left: number; openUp: boolean } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // Close the row-action menu when clicking outside of it.
+  useEffect(() => {
+    if (!menuId) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuId(null);
+      }
+    };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuId(null); };
+    const closeOnScroll = () => { setMenuId(null); setMenuAnchor(null); };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("keydown", esc);
+    window.addEventListener("scroll", closeOnScroll, true);
+    window.addEventListener("resize", closeOnScroll);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", esc);
+      window.removeEventListener("scroll", closeOnScroll, true);
+      window.removeEventListener("resize", closeOnScroll);
+    };
+  }, [menuId]);
   const [mounted, setMounted] = useState(false);
   const [selectedTestAgentId, setSelectedTestAgentId] = useState("");
 
@@ -287,31 +312,31 @@ export default function AgentsPage() {
                           </div>
                           <div className="text-xs text-[var(--muted)]">{formatTs(agent.last_call_time_unix_secs)}</div>
                           <div className="text-sm font-semibold">{agent.last_7_day_call_count || 0}</div>
-                          <div className="flex items-center justify-end gap-1 relative">
+                          <div className="flex items-center justify-end gap-1">
                             <button
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuId(menuId === agent.agent_id ? null : agent.agent_id); }}
-                              className="p-1.5 rounded-lg hover:bg-[var(--border)] transition-colors opacity-0 group-hover:opacity-100"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (menuId === agent.agent_id) {
+                                  setMenuId(null);
+                                  setMenuAnchor(null);
+                                  return;
+                                }
+                                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                                const MENU_HEIGHT = 88;
+                                const openUp = window.innerHeight - rect.bottom < MENU_HEIGHT + 16;
+                                setMenuAnchor({
+                                  top: openUp ? rect.top - MENU_HEIGHT - 4 : rect.bottom + 4,
+                                  left: rect.right - 144,
+                                  openUp,
+                                });
+                                setMenuId(agent.agent_id);
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-[var(--border)] transition-colors"
+                              aria-label="Agent actions"
                             >
                               <MoreVertical className="w-4 h-4 text-[var(--muted)]" />
                             </button>
-                            {menuId === agent.agent_id && (
-                              <div className="absolute right-0 top-8 w-36 bg-[var(--background)] border border-[var(--border)] rounded-xl shadow-xl z-20 py-1 animate-[fadeInUp_0.15s_ease-out]">
-                                <button
-                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedTestAgentId(agent.agent_id); setNav("test-agent"); setMenuId(null); }}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[var(--foreground)] hover:bg-white/[0.04] transition-colors"
-                                >
-                                  <Mic className="w-3.5 h-3.5 text-[var(--accent)]" /> Test Agent
-                                </button>
-                                <button
-                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(agent.agent_id); }}
-                                  disabled={deletingId === agent.agent_id}
-                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
-                                >
-                                  {deletingId === agent.agent_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                                  Delete Agent
-                                </button>
-                              </div>
-                            )}
                             <Settings2 className="w-4 h-4 text-[var(--muted)]" />
                           </div>
                         </Link>
@@ -804,6 +829,30 @@ export default function AgentsPage() {
           )}
         </main>
       </div>
+
+      {mounted && menuId && menuAnchor && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: "fixed", top: menuAnchor.top, left: menuAnchor.left, width: 144 }}
+          className="bg-[var(--background)] border border-[var(--border)] rounded-xl shadow-xl z-[100] py-1 animate-[fadeInUp_0.15s_ease-out]"
+        >
+          <button
+            onClick={() => { setSelectedTestAgentId(menuId); setNav("test-agent"); setMenuId(null); setMenuAnchor(null); }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[var(--foreground)] hover:bg-white/[0.04] transition-colors"
+          >
+            <Mic className="w-3.5 h-3.5 text-[var(--accent)]" /> Test Agent
+          </button>
+          <button
+            onClick={() => { handleDelete(menuId); setMenuAnchor(null); }}
+            disabled={deletingId === menuId}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            {deletingId === menuId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            Delete Agent
+          </button>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
