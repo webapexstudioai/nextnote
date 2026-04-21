@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Plus, FolderPlus, Folder as FolderIcon, FileSpreadsheet, FilePlus, ChevronRight,
@@ -149,10 +150,20 @@ function ProspectsPageInner() {
                 </p>
               </div>
             </div>
-            <button onClick={() => setShowAddModal(true)} className="liquid-btn shrink-0">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Prospect</span>
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href="/dashboard/import"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border)] text-sm hover:bg-white/[0.04] transition-colors"
+                title="Import prospects from CSV, XLSX, or Google Sheets"
+              >
+                <Upload className="w-4 h-4" />
+                <span className="hidden sm:inline">Import</span>
+              </Link>
+              <button onClick={() => setShowAddModal(true)} className="liquid-btn">
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Add Prospect</span>
+              </button>
+            </div>
           </div>
         </header>
 

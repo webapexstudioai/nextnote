@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, FileSpreadsheet, Link2, Loader2, CheckCircle, AlertCircle, Sparkles, ArrowRight, Eye } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Upload, FileSpreadsheet, Link2, Loader2, CheckCircle, AlertCircle, Sparkles, ArrowRight, Eye } from "lucide-react";
 import { useProspects } from "@/context/ProspectsContext";
 import { Prospect } from "@/types";
 
@@ -160,9 +161,18 @@ export default function ImportPage() {
   return (
     <>
       <header className="sticky top-0 z-30 liquid-glass-strong border-b border-white/5">
-        <div className="px-4 sm:px-6 py-4">
-          <h1 className="text-xl font-bold">Import Prospects</h1>
-          <p className="text-xs text-[var(--muted)]">Import from XLSX files or Google Sheets — AI auto-detects your columns</p>
+        <div className="px-4 sm:px-6 py-4 flex items-center gap-3">
+          <Link
+            href="/dashboard/prospects"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-xs text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-white/[0.04] transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Prospects</span>
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold">Import Prospects</h1>
+            <p className="text-xs text-[var(--muted)]">Import from XLSX files or Google Sheets — AI auto-detects your columns</p>
+          </div>
         </div>
       </header>
 

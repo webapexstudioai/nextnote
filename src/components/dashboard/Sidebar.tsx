@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Users, Calendar, FileSpreadsheet, Settings, LogOut, Zap, Crown, Phone, BarChart3, Bot, Coins, Globe } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Settings, LogOut, Zap, Crown, Phone, BarChart3, Bot, Coins, Globe } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 import { TIERS, SubscriptionTier } from "@/lib/subscriptions";
 
@@ -15,7 +15,6 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", minTier: "starter" },
   { icon: Users, label: "Prospects", href: "/dashboard/prospects", minTier: "starter" },
   { icon: Calendar, label: "Appointments", href: "/dashboard/appointments", minTier: "starter" },
-  { icon: FileSpreadsheet, label: "Import", href: "/dashboard/import", minTier: "pro" },
   { icon: Zap, label: "AI Insights", href: "/dashboard/ai-insights", minTier: "pro" },
   { icon: Bot, label: "AI Agents", href: "/dashboard/agents", minTier: "starter" },
   { icon: Globe, label: "AI Websites", href: "/dashboard/websites", minTier: "starter" },
