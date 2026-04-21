@@ -72,6 +72,19 @@ export async function POST(req: NextRequest) {
     const importData = await importRes.json();
 
     if (!importRes.ok || !importData?.phone_number_id) {
+      // Surface the real ElevenLabs error so we can debug mismatches,
+      // plan limits, missing voice capability, bad creds, etc.
+      const elevenMsg =
+        importData?.detail?.message ||
+        importData?.detail ||
+        importData?.message ||
+        importData?.error ||
+        JSON.stringify(importData);
+      console.error("[purchase-number] ElevenLabs import failed", {
+        status: importRes.status,
+        body: importData,
+        phoneNumber: purchaseData.phone_number,
+      });
       // Release the Twilio number so we're not billed for an orphan.
       await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${sid}/IncomingPhoneNumbers/${purchaseData.sid}.json`,
@@ -79,10 +92,10 @@ export async function POST(req: NextRequest) {
       ).catch(() => {});
       await addCredits(session.userId, PHONE_NUMBER_PURCHASE_CREDITS, {
         reason: "phone_number_purchase_refund",
-        metadata: { phoneNumber, error: importData?.detail?.message || "elevenlabs_import_failed" },
+        metadata: { phoneNumber, error: elevenMsg, elevenStatus: importRes.status },
       });
       return NextResponse.json({
-        error: importData?.detail?.message || "Purchased but failed to import into voice platform. Refunded.",
+        error: `ElevenLabs rejected the number (${importRes.status}): ${typeof elevenMsg === "string" ? elevenMsg : "see server logs"}. Number released and credits refunded.`,
       }, { status: 500 });
     }
 
