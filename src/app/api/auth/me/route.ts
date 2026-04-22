@@ -34,6 +34,9 @@ export async function GET() {
         subscriptionStatus: user.subscription_status ?? "active",
         profileImageUrl: (user as Record<string, unknown>).profile_image_url as string | null ?? null,
       },
+      impersonation: session.impersonatorUserId
+        ? { adminEmail: session.impersonatorEmail ?? null }
+        : null,
     });
   } catch (err) {
     console.error("Auth check error:", err);

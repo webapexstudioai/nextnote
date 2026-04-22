@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { X, Upload, Link2, FileSpreadsheet, Loader2, CheckCircle, AlertCircle, Sparkles, ArrowRight, Eye } from "lucide-react";
 import { useProspects } from "@/context/ProspectsContext";
-import { Prospect, ProspectFile } from "@/types";
+import { Prospect } from "@/types";
 
 interface FolderImportModalProps {
   folderId: string;
@@ -13,7 +13,7 @@ interface FolderImportModalProps {
 type Step = "name" | "source" | "analyzing" | "preview" | "done" | "error";
 
 export default function FolderImportModal({ folderId, onClose }: FolderImportModalProps) {
-  const { addProspects, addFileToFolder, folders } = useProspects();
+  const { addProspects, createFile, folders } = useProspects();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("name");
   const [fileName, setFileName] = useState("");
@@ -152,19 +152,17 @@ export default function FolderImportModal({ folderId, onClose }: FolderImportMod
     }
   };
 
-  const handleConfirm = () => {
-    const fileId = parsedProspects[0]?.fileId || `file-${Date.now()}`;
-    const file: ProspectFile = {
-      id: fileId,
-      name: fileName.trim() || "Untitled Import",
-      folderId,
-      createdAt: new Date().toISOString().split("T")[0],
-      source: importMode === "sheets" ? "google-sheets" : "xlsx",
-      prospectCount: parsedProspects.length,
-    };
-    addFileToFolder(folderId, file);
-    addProspects(parsedProspects);
-    setStep("done");
+  const handleConfirm = async () => {
+    try {
+      const file = await createFile(folderId, fileName.trim() || "Untitled Import");
+      const withRealFileId = parsedProspects.map((p) => ({ ...p, folderId, fileId: file.id }));
+      await addProspects(withRealFileId);
+      setStep("done");
+    } catch (err) {
+      console.error("Import confirm failed:", err);
+      setError(err instanceof Error ? err.message : "Import failed");
+      setStep("error");
+    }
   };
 
   const fieldLabels: Record<string, string> = {

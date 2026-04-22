@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
         email: email.toLowerCase(),
         password_hash,
         email_verified: false,
-        subscription_tier: "starter",
-        subscription_status: "active",
+        subscription_tier: null,
+        subscription_status: "pending",
       })
       .select("id, name, agency_name, email")
       .single();

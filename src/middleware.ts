@@ -3,6 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Admin routes: localhost-only. In production, return 404 so the surface doesn't exist.
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    if (process.env.NODE_ENV === "production") {
+      return new NextResponse("Not found", { status: 404 });
+    }
+  }
+
   // Public paths that don't need auth
   const publicPaths = [
     "/",

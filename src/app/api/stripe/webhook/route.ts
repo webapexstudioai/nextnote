@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
 import { addCredits, hasBeenProcessed } from "@/lib/credits";
+import { sendWelcomeEmail } from "@/lib/email-templates";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -66,6 +67,21 @@ export async function POST(req: NextRequest) {
               refId: `sub_bonus_${session.id}`,
               metadata: { plan },
             });
+          }
+
+          if (plan === "starter" || plan === "pro") {
+            const { data: u } = await supabaseAdmin
+              .from("users")
+              .select("email")
+              .eq("id", userId)
+              .single();
+            if (u?.email) {
+              try {
+                await sendWelcomeEmail(u.email, plan);
+              } catch (e) {
+                console.error("Welcome email failed:", e);
+              }
+            }
           }
         }
         break;

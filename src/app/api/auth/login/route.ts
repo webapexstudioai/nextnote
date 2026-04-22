@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const { data: user, error } = await supabaseAdmin
       .from("users")
-      .select("id, name, agency_name, email, password_hash")
+      .select("id, name, agency_name, email, password_hash, suspended_at")
       .eq("email", email.toLowerCase())
       .single();
 
@@ -24,6 +24,13 @@ export async function POST(req: NextRequest) {
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+    }
+
+    if (user.suspended_at) {
+      return NextResponse.json(
+        { error: "Your account has been suspended. Contact support." },
+        { status: 403 },
+      );
     }
 
     // Set session

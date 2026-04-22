@@ -81,6 +81,9 @@ export default function SettingsPage() {
   const [changingPlan, setChangingPlan] = useState(false);
   const [planError, setPlanError] = useState("");
   const [planSuccess, setPlanSuccess] = useState("");
+  const [subInfo, setSubInfo] = useState<{ cancelAtPeriodEnd: boolean; currentPeriodEnd: number | null } | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // Caller ID state (for voicemail drops)
   const [callerIds, setCallerIds] = useState<CallerId[]>([]);
@@ -108,6 +111,56 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeTab === "caller_id") loadCallerIds();
   }, [activeTab]);
+
+  async function loadSubscription() {
+    try {
+      const res = await fetch("/api/stripe/subscription");
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.subscription) {
+        setSubInfo({
+          cancelAtPeriodEnd: data.subscription.cancelAtPeriodEnd,
+          currentPeriodEnd: data.subscription.currentPeriodEnd ?? null,
+        });
+      } else {
+        setSubInfo(null);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === "subscription") loadSubscription();
+  }, [activeTab]);
+
+  async function handleCancelSubscription() {
+    setCancelling(true);
+    setPlanError("");
+    setPlanSuccess("");
+    try {
+      const res = await fetch("/api/stripe/cancel-subscription", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setPlanError(data.error || "Failed to cancel subscription");
+        return;
+      }
+      setSubInfo({
+        cancelAtPeriodEnd: true,
+        currentPeriodEnd: data.currentPeriodEnd ?? null,
+      });
+      setShowCancelConfirm(false);
+      const endDate = data.currentPeriodEnd
+        ? new Date(data.currentPeriodEnd * 1000).toLocaleDateString()
+        : "the end of the billing period";
+      setPlanSuccess(`Subscription cancelled. You'll keep access until ${endDate}.`);
+      setTimeout(() => setPlanSuccess(""), 8000);
+    } catch {
+      setPlanError("Network error. Please try again.");
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   async function handleStartVerification() {
     setCallerIdError("");
@@ -776,6 +829,70 @@ export default function SettingsPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Cancel Subscription */}
+              {subInfo && (
+                <div className="rounded-xl liquid-glass p-5 border border-red-500/10">
+                  <h3 className="text-sm font-medium mb-2 text-[var(--foreground)]">Cancel Subscription</h3>
+                  {subInfo.cancelAtPeriodEnd ? (
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
+                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium">Cancellation scheduled</p>
+                        <p className="text-xs text-amber-400/80 mt-1">
+                          You&apos;ll keep full access until{" "}
+                          {subInfo.currentPeriodEnd
+                            ? new Date(subInfo.currentPeriodEnd * 1000).toLocaleDateString(undefined, {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })
+                            : "the end of the current billing period"}
+                          . To resume, you&apos;ll need to subscribe again after that date.
+                        </p>
+                      </div>
+                    </div>
+                  ) : showCancelConfirm ? (
+                    <div className="space-y-3">
+                      <p className="text-xs text-[var(--muted)]">
+                        Are you sure? Your subscription will stop renewing, but you&apos;ll keep access until your current billing period ends. You&apos;ll have to pay again if you change your mind.
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleCancelSubscription}
+                          disabled={cancelling}
+                          className="px-4 py-2 rounded-lg text-xs font-medium bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/15 disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {cancelling ? (
+                            <><Loader2 className="w-3 h-3 animate-spin" /> Cancelling...</>
+                          ) : (
+                            "Yes, cancel my subscription"
+                          )}
+                        </button>
+                        <button
+                          onClick={() => setShowCancelConfirm(false)}
+                          disabled={cancelling}
+                          className="px-4 py-2 rounded-lg text-xs font-medium bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)]/30"
+                        >
+                          Keep subscription
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs text-[var(--muted)] mb-3">
+                        You&apos;ll keep full access until the end of your current billing period. To resume afterwards, you&apos;ll need to subscribe again.
+                      </p>
+                      <button
+                        onClick={() => setShowCancelConfirm(true)}
+                        className="px-4 py-2 rounded-lg text-xs font-medium bg-[var(--background)] border border-red-500/30 text-red-400 hover:bg-red-500/10"
+                      >
+                        Cancel subscription
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

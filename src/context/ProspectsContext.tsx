@@ -3,28 +3,17 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { Prospect, ProspectStatus, Folder, ProspectFile, AppointmentRecord, AppointmentDuration, AppointmentOutcome, CancelReason } from "@/types";
 
-const PROSPECTS_KEY = "nextnote_prospects";
-const FOLDERS_KEY = "nextnote_folders";
-
-function loadFromStorage<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw) return JSON.parse(raw) as T;
-  } catch { /* ignore parse errors */ }
-  return fallback;
-}
-
 interface ProspectsContextType {
   prospects: Prospect[];
   folders: Folder[];
+  loaded: boolean;
   googleConnected: boolean;
   setGoogleConnected: (v: boolean) => void;
-  addProspect: (prospect: Prospect) => void;
-  addProspects: (prospects: Prospect[]) => void;
-  updateProspect: (id: string, updates: Partial<Prospect>) => void;
-  deleteProspect: (id: string) => void;
-  updateStatus: (id: string, status: ProspectStatus) => void;
+  addProspect: (prospect: Prospect) => Promise<void>;
+  addProspects: (prospects: Prospect[]) => Promise<void>;
+  updateProspect: (id: string, updates: Partial<Prospect>) => Promise<void>;
+  deleteProspect: (id: string) => Promise<void>;
+  updateStatus: (id: string, status: ProspectStatus) => Promise<void>;
   bookAppointment: (
     prospectId: string,
     date: string,
@@ -33,9 +22,9 @@ interface ProspectsContextType {
     email?: string,
     meetLink?: string,
     agenda?: string,
-  ) => Promise<void> | void;
-  updateAppointmentOutcome: (prospectId: string, appointmentId: string, outcome: AppointmentOutcome, cancelReason?: CancelReason) => void;
-  updateMeetingNotes: (prospectId: string, appointmentId: string, notes: string, summarized?: string) => void;
+  ) => Promise<void>;
+  updateAppointmentOutcome: (prospectId: string, appointmentId: string, outcome: AppointmentOutcome, cancelReason?: CancelReason) => Promise<void>;
+  updateMeetingNotes: (prospectId: string, appointmentId: string, notes: string, summarized?: string) => Promise<void>;
   rescheduleAppointment: (
     prospectId: string,
     oldAppointmentId: string,
@@ -44,62 +33,112 @@ interface ProspectsContextType {
     duration: AppointmentDuration,
     meetLink?: string,
     agenda?: string,
-  ) => void;
-  createFolder: (name: string, color: string) => Folder;
-  updateFolder: (id: string, updates: Partial<Folder>) => void;
-  deleteFolder: (id: string) => void;
+  ) => Promise<void>;
+  createFolder: (name: string, color: string) => Promise<Folder>;
+  updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
+  deleteFolder: (id: string) => Promise<void>;
   addFileToFolder: (folderId: string, file: ProspectFile) => void;
-  createFile: (folderId: string, name: string) => ProspectFile;
-  renameFile: (folderId: string, fileId: string, name: string) => void;
-  deleteFile: (folderId: string, fileId: string) => void;
-  moveProspectToFile: (prospectId: string, fileId: string | null) => void;
+  createFile: (folderId: string, name: string) => Promise<ProspectFile>;
+  renameFile: (folderId: string, fileId: string, name: string) => Promise<void>;
+  deleteFile: (folderId: string, fileId: string) => Promise<void>;
+  moveProspectToFile: (prospectId: string, fileId: string | null) => Promise<void>;
 }
 
 const ProspectsContext = createContext<ProspectsContextType | null>(null);
+
+async function api(path: string, init?: RequestInit) {
+  const res = await fetch(path, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status}: ${text}`);
+  }
+  return res.json();
+}
 
 export function ProspectsProvider({ children }: { children: ReactNode }) {
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [googleConnected, setGoogleConnected] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
-  // Load from localStorage on mount
   useEffect(() => {
-    setProspects(loadFromStorage<Prospect[]>(PROSPECTS_KEY, []));
-    setFolders(loadFromStorage<Folder[]>(FOLDERS_KEY, []));
-    setHydrated(true);
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api("/api/crm");
+        if (cancelled) return;
+        setProspects(data.prospects || []);
+        setFolders(data.folders || []);
+      } catch (err) {
+        console.error("Failed to load CRM:", err);
+      } finally {
+        if (!cancelled) setLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Persist prospects to localStorage
-  useEffect(() => {
-    if (!hydrated) return;
-    localStorage.setItem(PROSPECTS_KEY, JSON.stringify(prospects));
-  }, [prospects, hydrated]);
-
-  // Persist folders to localStorage
-  useEffect(() => {
-    if (!hydrated) return;
-    localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
-  }, [folders, hydrated]);
-
-  const addProspect = useCallback((prospect: Prospect) => {
-    setProspects((prev) => [prospect, ...prev]);
+  const addProspect = useCallback(async (prospect: Prospect) => {
+    try {
+      const { prospect: created } = await api("/api/crm/prospects", {
+        method: "POST",
+        body: JSON.stringify(prospect),
+      });
+      setProspects((prev) => [created, ...prev]);
+    } catch (err) {
+      console.error("addProspect failed:", err);
+    }
   }, []);
 
-  const addProspects = useCallback((newProspects: Prospect[]) => {
-    setProspects((prev) => [...newProspects, ...prev]);
+  const addProspects = useCallback(async (newProspects: Prospect[]) => {
+    if (newProspects.length === 0) return;
+    try {
+      const { prospects: created } = await api("/api/crm/prospects", {
+        method: "POST",
+        body: JSON.stringify({ prospects: newProspects }),
+      });
+      setProspects((prev) => [...(created as Prospect[]), ...prev]);
+    } catch (err) {
+      console.error("addProspects failed:", err);
+    }
   }, []);
 
-  const updateProspect = useCallback((id: string, updates: Partial<Prospect>) => {
+  const updateProspect = useCallback(async (id: string, updates: Partial<Prospect>) => {
     setProspects((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+    try {
+      await api(`/api/crm/prospects/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(updates),
+      });
+    } catch (err) {
+      console.error("updateProspect failed:", err);
+    }
   }, []);
 
-  const deleteProspect = useCallback((id: string) => {
+  const deleteProspect = useCallback(async (id: string) => {
     setProspects((prev) => prev.filter((p) => p.id !== id));
+    try {
+      await api(`/api/crm/prospects/${id}`, { method: "DELETE" });
+    } catch (err) {
+      console.error("deleteProspect failed:", err);
+    }
   }, []);
 
-  const updateStatus = useCallback((id: string, status: ProspectStatus) => {
+  const updateStatus = useCallback(async (id: string, status: ProspectStatus) => {
     setProspects((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+    try {
+      await api(`/api/crm/prospects/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+    } catch (err) {
+      console.error("updateStatus failed:", err);
+    }
   }, []);
 
   const bookAppointment = useCallback(
@@ -115,7 +154,6 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       let finalMeetLink = meetLink;
       let calendarEventId: string | undefined;
 
-      // If Google is connected, create a real calendar event
       if (googleConnected) {
         try {
           const prospect = prospects.find((p) => p.id === prospectId);
@@ -140,7 +178,6 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
             finalMeetLink = data.meetLink || finalMeetLink;
             calendarEventId = data.calendarEventId;
 
-            // Auto-send confirmation email
             if (prospectEmail) {
               fetch("/api/appointments/confirm-email", {
                 method: "POST",
@@ -158,40 +195,45 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
             }
           }
         } catch {
-          // Fall back to local-only booking
+          // fall back to DB-only booking
         }
       }
 
-      const newAppt: AppointmentRecord = {
-        id: `appt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        date,
-        time,
-        duration,
-        meetLink: finalMeetLink,
-        calendarEventId,
-        agenda,
-        outcome: "pending",
-        createdAt: new Date().toISOString(),
-      };
-      setProspects((prev) =>
-        prev.map((p) =>
-          p.id === prospectId
-            ? {
-                ...p,
-                email: email || p.email,
-                appointments: [...p.appointments, newAppt],
-                status: "Booked" as ProspectStatus,
-              }
-            : p
-        )
-      );
+      try {
+        const { appointment } = await api("/api/crm/appointments", {
+          method: "POST",
+          body: JSON.stringify({
+            prospectId,
+            date,
+            time,
+            duration,
+            meetLink: finalMeetLink,
+            agenda,
+            calendarEventId,
+          }),
+        });
+
+        setProspects((prev) =>
+          prev.map((p) =>
+            p.id === prospectId
+              ? {
+                  ...p,
+                  email: email || p.email,
+                  appointments: [...p.appointments, appointment as AppointmentRecord],
+                  status: "Booked" as ProspectStatus,
+                }
+              : p
+          )
+        );
+      } catch (err) {
+        console.error("bookAppointment failed:", err);
+      }
     },
     [googleConnected, prospects]
   );
 
   const updateAppointmentOutcome = useCallback(
-    (prospectId: string, appointmentId: string, outcome: AppointmentOutcome, cancelReason?: CancelReason) => {
-      // Find the appointment to pull the calendarEventId before state update
+    async (prospectId: string, appointmentId: string, outcome: AppointmentOutcome, cancelReason?: CancelReason) => {
       const prospect = prospects.find((p) => p.id === prospectId);
       const appt = prospect?.appointments.find((a) => a.id === appointmentId);
 
@@ -208,7 +250,15 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
         )
       );
 
-      // Delete the Google Calendar event when cancelling
+      try {
+        await api(`/api/crm/appointments/${appointmentId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ outcome, ...(cancelReason ? { cancelReason } : {}) }),
+        });
+      } catch (err) {
+        console.error("updateAppointmentOutcome failed:", err);
+      }
+
       if (outcome === "cancelled" && appt?.calendarEventId && googleConnected) {
         fetch("/api/appointments/cancel", {
           method: "POST",
@@ -221,7 +271,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   );
 
   const updateMeetingNotes = useCallback(
-    (prospectId: string, appointmentId: string, notes: string, summarized?: string) => {
+    async (prospectId: string, appointmentId: string, notes: string, summarized?: string) => {
       setProspects((prev) =>
         prev.map((p) =>
           p.id === prospectId
@@ -236,12 +286,23 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
             : p
         )
       );
+      try {
+        await api(`/api/crm/appointments/${appointmentId}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            meetingNotes: notes,
+            ...(summarized !== undefined ? { summarizedNotes: summarized } : {}),
+          }),
+        });
+      } catch (err) {
+        console.error("updateMeetingNotes failed:", err);
+      }
     },
     []
   );
 
   const rescheduleAppointment = useCallback(
-    (
+    async (
       prospectId: string,
       oldAppointmentId: string,
       date: string,
@@ -250,51 +311,67 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       meetLink?: string,
       agenda?: string,
     ) => {
-      const newAppt: AppointmentRecord = {
-        id: `appt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        date,
-        time,
-        duration,
-        meetLink,
-        agenda,
-        outcome: "pending",
-        createdAt: new Date().toISOString(),
-      };
-      setProspects((prev) =>
-        prev.map((p) =>
-          p.id === prospectId
-            ? {
-                ...p,
-                appointments: p.appointments.map((a) =>
-                  a.id === oldAppointmentId ? { ...a, outcome: "rescheduled" as AppointmentOutcome } : a
-                ).concat(newAppt),
-              }
-            : p
-        )
-      );
+      try {
+        const { appointment } = await api(
+          `/api/crm/appointments/${oldAppointmentId}/reschedule`,
+          {
+            method: "POST",
+            body: JSON.stringify({ date, time, duration, meetLink, agenda }),
+          }
+        );
+        setProspects((prev) =>
+          prev.map((p) =>
+            p.id === prospectId
+              ? {
+                  ...p,
+                  appointments: p.appointments
+                    .map((a) =>
+                      a.id === oldAppointmentId
+                        ? { ...a, outcome: "rescheduled" as AppointmentOutcome }
+                        : a
+                    )
+                    .concat(appointment as AppointmentRecord),
+                }
+              : p
+          )
+        );
+      } catch (err) {
+        console.error("rescheduleAppointment failed:", err);
+      }
     },
     []
   );
 
-  const createFolder = useCallback((name: string, color: string): Folder => {
-    const folder: Folder = {
-      id: `folder-${Date.now()}`,
-      name,
-      color,
-      createdAt: new Date().toISOString().split("T")[0],
-      files: [],
-    };
-    setFolders((prev) => [...prev, folder]);
-    return folder;
+  const createFolder = useCallback(async (name: string, color: string): Promise<Folder> => {
+    const { folder } = await api("/api/crm/folders", {
+      method: "POST",
+      body: JSON.stringify({ name, color }),
+    });
+    const created = folder as Folder;
+    setFolders((prev) => [...prev, created]);
+    return created;
   }, []);
 
-  const updateFolder = useCallback((id: string, updates: Partial<Folder>) => {
+  const updateFolder = useCallback(async (id: string, updates: Partial<Folder>) => {
     setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, ...updates } : f)));
+    try {
+      await api(`/api/crm/folders/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(updates),
+      });
+    } catch (err) {
+      console.error("updateFolder failed:", err);
+    }
   }, []);
 
-  const deleteFolder = useCallback((id: string) => {
+  const deleteFolder = useCallback(async (id: string) => {
     setFolders((prev) => prev.filter((f) => f.id !== id));
     setProspects((prev) => prev.filter((p) => p.folderId !== id));
+    try {
+      await api(`/api/crm/folders/${id}`, { method: "DELETE" });
+    } catch (err) {
+      console.error("deleteFolder failed:", err);
+    }
   }, []);
 
   const addFileToFolder = useCallback((folderId: string, file: ProspectFile) => {
@@ -303,22 +380,19 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const createFile = useCallback((folderId: string, name: string): ProspectFile => {
-    const file: ProspectFile = {
-      id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      name,
-      folderId,
-      createdAt: new Date().toISOString().split("T")[0],
-      source: "manual",
-      prospectCount: 0,
-    };
+  const createFile = useCallback(async (folderId: string, name: string): Promise<ProspectFile> => {
+    const { file } = await api("/api/crm/files", {
+      method: "POST",
+      body: JSON.stringify({ folderId, name, source: "manual" }),
+    });
+    const created = file as ProspectFile;
     setFolders((prev) =>
-      prev.map((f) => (f.id === folderId ? { ...f, files: [...f.files, file] } : f))
+      prev.map((f) => (f.id === folderId ? { ...f, files: [...f.files, created] } : f))
     );
-    return file;
+    return created;
   }, []);
 
-  const renameFile = useCallback((folderId: string, fileId: string, name: string) => {
+  const renameFile = useCallback(async (folderId: string, fileId: string, name: string) => {
     setFolders((prev) =>
       prev.map((f) =>
         f.id === folderId
@@ -326,24 +400,44 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
           : f
       )
     );
+    try {
+      await api(`/api/crm/files/${fileId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name }),
+      });
+    } catch (err) {
+      console.error("renameFile failed:", err);
+    }
   }, []);
 
-  const deleteFile = useCallback((folderId: string, fileId: string) => {
+  const deleteFile = useCallback(async (folderId: string, fileId: string) => {
     setFolders((prev) =>
       prev.map((f) =>
         f.id === folderId ? { ...f, files: f.files.filter((file) => file.id !== fileId) } : f
       )
     );
-    // Unassign prospects from the deleted file (keep them in the folder)
     setProspects((prev) =>
       prev.map((p) => (p.fileId === fileId ? { ...p, fileId: undefined } : p))
     );
+    try {
+      await api(`/api/crm/files/${fileId}`, { method: "DELETE" });
+    } catch (err) {
+      console.error("deleteFile failed:", err);
+    }
   }, []);
 
-  const moveProspectToFile = useCallback((prospectId: string, fileId: string | null) => {
+  const moveProspectToFile = useCallback(async (prospectId: string, fileId: string | null) => {
     setProspects((prev) =>
       prev.map((p) => (p.id === prospectId ? { ...p, fileId: fileId ?? undefined } : p))
     );
+    try {
+      await api(`/api/crm/prospects/${prospectId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ fileId }),
+      });
+    } catch (err) {
+      console.error("moveProspectToFile failed:", err);
+    }
   }, []);
 
   return (
@@ -351,6 +445,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
       value={{
         prospects,
         folders,
+        loaded,
         googleConnected,
         setGoogleConnected,
         addProspect,

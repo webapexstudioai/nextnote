@@ -155,9 +155,9 @@ export default function DashboardPage() {
 
   const selected = selectedProspect ? prospects.find((p) => p.id === selectedProspect) : null;
 
-  const handleCreateFolder = () => {
+  const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
-    createFolder(newFolderName.trim(), newFolderColor);
+    await createFolder(newFolderName.trim(), newFolderColor);
     setShowCreateFolder(false);
     setNewFolderName("");
     setNewFolderColor(FOLDER_COLORS[0].value);

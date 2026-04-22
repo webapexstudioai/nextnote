@@ -101,18 +101,18 @@ function ProspectsPageInner() {
     router.push(q ? `/dashboard/prospects?${q}` : "/dashboard/prospects");
   };
 
-  const handleCreateFolder = () => {
+  const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return;
-    const f = createFolder(newFolderName.trim(), newFolderColor);
+    const f = await createFolder(newFolderName.trim(), newFolderColor);
     setShowCreateFolder(false);
     setNewFolderName("");
     setNewFolderColor(FOLDER_COLORS[0].value);
     go({ folder: f.id, file: null });
   };
 
-  const handleCreateFile = () => {
+  const handleCreateFile = async () => {
     if (!newFileName.trim() || !activeFolder) return;
-    const f = createFile(activeFolder.id, newFileName.trim());
+    const f = await createFile(activeFolder.id, newFileName.trim());
     setShowCreateFile(false);
     setNewFileName("");
     go({ folder: activeFolder.id, file: f.id });

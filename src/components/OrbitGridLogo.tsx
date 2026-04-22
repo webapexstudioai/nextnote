@@ -8,32 +8,53 @@ export function OrbitGridIcon({ size = 32, className = "" }: { size?: number; cl
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
+      {/* Peach gradient rounded background */}
+      <rect width="48" height="48" rx="10.5" fill="url(#nnBgGrad)" />
+
       {/* Outer orbit ring */}
-      <circle cx="24" cy="24" r="21" stroke="url(#orbitGrad)" strokeWidth="1.5" opacity="0.5" />
+      <circle
+        cx="24"
+        cy="24"
+        r="18"
+        stroke="#ffffff"
+        strokeOpacity="0.85"
+        strokeWidth="1.4"
+      />
       {/* Middle orbit ring */}
-      <circle cx="24" cy="24" r="15" stroke="url(#orbitGrad)" strokeWidth="1.2" opacity="0.35" />
-      {/* Inner glow circle */}
-      <circle cx="24" cy="24" r="9" fill="url(#coreGrad)" />
+      <circle
+        cx="24"
+        cy="24"
+        r="12.5"
+        stroke="#ffffff"
+        strokeOpacity="0.85"
+        strokeWidth="1.2"
+      />
+
       {/* Orbital dot accents */}
-      <circle cx="24" cy="3" r="2" fill="#e8553d" opacity="0.9" />
-      <circle cx="45" cy="24" r="1.5" fill="#ff8a6a" opacity="0.7" />
-      <circle cx="9" cy="38" r="1.5" fill="#ff8a6a" opacity="0.5" />
-      {/* N letterform */}
+      <circle cx="30" cy="7.8" r="1.8" fill="#e8553d" opacity="0.75" />
+      <circle cx="42.5" cy="28.5" r="1.5" fill="#e8553d" opacity="0.65" />
+      <circle cx="15" cy="41.5" r="1.6" fill="#e8553d" opacity="0.6" />
+
+      {/* Red core circle */}
+      <circle cx="24" cy="24" r="8.2" fill="url(#nnCoreGrad)" />
+
+      {/* Bold N letterform */}
       <path
-        d="M19.5 30V18L28.5 30V18"
+        d="M20.6 28.6V19.4L27.4 28.6V19.4"
         stroke="white"
-        strokeWidth="2.5"
+        strokeWidth="2.4"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+
       <defs>
-        <linearGradient id="orbitGrad" x1="0" y1="0" x2="48" y2="48">
-          <stop stopColor="#e8553d" />
-          <stop offset="1" stopColor="#ff8a6a" />
+        <linearGradient id="nnBgGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ffa184" />
+          <stop offset="1" stopColor="#ff7551" />
         </linearGradient>
-        <radialGradient id="coreGrad" cx="0.5" cy="0.5" r="0.5">
-          <stop stopColor="#e8553d" />
-          <stop offset="1" stopColor="#d44429" />
+        <radialGradient id="nnCoreGrad" cx="0.45" cy="0.4" r="0.65">
+          <stop stopColor="#f06040" />
+          <stop offset="1" stopColor="#d43b22" />
         </radialGradient>
       </defs>
     </svg>

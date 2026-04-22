@@ -32,6 +32,10 @@ export interface AuthSessionData {
   agencyName?: string;
   email?: string;
   isLoggedIn?: boolean;
+  // Impersonation — when an admin is viewing the product as another user.
+  // `impersonatorUserId` is the admin's real userId; `userId` is swapped to the target.
+  impersonatorUserId?: string;
+  impersonatorEmail?: string;
 }
 
 if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
