@@ -899,16 +899,21 @@ function Footer() {
           <div>
             <h4 className="text-sm font-semibold mb-4">Legal</h4>
             <ul className="space-y-2.5">
-              {["Privacy Policy", "Terms of Service", "Security"].map((l) => (
-                <li key={l}>
-                  <a
-                    href="#"
-                    className="text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-                  >
-                    {l}
-                  </a>
-                </li>
-              ))}
+              <li>
+                <Link href="/privacy" className="text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <a href="mailto:support@nextnote.to" className="text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors">
+                  Contact
+                </a>
+              </li>
             </ul>
           </div>
         </div>
