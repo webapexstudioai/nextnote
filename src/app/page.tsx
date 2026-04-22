@@ -358,7 +358,7 @@ const features = [
   {
     icon: Mic,
     title: "Voicemail Drops",
-    desc: "Send ringless voicemails at scale with Slybroadcast. Reach more prospects without lifting a finger.",
+    desc: "Drop pre-recorded messages straight to a prospect's voicemail at scale. Reach more prospects without lifting a finger.",
   },
   {
     icon: BarChart3,
@@ -734,7 +734,7 @@ const faqs = [
   },
   {
     q: "What are voicemail drops?",
-    a: "Voicemail drops let you send pre-recorded messages directly to a prospect's voicemail without their phone ringing. It's powered by Slybroadcast integration and lets you reach hundreds of prospects in minutes.",
+    a: "Voicemail drops let you send pre-recorded messages straight to a prospect's voicemail. Our carrier-grade phone network detects the answering machine and plays your audio when it beeps — reach hundreds of prospects in minutes.",
   },
   {
     q: "How is NextNote different from other CRMs?",

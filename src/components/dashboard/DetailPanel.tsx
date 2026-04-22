@@ -132,13 +132,12 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
 
   // Voicemail drop
   const [showVoicemailModal, setShowVoicemailModal] = useState(false);
-  const [vmMessage, setVmMessage] = useState("");
   const [vmCallerId, setVmCallerId] = useState("");
   const [vmSending, setVmSending] = useState(false);
   const [vmResult, setVmResult] = useState<{ success: boolean; text: string } | null>(null);
 
   // Voicemail tabs
-  type VmTab = "upload" | "ai" | "library";
+  type VmTab = "upload" | "ai";
   const [vmTab, setVmTab] = useState<VmTab>("upload");
 
   // Upload audio state
@@ -149,14 +148,12 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Library state
-  const [libraryFileName, setLibraryFileName] = useState("");
-
   // Build Receptionist
   const [showReceptionistBuilder, setShowReceptionistBuilder] = useState(false);
   const [buildingReceptionist, setBuildingReceptionist] = useState(false);
   const [receptionistError, setReceptionistError] = useState("");
   const [receptionistPaywall, setReceptionistPaywall] = useState<{ required: number; balance: number } | null>(null);
+  const [voicemailPaywall, setVoicemailPaywall] = useState<{ required: number; balance: number } | null>(null);
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [createdAgent, setCreatedAgent] = useState<{ agentId: string; agentName: string } | null>(null);
   const [createAgentError, setCreateAgentError] = useState("");
@@ -370,56 +367,44 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
 
   const handleSendUploadedVoicemail = async () => {
     if (!prospect.phone || !uploadedUrl) return;
-    setVmSending(true);
-    setVmResult(null);
-    try {
-      const fullUrl = `${window.location.origin}${uploadedUrl}`;
-      const res = await fetch("/api/slybroadcast/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: prospect.phone,
-          audioUrl: fullUrl,
-          callerId: vmCallerId.trim(),
-          campaignName: `NextNote — ${prospect.name}`,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setVmResult({ success: true, text: "Voicemail sent successfully!" });
-      } else {
-        setVmResult({ success: false, text: data.error || "Failed to send voicemail" });
-      }
-    } catch {
-      setVmResult({ success: false, text: "Network error — could not reach Slybroadcast" });
-    } finally {
-      setVmSending(false);
+    const callerId = vmCallerId.trim();
+    if (!callerId) {
+      setVmResult({ success: false, text: "Enter a verified caller ID first." });
+      return;
     }
-  };
-
-  const handleSendLibraryVoicemail = async () => {
-    if (!prospect.phone || !libraryFileName.trim()) return;
     setVmSending(true);
     setVmResult(null);
     try {
-      const res = await fetch("/api/slybroadcast/send", {
+      const audioUrl = uploadedUrl.startsWith("http")
+        ? uploadedUrl
+        : `${window.location.origin}${uploadedUrl}`;
+      const res = await fetch("/api/voicemail/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone: prospect.phone,
-          message: libraryFileName.trim(),
-          callerId: vmCallerId.trim(),
-          campaignName: `NextNote — ${prospect.name}`,
+          from_number: callerId,
+          audio_url: audioUrl,
+          campaign_name: `NextNote — ${prospect.name}`,
+          targets: [{
+            prospect_id: prospect.id,
+            prospect_name: prospect.name,
+            phone: prospect.phone,
+          }],
         }),
       });
       const data = await res.json();
-      if (data.success) {
-        setVmResult({ success: true, text: "Voicemail sent successfully!" });
+      if (res.status === 402 && typeof data?.required === "number" && typeof data?.balance === "number") {
+        setVoicemailPaywall({ required: data.required, balance: data.balance });
+        return;
+      }
+      if (res.ok && data?.successful > 0) {
+        setVmResult({ success: true, text: "Voicemail queued — prospect will get it shortly." });
       } else {
-        setVmResult({ success: false, text: data.error || "Failed to send voicemail" });
+        const firstErr = data?.results?.find((r: { ok: boolean; error?: string }) => !r.ok)?.error;
+        setVmResult({ success: false, text: firstErr || data?.error || "Failed to send voicemail" });
       }
     } catch {
-      setVmResult({ success: false, text: "Network error — could not reach Slybroadcast" });
+      setVmResult({ success: false, text: "Network error — please try again." });
     } finally {
       setVmSending(false);
     }
@@ -445,35 +430,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleSendVoicemail = async () => {
-    if (!prospect.phone || !vmMessage.trim()) return;
-    setVmSending(true);
-    setVmResult(null);
-    try {
-      const isUrl = vmMessage.startsWith("http://") || vmMessage.startsWith("https://");
-      const res = await fetch("/api/slybroadcast/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: prospect.phone,
-          ...(isUrl ? { audioUrl: vmMessage } : { message: vmMessage }),
-          campaignName: `NextNote — ${prospect.name}`,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setVmResult({ success: true, text: "Voicemail sent successfully!" });
-      } else {
-        setVmResult({ success: false, text: data.error || "Failed to send voicemail" });
-      }
-    } catch {
-      setVmResult({ success: false, text: "Network error — could not reach Slybroadcast" });
-    } finally {
-      setVmSending(false);
-    }
   };
 
   const renderBookingForm = (isReschedule: boolean) => (
@@ -1229,7 +1185,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
             )}
             {prospect.phone && (
               <button
-                onClick={() => { setShowVoicemailModal(true); setVmResult(null); setVmMessage(""); setVmTab("upload"); setUploadFile(null); setUploadedUrl(null); setUploadProgress(0); setLibraryFileName(""); }}
+                onClick={() => { setShowVoicemailModal(true); setVmResult(null); setVmTab("upload"); setUploadFile(null); setUploadedUrl(null); setUploadProgress(0); }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border)] text-sm font-medium hover:bg-[var(--card-hover)] transition-colors"
               >
                 <Voicemail className="w-4 h-4 text-amber-400" />
@@ -1273,7 +1229,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
                 {([
                   { key: "ai" as VmTab, label: "AI Generate" },
                   { key: "upload" as VmTab, label: "Upload Audio" },
-                  { key: "library" as VmTab, label: "My Library" },
                 ]).map((tab) => (
                   <button
                     key={tab.key}
@@ -1419,33 +1374,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
                       )}
                     </div>
                   )}
-                </div>
-              )}
-
-              {/* My Library Tab */}
-              {vmTab === "library" && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs text-[var(--muted)] mb-1 block">Slybroadcast Audio File Name</label>
-                    <input
-                      type="text"
-                      value={libraryFileName}
-                      onChange={(e) => setLibraryFileName(e.target.value)}
-                      placeholder="Enter the audio file name from your Slybroadcast library..."
-                      className="w-full px-3 py-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] placeholder:text-zinc-600"
-                    />
-                    <p className="text-[10px] text-[var(--muted)] mt-1.5">
-                      Use the exact file name from your Slybroadcast account audio library.
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleSendLibraryVoicemail}
-                    disabled={vmSending || !libraryFileName.trim()}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500/20 text-amber-400 text-sm font-medium hover:bg-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {vmSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Voicemail className="w-4 h-4" />}
-                    {vmSending ? "Sending..." : "Send Drop"}
-                  </button>
                 </div>
               )}
 
@@ -1621,6 +1549,16 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
           required={receptionistPaywall.required}
           balance={receptionistPaywall.balance}
           action="Drafting an AI receptionist"
+        />
+      )}
+
+      {voicemailPaywall && (
+        <InsufficientCreditsModal
+          open
+          onClose={() => setVoicemailPaywall(null)}
+          required={voicemailPaywall.required}
+          balance={voicemailPaywall.balance}
+          action="Sending a voicemail drop"
         />
       )}
     </div>

@@ -21,10 +21,12 @@ const statusBadge: Record<ProspectStatus, string> = {
 export default function ProspectTable({ prospects, onSelect, selectedId }: ProspectTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkVm, setShowBulkVm] = useState(false);
-  const [bulkVmMessage, setBulkVmMessage] = useState("");
+  const [bulkVmAudioUrl, setBulkVmAudioUrl] = useState("");
+  const [bulkVmCallerId, setBulkVmCallerId] = useState("");
   const [bulkVmSending, setBulkVmSending] = useState(false);
   const [bulkVmProgress, setBulkVmProgress] = useState({ sent: 0, failed: 0, total: 0 });
   const [bulkVmDone, setBulkVmDone] = useState(false);
+  const [bulkVmError, setBulkVmError] = useState("");
 
   const toggleSelect = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -46,38 +48,39 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
   const selectedWithPhone = prospects.filter((p) => selectedIds.has(p.id) && p.phone);
 
   const handleBulkVoicemail = async () => {
-    if (!bulkVmMessage.trim() || selectedWithPhone.length === 0) return;
+    if (!bulkVmAudioUrl.trim() || !bulkVmCallerId.trim() || selectedWithPhone.length === 0) return;
     setBulkVmSending(true);
     setBulkVmDone(false);
+    setBulkVmError("");
     setBulkVmProgress({ sent: 0, failed: 0, total: selectedWithPhone.length });
 
-    const isUrl = bulkVmMessage.startsWith("http://") || bulkVmMessage.startsWith("https://");
-
-    for (let i = 0; i < selectedWithPhone.length; i++) {
-      const p = selectedWithPhone[i];
-      try {
-        const res = await fetch("/api/slybroadcast/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+    try {
+      const res = await fetch("/api/voicemail/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from_number: bulkVmCallerId.trim(),
+          audio_url: bulkVmAudioUrl.trim(),
+          campaign_name: `NextNote Bulk — ${new Date().toLocaleDateString()}`,
+          targets: selectedWithPhone.map((p) => ({
+            prospect_id: p.id,
+            prospect_name: p.name,
             phone: p.phone,
-            ...(isUrl ? { audioUrl: bulkVmMessage } : { message: bulkVmMessage }),
-            campaignName: `NextNote Bulk — ${new Date().toLocaleDateString()}`,
-          }),
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setBulkVmError(data?.error || "Failed to queue voicemails");
+      } else {
+        setBulkVmProgress({
+          sent: data.successful ?? 0,
+          failed: data.failed ?? 0,
+          total: data.total ?? selectedWithPhone.length,
         });
-        const data = await res.json();
-        setBulkVmProgress((prev) => ({
-          ...prev,
-          sent: prev.sent + (data.success ? 1 : 0),
-          failed: prev.failed + (data.success ? 0 : 1),
-        }));
-      } catch {
-        setBulkVmProgress((prev) => ({ ...prev, failed: prev.failed + 1 }));
       }
-      // 500ms delay between each to avoid rate limits
-      if (i < selectedWithPhone.length - 1) {
-        await new Promise((r) => setTimeout(r, 500));
-      }
+    } catch {
+      setBulkVmError("Network error — please try again.");
     }
     setBulkVmSending(false);
     setBulkVmDone(true);
@@ -99,7 +102,7 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
         <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl mb-3" style={{ background: "rgba(232, 85, 61, 0.05)", border: "1px solid rgba(232, 85, 61, 0.2)" }}>
           <span className="text-xs text-[var(--accent)] font-medium">{selectedIds.size} selected</span>
           <button
-            onClick={() => { setShowBulkVm(true); setBulkVmDone(false); setBulkVmMessage(""); }}
+            onClick={() => { setShowBulkVm(true); setBulkVmDone(false); setBulkVmAudioUrl(""); setBulkVmError(""); }}
             disabled={selectedWithPhone.length === 0}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 text-xs font-medium hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
@@ -200,16 +203,30 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
               Sending to <span className="text-[var(--foreground)] font-medium">{selectedWithPhone.length}</span> prospects with phone numbers
             </p>
             <div>
-              <label className="text-xs text-[var(--muted)] mb-1 block">Audio URL or Message</label>
-              <textarea
-                value={bulkVmMessage}
-                onChange={(e) => setBulkVmMessage(e.target.value)}
-                rows={3}
+              <label className="text-xs text-[var(--muted)] mb-1 block">Your Caller ID (verified)</label>
+              <input
+                type="tel"
+                value={bulkVmCallerId}
+                onChange={(e) => setBulkVmCallerId(e.target.value)}
                 disabled={bulkVmSending}
-                placeholder="Paste an audio URL (https://...) or type a message..."
-                className="w-full px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] resize-none placeholder:text-zinc-600 disabled:opacity-50"
+                placeholder="+13125550100"
+                className="w-full px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] placeholder:text-zinc-600 disabled:opacity-50"
               />
             </div>
+            <div>
+              <label className="text-xs text-[var(--muted)] mb-1 block">Audio URL (MP3/WAV)</label>
+              <input
+                type="url"
+                value={bulkVmAudioUrl}
+                onChange={(e) => setBulkVmAudioUrl(e.target.value)}
+                disabled={bulkVmSending}
+                placeholder="https://..."
+                className="w-full px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] placeholder:text-zinc-600 disabled:opacity-50"
+              />
+            </div>
+            {bulkVmError && (
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-400">{bulkVmError}</div>
+            )}
             {(bulkVmSending || bulkVmDone) && (
               <div className="space-y-2">
                 <div className="w-full bg-[var(--border)] rounded-full h-2 overflow-hidden">
@@ -229,7 +246,7 @@ export default function ProspectTable({ prospects, onSelect, selectedId }: Prosp
               {!bulkVmDone ? (
                 <button
                   onClick={handleBulkVoicemail}
-                  disabled={bulkVmSending || !bulkVmMessage.trim()}
+                  disabled={bulkVmSending || !bulkVmAudioUrl.trim() || !bulkVmCallerId.trim()}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500/20 text-amber-400 text-sm font-medium hover:bg-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {bulkVmSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Voicemail className="w-4 h-4" />}
