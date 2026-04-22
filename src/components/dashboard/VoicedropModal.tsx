@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Phone, Upload, Loader2, CheckCircle, AlertCircle, Coins, Mic } from "lucide-react";
 import type { Prospect } from "@/types";
+import InsufficientCreditsModal from "./InsufficientCreditsModal";
 
 interface CallerId {
   id: string;
@@ -42,6 +43,7 @@ export default function VoicedropModal({ prospects, onClose, onSent }: Props) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<SendResult | null>(null);
+  const [creditsPaywall, setCreditsPaywall] = useState<{ required: number; balance: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -123,6 +125,10 @@ export default function VoicedropModal({ prospects, onClose, onSent }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 402 && typeof data.required === "number" && typeof data.balance === "number") {
+          setCreditsPaywall({ required: data.required, balance: data.balance });
+          return;
+        }
         setError(data.error || "Send failed");
         return;
       }
@@ -350,6 +356,16 @@ export default function VoicedropModal({ prospects, onClose, onSent }: Props) {
           </div>
         )}
       </div>
+
+      {creditsPaywall && (
+        <InsufficientCreditsModal
+          open
+          onClose={() => setCreditsPaywall(null)}
+          required={creditsPaywall.required}
+          balance={creditsPaywall.balance}
+          action={`Dropping voicemails to ${selectedList.length} prospect${selectedList.length === 1 ? "" : "s"}`}
+        />
+      )}
     </div>
   );
 }

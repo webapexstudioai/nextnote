@@ -6,6 +6,7 @@ import {
   ArrowLeft, Loader2, Sparkles, Send, MousePointerClick, MessageSquare,
   Save, RotateCcw, ExternalLink, Check,
 } from "lucide-react";
+import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
 
 const WEBSITE_AI_EDIT_CREDITS = 15;
 
@@ -35,6 +36,7 @@ export default function WebsiteEditPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [instruction, setInstruction] = useState("");
   const [applying, setApplying] = useState(false);
+  const [creditsPaywall, setCreditsPaywall] = useState<{ required: number; balance: number } | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
@@ -175,6 +177,11 @@ export default function WebsiteEditPage() {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 402 && typeof data.required === "number" && typeof data.balance === "number") {
+          setCreditsPaywall({ required: data.required, balance: data.balance });
+          setMessages((m) => m.slice(0, -1));
+          return;
+        }
         const errMsg = data.error || "Edit failed";
         setMessages((m) => [...m, { role: "assistant", text: `⚠ ${errMsg}`, timestamp: Date.now() }]);
         setError(errMsg);
@@ -468,6 +475,16 @@ export default function WebsiteEditPage() {
           </div>
         )}
       </div>
+
+      {creditsPaywall && (
+        <InsufficientCreditsModal
+          open
+          onClose={() => setCreditsPaywall(null)}
+          required={creditsPaywall.required}
+          balance={creditsPaywall.balance}
+          action="Applying an AI edit to this site"
+        />
+      )}
     </>
   );
 }

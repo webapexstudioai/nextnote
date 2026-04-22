@@ -6,6 +6,7 @@ import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useProspects } from "@/context/ProspectsContext";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
 
 interface DetailPanelProps {
   prospect: Prospect;
@@ -155,6 +156,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   const [showReceptionistBuilder, setShowReceptionistBuilder] = useState(false);
   const [buildingReceptionist, setBuildingReceptionist] = useState(false);
   const [receptionistError, setReceptionistError] = useState("");
+  const [receptionistPaywall, setReceptionistPaywall] = useState<{ required: number; balance: number } | null>(null);
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [createdAgent, setCreatedAgent] = useState<{ agentId: string; agentName: string } | null>(null);
   const [createAgentError, setCreateAgentError] = useState("");
@@ -598,7 +600,13 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
         body: JSON.stringify(receptionistForm),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to build receptionist");
+      if (!res.ok) {
+        if (res.status === 402 && typeof data.required === "number" && typeof data.balance === "number") {
+          setReceptionistPaywall({ required: data.required, balance: data.balance });
+          return;
+        }
+        throw new Error(data.error || "Failed to build receptionist");
+      }
       setReceptionistDraft(data.draft || null);
     } catch (err) {
       setReceptionistError(err instanceof Error ? err.message : "Failed to build receptionist");
@@ -1605,6 +1613,16 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
         }}
         onCancel={() => setShowDeleteConfirm(false)}
       />
+
+      {receptionistPaywall && (
+        <InsufficientCreditsModal
+          open
+          onClose={() => setReceptionistPaywall(null)}
+          required={receptionistPaywall.required}
+          balance={receptionistPaywall.balance}
+          action="Drafting an AI receptionist"
+        />
+      )}
     </div>
   );
 }

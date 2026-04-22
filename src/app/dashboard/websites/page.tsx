@@ -8,6 +8,7 @@ import {
 import { Folder as FolderIcon, FileText, ChevronRight, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useProspects } from "@/context/ProspectsContext";
+import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
 const WEBSITE_GENERATION_CREDITS = 50;
 const WEBSITE_WHITELABEL_CREDITS = 200;
 
@@ -31,6 +32,7 @@ export default function WebsitesPage() {
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [creditsPaywall, setCreditsPaywall] = useState<{ required: number; balance: number; tier: Tier } | null>(null);
 
   // Generate form
   const [showForm, setShowForm] = useState(false);
@@ -125,6 +127,11 @@ export default function WebsitesPage() {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 402 && typeof data.required === "number" && typeof data.balance === "number") {
+          setCreditsPaywall({ required: data.required, balance: data.balance, tier: selectedTier });
+          setShowForm(true);
+          return;
+        }
         setError(data.error || "Generation failed");
         setShowForm(true);
         return;
@@ -716,6 +723,16 @@ export default function WebsitesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {creditsPaywall && (
+        <InsufficientCreditsModal
+          open
+          onClose={() => setCreditsPaywall(null)}
+          required={creditsPaywall.required}
+          balance={creditsPaywall.balance}
+          action={creditsPaywall.tier === "whitelabel" ? "Generating a white-label landing page" : "Generating a landing page"}
+        />
       )}
     </>
   );
