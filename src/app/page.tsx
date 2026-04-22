@@ -730,7 +730,15 @@ const faqs = [
   },
   {
     q: "Does NextNote integrate with Google Calendar?",
-    a: "Yes. Connect your Google account and NextNote will sync appointments directly to your calendar, send confirmations, and track outcomes.",
+    a: "Yes. When you connect your Google account, NextNote requests read and write access to your Google Calendar so it can create, update, and cancel appointments you book inside the dashboard, and keep both sides in sync. You can disconnect anytime in Settings → Integrations or at myaccount.google.com/permissions.",
+  },
+  {
+    q: "Why does NextNote ask for Gmail send access?",
+    a: "If you opt into sending appointment confirmations and follow-ups from your own address, NextNote uses the Gmail send scope strictly to send those specific emails you trigger. We never read your inbox, never store the contents of sent messages, and never use your Gmail data to train AI. You can revoke access anytime.",
+  },
+  {
+    q: "What Google user data does NextNote use?",
+    a: "Only what's needed to power the features you turn on: your profile name and email to identify the connected account, Google Calendar events to manage bookings, and Gmail send access if you enable email confirmations. Our use of Google user data follows Google's API Services User Data Policy, including the Limited Use requirements. Full details in our Privacy Policy.",
   },
   {
     q: "What are voicemail drops?",
