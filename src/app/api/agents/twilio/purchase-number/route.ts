@@ -22,7 +22,9 @@ export async function POST(req: NextRequest) {
     const balance = await getBalance(session.userId);
     if (balance < PHONE_NUMBER_PURCHASE_CREDITS) {
       return NextResponse.json({
-        error: `Not enough credits. Buying a number costs ${PHONE_NUMBER_PURCHASE_CREDITS} credits; you have ${balance}.`,
+        error: "Insufficient credits",
+        required: PHONE_NUMBER_PURCHASE_CREDITS,
+        balance,
       }, { status: 402 });
     }
 

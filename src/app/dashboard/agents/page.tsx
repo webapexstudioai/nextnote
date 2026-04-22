@@ -6,10 +6,11 @@ import {
   Bot, Plus, Search, Trash2, Loader2, RefreshCw, AlertCircle,
   MoreVertical, Phone, MessageSquare, BarChart2, Settings2,
   Clock, CheckCircle2, TrendingUp,
-  Mic, PhoneCall, PhoneOff, Link2, X, ChevronUp, ChevronDown,
+  Mic, PhoneCall, PhoneOff, Link2, X, ChevronUp, ChevronDown, Coins,
 } from "lucide-react";
 import Link from "next/link";
 import AgentTestWidget from "@/components/dashboard/AgentTestWidget";
+import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
 
 interface ElevenAgent {
   agent_id: string;
@@ -89,6 +90,7 @@ export default function AgentsPage() {
   const [purchasingNumber, setPurchasingNumber] = useState<string | null>(null);
   const [buyError, setBuyError] = useState("");
   const [buySuccess, setBuySuccess] = useState("");
+  const [creditsPaywall, setCreditsPaywall] = useState<{ required: number; balance: number } | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConvs, setLoadingConvs] = useState(false);
   const [expandedConvId, setExpandedConvId] = useState<string | null>(null);
@@ -406,7 +408,11 @@ export default function AgentsPage() {
                     <h3 className="text-sm font-semibold flex items-center gap-2"><Phone className="w-4 h-4 text-[var(--accent)]" /> Buy a Phone Number</h3>
                     <button onClick={() => setShowBuyNumber(false)} className="p-1.5 rounded-lg hover:bg-white/[0.04]"><X className="w-4 h-4" /></button>
                   </div>
-                  <p className="text-xs text-[var(--muted)]">Pick an area code, find an available number, and attach it to an agent. Each number costs 500 credits to reserve, with monthly credits applied to keep it active.</p>
+                  <p className="text-xs text-[var(--muted)]">Pick an area code, find an available number, and attach it to an agent.</p>
+                  <div className="rounded-xl border border-[var(--accent)]/25 bg-[var(--accent)]/5 px-3 py-2 text-[11px] text-[var(--muted)] flex items-center gap-2">
+                    <Coins className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
+                    <span><span className="text-[var(--foreground)] font-semibold">500 credits</span> (~$5) to buy · then <span className="text-[var(--foreground)] font-semibold">500 credits/mo</span> (~$5) to keep the line active. Cancel anytime by releasing the number.</span>
+                  </div>
                   {buyError && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{buyError}</div>}
                   {buySuccess && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">{buySuccess}</div>}
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -464,6 +470,10 @@ export default function AgentsPage() {
                                     body: JSON.stringify({ phoneNumber: num.phone_number }),
                                   });
                                   const data = await res.json();
+                                  if (res.status === 402 && typeof data?.required === "number" && typeof data?.balance === "number") {
+                                    setCreditsPaywall({ required: data.required, balance: data.balance });
+                                    return;
+                                  }
                                   if (!res.ok) throw new Error(data.error);
                                   setBuySuccess(`${num.phone_number} purchased and imported!`);
                                   setAvailableNumbers([]);
@@ -475,7 +485,7 @@ export default function AgentsPage() {
                               className="px-3 py-2 rounded-xl bg-[var(--accent)] text-white text-xs font-semibold hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
                             >
                               {purchasingNumber === num.phone_number ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Phone className="w-3.5 h-3.5" />}
-                              Buy
+                              Buy · 500 cr
                             </button>
                           </div>
                         ))}
@@ -832,6 +842,14 @@ export default function AgentsPage() {
         </div>,
         document.body
       )}
+
+      <InsufficientCreditsModal
+        open={creditsPaywall !== null}
+        onClose={() => setCreditsPaywall(null)}
+        required={creditsPaywall?.required ?? 0}
+        balance={creditsPaywall?.balance ?? 0}
+        action="Buying a phone number"
+      />
     </div>
   );
 }
