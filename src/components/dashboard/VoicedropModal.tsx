@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { X, Phone, Upload, Loader2, CheckCircle, AlertCircle, Coins, Mic } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { X, Phone, Upload, Loader2, CheckCircle, AlertCircle, Coins, Mic, Library, Play, Pause, Trash2 } from "lucide-react";
 import type { Prospect } from "@/types";
 import InsufficientCreditsModal from "./InsufficientCreditsModal";
+import VoicemailRecorder, { SavedRecording } from "./VoicemailRecorder";
 
 interface CallerId {
   id: string;
@@ -38,7 +39,14 @@ export default function VoicedropModal({ prospects, onClose, onSent }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set(withPhone.map((p) => p.id)));
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioUrl, setAudioUrl] = useState<string>("");
+  const [audioLabel, setAudioLabel] = useState<string>("");
   const [uploading, setUploading] = useState(false);
+  const [audioTab, setAudioTab] = useState<"record" | "library" | "upload">("record");
+  const [recordings, setRecordings] = useState<SavedRecording[]>([]);
+  const [loadingRecordings, setLoadingRecordings] = useState(false);
+  const [selectedRecordingId, setSelectedRecordingId] = useState<string | null>(null);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [campaignName, setCampaignName] = useState(`Drop ${new Date().toLocaleString()}`);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -61,6 +69,62 @@ export default function VoicedropModal({ prospects, onClose, onSent }: Props) {
       }
     })();
   }, []);
+
+  const loadRecordings = useCallback(async () => {
+    setLoadingRecordings(true);
+    try {
+      const res = await fetch("/api/voicemail/recordings");
+      if (res.ok) {
+        const data = await res.json();
+        setRecordings(data.recordings ?? []);
+      }
+    } finally {
+      setLoadingRecordings(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRecordings();
+  }, [loadRecordings]);
+
+  function pickRecording(rec: SavedRecording) {
+    setAudioUrl(rec.url);
+    setAudioLabel(rec.name);
+    setAudioFile(null);
+    setSelectedRecordingId(rec.id);
+  }
+
+  async function deleteRecording(id: string) {
+    if (!confirm("Delete this recording? This can't be undone.")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/voicemail/recordings/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setRecordings((prev) => prev.filter((r) => r.id !== id));
+        if (selectedRecordingId === id) {
+          setSelectedRecordingId(null);
+          setAudioUrl("");
+          setAudioLabel("");
+        }
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  function togglePlay(id: string, url: string) {
+    const audio = document.getElementById(`rec-audio-${id}`) as HTMLAudioElement | null;
+    if (!audio) return;
+    if (playingId === id) {
+      audio.pause();
+      setPlayingId(null);
+    } else {
+      document.querySelectorAll<HTMLAudioElement>("audio[data-rec]").forEach((a) => a.pause());
+      audio.src = url;
+      audio.play();
+      setPlayingId(id);
+    }
+  }
 
   const selectedList = withPhone.filter((p) => selected.has(p.id));
   const totalCost = selectedList.length * CREDITS_PER_DROP;
@@ -88,17 +152,29 @@ export default function VoicedropModal({ prospects, onClose, onSent }: Props) {
     try {
       const fd = new FormData();
       fd.append("audio", file);
-      const res = await fetch("/api/voicemail/upload-audio", { method: "POST", body: fd });
+      fd.append("name", file.name.replace(/\.[^.]+$/, "").slice(0, 80) || "Uploaded clip");
+      fd.append("source", "uploaded");
+      const res = await fetch("/api/voicemail/recordings", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Upload failed");
         return;
       }
+      const rec = data.recording as SavedRecording;
+      setRecordings((prev) => [rec, ...prev]);
       setAudioFile(file);
-      setAudioUrl(data.url);
+      setAudioUrl(rec.url);
+      setAudioLabel(rec.name);
+      setSelectedRecordingId(rec.id);
     } finally {
       setUploading(false);
     }
+  }
+
+  function handleRecordingSaved(rec: SavedRecording) {
+    setRecordings((prev) => [rec, ...prev]);
+    pickRecording(rec);
+    setAudioTab("library");
   }
 
   async function handleSend() {
@@ -219,46 +295,162 @@ export default function VoicedropModal({ prospects, onClose, onSent }: Props) {
               )}
             </div>
 
-            {/* Audio upload */}
+            {/* Voicemail audio picker */}
             <div>
               <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2 block">
-                Voicemail Audio (MP3 or WAV, max 10MB)
+                Voicemail audio
               </label>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/m4a,audio/x-m4a,audio/mp4"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleUpload(f);
-                }}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg bg-[var(--background)] border border-dashed border-[var(--border)] hover:border-[var(--accent)] transition-colors disabled:opacity-50"
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-[var(--muted)]" />
-                    <span className="text-sm text-[var(--muted)]">Uploading...</span>
-                  </>
-                ) : audioFile ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm text-[var(--foreground)] truncate">{audioFile.name}</span>
-                    <span className="ml-auto text-[11px] text-[var(--muted)]">Replace</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 text-[var(--muted)]" />
-                    <span className="text-sm text-[var(--muted)]">Click to upload audio file</span>
-                  </>
-                )}
-              </button>
-              {audioUrl && (
-                <audio src={audioUrl} controls className="w-full mt-2 h-10" />
+
+              <div className="flex gap-1 p-1 rounded-lg bg-black/20 border border-[var(--border)] mb-3">
+                {([
+                  { id: "record", label: "Record", icon: Mic },
+                  { id: "library", label: `Library${recordings.length ? ` (${recordings.length})` : ""}`, icon: Library },
+                  { id: "upload", label: "Upload", icon: Upload },
+                ] as const).map((tab) => {
+                  const Icon = tab.icon;
+                  const active = audioTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setAudioTab(tab.id)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        active
+                          ? "bg-[var(--accent)] text-white"
+                          : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-white/5"
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {audioTab === "record" && (
+                <VoicemailRecorder onSaved={handleRecordingSaved} />
+              )}
+
+              {audioTab === "library" && (
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-2 max-h-64 overflow-y-auto">
+                  {loadingRecordings ? (
+                    <div className="flex items-center justify-center gap-2 py-6 text-xs text-[var(--muted)]">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Loading your library…
+                    </div>
+                  ) : recordings.length === 0 ? (
+                    <div className="py-6 px-3 text-center">
+                      <Library className="w-6 h-6 text-[var(--muted)] mx-auto mb-2 opacity-40" />
+                      <div className="text-xs text-[var(--muted)]">No saved recordings yet.</div>
+                      <button
+                        onClick={() => setAudioTab("record")}
+                        className="mt-2 text-[11px] text-[var(--accent)] hover:underline"
+                      >
+                        Record your first one →
+                      </button>
+                    </div>
+                  ) : (
+                    <ul className="space-y-1">
+                      {recordings.map((r) => {
+                        const isSelected = selectedRecordingId === r.id;
+                        const isPlaying = playingId === r.id;
+                        return (
+                          <li key={r.id}>
+                            <div
+                              className={`group flex items-center gap-2 rounded-lg px-2 py-2 transition-colors ${
+                                isSelected
+                                  ? "bg-[var(--accent)]/10 border border-[var(--accent)]/30"
+                                  : "border border-transparent hover:bg-white/5"
+                              }`}
+                            >
+                              <button
+                                onClick={() => togglePlay(r.id, r.url)}
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black/30 text-[var(--foreground)] hover:bg-[var(--accent)]/20 transition-colors"
+                                aria-label={isPlaying ? "Pause" : "Play"}
+                              >
+                                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                              </button>
+                              <button
+                                onClick={() => pickRecording(r)}
+                                className="flex-1 min-w-0 text-left"
+                              >
+                                <div className="text-sm text-[var(--foreground)] truncate flex items-center gap-1.5">
+                                  {r.name}
+                                  {r.source === "uploaded" && (
+                                    <span className="text-[9px] px-1 py-0.5 rounded bg-white/5 text-[var(--muted)] uppercase tracking-wider">upload</span>
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-[var(--muted)] mt-0.5">
+                                  {r.durationSeconds ? `${r.durationSeconds}s` : "—"} · {new Date(r.createdAt).toLocaleDateString()}
+                                </div>
+                              </button>
+                              {isSelected && (
+                                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                              )}
+                              <button
+                                onClick={() => deleteRecording(r.id)}
+                                disabled={deletingId === r.id}
+                                className="opacity-0 group-hover:opacity-100 p-1.5 rounded text-[var(--muted)] hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-40"
+                                aria-label="Delete"
+                              >
+                                {deletingId === r.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                              <audio id={`rec-audio-${r.id}`} data-rec onEnded={() => setPlayingId(null)} className="hidden" />
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {audioTab === "upload" && (
+                <>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/m4a,audio/x-m4a,audio/mp4"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleUpload(f);
+                    }}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    disabled={uploading}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg bg-[var(--background)] border border-dashed border-[var(--border)] hover:border-[var(--accent)] transition-colors disabled:opacity-50"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-[var(--muted)]" />
+                        <span className="text-sm text-[var(--muted)]">Uploading & saving to library…</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 text-[var(--muted)]" />
+                        <span className="text-sm text-[var(--muted)]">Click to upload — MP3, WAV, or M4A (max 10MB)</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[10px] text-[var(--muted)] mt-1.5">
+                    Uploads save to your library so you can reuse them on future drops.
+                  </p>
+                </>
+              )}
+
+              {audioUrl && audioLabel && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3 py-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div className="text-xs text-[var(--foreground)] truncate flex-1">
+                    Using: <span className="font-medium">{audioLabel}</span>
+                  </div>
+                  <audio src={audioUrl} controls className="h-7" style={{ maxWidth: 140 }} />
+                </div>
               )}
             </div>
 
