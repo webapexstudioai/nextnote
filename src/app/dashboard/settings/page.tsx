@@ -254,6 +254,13 @@ export default function SettingsPage() {
     if (params.get("connected") === "true") {
       setActiveTab("integrations");
       window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
+    const deepLinkTab = params.get("tab") as SettingsTab | null;
+    const validTabs: SettingsTab[] = ["profile", "subscription", "credits", "caller_id", "integrations", "appearance", "notifications"];
+    if (deepLinkTab && validTabs.includes(deepLinkTab)) {
+      setActiveTab(deepLinkTab);
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 

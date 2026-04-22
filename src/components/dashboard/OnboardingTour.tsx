@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Users, Bot, Rocket, CheckCircle2, X, Sparkles, ArrowRight, Loader2,
+  Users, Phone, CalendarCheck, Mic, CheckCircle2, X, Sparkles, ArrowRight, Loader2,
 } from "lucide-react";
 import { useProspects } from "@/context/ProspectsContext";
 
@@ -11,8 +11,9 @@ const DISMISS_KEY = "nextnote_tour_dismissed";
 
 interface StepStatus {
   prospects: boolean;
-  agents: boolean;
-  deployed: boolean;
+  callerId: boolean;
+  googleCalendar: boolean;
+  voicedropSent: boolean;
 }
 
 export default function OnboardingTour() {
@@ -22,26 +23,26 @@ export default function OnboardingTour() {
   const [checking, setChecking] = useState(true);
   const [status, setStatus] = useState<StepStatus>({
     prospects: false,
-    agents: false,
-    deployed: false,
+    callerId: false,
+    googleCalendar: false,
+    voicedropSent: false,
   });
 
   const refresh = useCallback(async () => {
     setChecking(true);
     try {
-      const [agentsRes, phonesRes] = await Promise.all([
-        fetch("/api/agents/elevenlabs/list", { cache: "no-store" }).catch(() => null),
-        fetch("/api/agents/elevenlabs/phone-numbers", { cache: "no-store" }).catch(() => null),
-      ]);
-
-      const agentsJson = agentsRes && agentsRes.ok ? await agentsRes.json() : null;
-      const phonesJson = phonesRes && phonesRes.ok ? await phonesRes.json() : null;
-
-      setStatus({
-        prospects: prospects.length > 0,
-        agents: Array.isArray(agentsJson?.agents) ? agentsJson.agents.length > 0 : false,
-        deployed: Array.isArray(phonesJson?.phoneNumbers) ? phonesJson.phoneNumbers.length > 0 : false,
-      });
+      const res = await fetch("/api/onboarding/status", { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        setStatus({
+          prospects: Boolean(json.prospects) || prospects.length > 0,
+          callerId: Boolean(json.callerId),
+          googleCalendar: Boolean(json.googleCalendar),
+          voicedropSent: Boolean(json.voicedropSent),
+        });
+      } else {
+        setStatus((prev) => ({ ...prev, prospects: prospects.length > 0 }));
+      }
     } finally {
       setChecking(false);
     }
@@ -53,7 +54,6 @@ export default function OnboardingTour() {
     refresh();
   }, [refresh]);
 
-  // Re-check status each time the tour is opened or the page regains focus.
   useEffect(() => {
     if (!open) return;
     const onFocus = () => refresh();
@@ -74,27 +74,35 @@ export default function OnboardingTour() {
   const steps = [
     {
       icon: Users,
-      title: "Add your prospects",
-      blurb: "Create a folder, drop in a file, and import or type in the businesses you're reaching out to.",
+      title: "Import your first prospects",
+      blurb: "Open Prospects, create a folder, then upload a CSV or XLSX. Claude auto-maps your columns — no manual setup.",
       cta: "Open Prospects",
       href: "/dashboard/prospects",
       done: status.prospects,
     },
     {
-      icon: Bot,
-      title: "Build your AI agent",
-      blurb: "Spin up a voice agent with the script, knowledge base, and tools your agency uses daily.",
-      cta: "Create an Agent",
-      href: "/dashboard/agents",
-      done: status.agents,
+      icon: Phone,
+      title: "Verify your phone for voicedrops",
+      blurb: "Add and verify your caller ID so prospects see your number when you drop ringless voicemails. Takes 90 seconds.",
+      cta: "Go to Caller ID",
+      href: "/dashboard/settings?tab=caller_id",
+      done: status.callerId,
     },
     {
-      icon: Rocket,
-      title: "Deploy the agent",
-      blurb: "Attach a phone number and let the agent take over outreach, booking, and follow-ups.",
-      cta: "Deploy",
-      href: "/dashboard/agents",
-      done: status.deployed,
+      icon: CalendarCheck,
+      title: "Connect Google Calendar",
+      blurb: "Auto-generate Meet links and send booking confirmations. Required for the appointment scheduler.",
+      cta: "Connect",
+      href: "/dashboard/settings?tab=integrations",
+      done: status.googleCalendar,
+    },
+    {
+      icon: Mic,
+      title: "Send your first voicedrop",
+      blurb: "Select prospects on the Kanban, record a message, and drop it straight into their voicemail inbox.",
+      cta: "Open Prospects",
+      href: "/dashboard/prospects",
+      done: status.voicedropSent,
     },
   ];
 
@@ -115,8 +123,9 @@ export default function OnboardingTour() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/60 to-transparent" />
 
         <div className="p-6 sm:p-8 border-b border-white/5 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--accent)]/15 border border-[var(--accent)]/30 flex items-center justify-center shrink-0">
+          <div className="relative w-12 h-12 rounded-2xl bg-[var(--accent)]/15 border border-[var(--accent)]/30 flex items-center justify-center shrink-0">
             <Sparkles className="w-6 h-6 text-[var(--accent)]" />
+            <span className="setup-sparkle-ring" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
@@ -125,7 +134,7 @@ export default function OnboardingTour() {
             <p className="text-sm text-[var(--muted)] mt-1">
               {allDone
                 ? "Every step is complete — your outreach stack is ready."
-                : `${steps.length} steps to turn NextNote into your outbound engine. ${completed}/${steps.length} done.`}
+                : `${steps.length} quick steps to turn NextNote into your outbound engine. ${completed}/${steps.length} done.`}
             </p>
           </div>
           <button
@@ -140,7 +149,7 @@ export default function OnboardingTour() {
         <div className="px-6 sm:px-8 pt-5">
           <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[#ff8a6a] transition-all duration-700"
+              className="h-full rounded-full progress-shimmer transition-all duration-700"
               style={{ width: `${(completed / steps.length) * 100}%` }}
             />
           </div>
@@ -153,13 +162,14 @@ export default function OnboardingTour() {
             return (
               <div
                 key={step.title}
-                className={`relative rounded-2xl p-4 sm:p-5 border transition-all duration-500 ${
+                className={`step-card relative rounded-2xl p-4 sm:p-5 border transition-all duration-500 ${
                   step.done
                     ? "border-emerald-500/25 bg-emerald-500/[0.04]"
                     : isCurrent
                     ? "border-[var(--accent)]/45 bg-[var(--accent)]/[0.06] shadow-[0_0_40px_rgba(232,85,61,0.18)]"
                     : "border-white/5 bg-white/[0.015]"
                 }`}
+                style={{ animationDelay: `${idx * 80}ms` }}
               >
                 {isCurrent && (
                   <span className="absolute -top-2 left-4 text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[var(--accent)] text-white shadow-lg">
@@ -238,7 +248,7 @@ function OnboardingLauncher({ open, completed, total }: { open: () => void; comp
   return (
     <button
       onClick={open}
-      className="fixed bottom-5 right-5 z-40 liquid-glass-strong rounded-full pl-3 pr-4 py-2 flex items-center gap-2.5 text-xs font-medium hover:border-[var(--accent)]/40 transition-all shadow-xl group"
+      className="setup-launcher fixed bottom-[100px] right-6 z-40 liquid-glass-strong rounded-full pl-3 pr-4 py-2 flex items-center gap-2.5 text-xs font-medium hover:border-[var(--accent)]/40 hover:scale-105 transition-all shadow-xl group"
     >
       <span className="relative flex w-6 h-6 items-center justify-center rounded-full bg-[var(--accent)]/20 text-[var(--accent)]">
         <Sparkles className="w-3.5 h-3.5" />
