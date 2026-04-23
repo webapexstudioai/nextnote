@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { getUserAIConfig, aiChat } from "@/lib/ai";
@@ -844,7 +845,10 @@ export async function POST(req: Request) {
   }
 
   const palette = paletteForNiche(service);
-  const siteId = `site-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  // 128-bit cryptographic ID (32 hex chars). The GET endpoint for these pages is
+  // public-by-design (users share the URL with prospects), so the ID itself is the
+  // authorization token — it must be unguessable.
+  const siteId = `site-${crypto.randomBytes(16).toString("hex")}`;
 
   // Kick off image fetch + logo generation in parallel — logo takes ~10-20s so
   // overlapping it with the photo lookup saves real wall-clock time.

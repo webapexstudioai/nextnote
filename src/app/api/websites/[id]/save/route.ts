@@ -37,7 +37,8 @@ export async function POST(
   const { error } = await supabaseAdmin
     .from("generated_websites")
     .update({ html_content: html })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", session.userId);
 
   if (error) {
     return NextResponse.json({ error: `Save failed: ${error.message}` }, { status: 500 });

@@ -3,11 +3,19 @@ import { NextRequest, NextResponse } from "next/server";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Admin routes: localhost-only. In production, return 404 so the surface doesn't exist.
+  // Admin routes: require a session cookie at the middleware layer. The route
+  // handlers re-check is_admin on every request. This avoids leaking the admin
+  // surface to unauthenticated scanners.
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-    if (process.env.NODE_ENV === "production") {
-      return new NextResponse("Not found", { status: 404 });
+    const sessionCookie = req.cookies.get("nextnote_auth_session");
+    if (!sessionCookie) {
+      if (pathname.startsWith("/api/admin")) {
+        return new NextResponse("Not found", { status: 404 });
+      }
+      return NextResponse.redirect(new URL("/auth/login", req.url));
     }
+    // Fall through — requireAdmin() in each admin handler does the real is_admin check.
+    return NextResponse.next();
   }
 
   // Public paths that don't need auth

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabase";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -9,6 +10,22 @@ export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
+
+    // Prevent reset-email spam and email enumeration abuse.
+    const ipLimit = rateLimit(clientKey(req, "forgot"), 5, 15 * 60_000);
+    if (!ipLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many requests. Try again in ${ipLimit.retryAfterSec}s.` },
+        { status: 429 },
+      );
+    }
+    const emailLimit = rateLimit(`forgot:email:${email.toLowerCase()}`, 3, 60 * 60_000);
+    if (!emailLimit.ok) {
+      // Same opaque message as the happy path so we don't leak enumeration.
+      return NextResponse.json({
+        message: "If an account with that email exists, we've sent a password reset link.",
+      });
+    }
 
     // Always return the same message to prevent email enumeration
     const successMessage = "If an account with that email exists, we've sent a password reset link.";

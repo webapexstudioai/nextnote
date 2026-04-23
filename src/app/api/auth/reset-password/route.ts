@@ -2,9 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isPasswordStrong } from "@/lib/password";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
+    // Stop brute-force of reset tokens: 10 attempts / 15 min per IP.
+    const ipLimit = rateLimit(clientKey(req, "reset-pw"), 10, 15 * 60_000);
+    if (!ipLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many attempts. Try again in ${ipLimit.retryAfterSec}s.` },
+        { status: 429 },
+      );
+    }
+
     const { token, password } = await req.json();
     if (!token || !password) {
       return NextResponse.json({ error: "Token and password are required" }, { status: 400 });

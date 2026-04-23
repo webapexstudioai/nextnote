@@ -1,17 +1,66 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { getIronSession } from "iron-session";
+import { cookies } from "next/headers";
 import { google } from "googleapis";
 import { getOAuth2Client } from "@/lib/google";
 import { getSession, getAuthSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase";
 import { encrypt } from "@/lib/crypto";
 
+const OAUTH_STATE_COOKIE = "nextnote_oauth_state";
+
+interface OAuthStateData {
+  nonce?: string;
+  returnTo?: string;
+  createdAt?: number;
+}
+
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
-  const returnTo = req.nextUrl.searchParams.get("state") || "/dashboard/appointments?connected=true";
+  const incomingState = req.nextUrl.searchParams.get("state");
+
+  const cookieStore = cookies();
+  const stateSession = await getIronSession<OAuthStateData>(cookieStore, {
+    password: process.env.SESSION_SECRET as string,
+    cookieName: OAUTH_STATE_COOKIE,
+    cookieOptions: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 60 * 10,
+    },
+  });
+
+  const expectedNonce = stateSession.nonce;
+  const storedReturnTo = stateSession.returnTo || "/dashboard/appointments?connected=true";
+  const createdAt = stateSession.createdAt ?? 0;
+
+  // Always clear the state cookie — single-use.
+  stateSession.destroy();
 
   if (!code) {
     return NextResponse.redirect(new URL("/dashboard/appointments?error=no_code", req.url));
   }
+  if (!incomingState || !expectedNonce || !safeEqual(incomingState, expectedNonce)) {
+    return NextResponse.redirect(new URL("/dashboard/appointments?error=invalid_state", req.url));
+  }
+  // Enforce the 10-minute state lifetime at the app layer too (belt + suspenders).
+  if (!createdAt || Date.now() - createdAt > 10 * 60 * 1000) {
+    return NextResponse.redirect(new URL("/dashboard/appointments?error=state_expired", req.url));
+  }
+
+  // The callback must only return the user to an internal path.
+  const returnTo = storedReturnTo.startsWith("/") && !storedReturnTo.startsWith("//")
+    ? storedReturnTo
+    : "/dashboard/appointments?connected=true";
 
   try {
     const oauth2Client = getOAuth2Client();

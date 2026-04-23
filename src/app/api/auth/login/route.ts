@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getAuthSession } from "@/lib/session";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,6 +10,23 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+    }
+
+    // Rate limit: 8 attempts / 5 min per IP, and 6 attempts / 15 min per email
+    // so an attacker can't credential-stuff one account from a rotating pool.
+    const ipLimit = rateLimit(clientKey(req, "login"), 8, 5 * 60_000);
+    if (!ipLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many login attempts. Try again in ${ipLimit.retryAfterSec}s.` },
+        { status: 429 },
+      );
+    }
+    const emailLimit = rateLimit(`login:email:${email.toLowerCase()}`, 6, 15 * 60_000);
+    if (!emailLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many login attempts for this email. Try again in ${emailLimit.retryAfterSec}s.` },
+        { status: 429 },
+      );
     }
 
     const { data: user, error } = await supabaseAdmin

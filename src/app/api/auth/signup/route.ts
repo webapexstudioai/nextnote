@@ -4,9 +4,19 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { getAuthSession } from "@/lib/session";
 import { isPasswordStrong } from "@/lib/password";
 import { addCredits, SIGNUP_BONUS_CREDITS } from "@/lib/credits";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
+    // Cap signups per IP so one actor can't farm credit bonuses.
+    const ipLimit = rateLimit(clientKey(req, "signup"), 5, 60 * 60_000);
+    if (!ipLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many signups from this network. Try again in ${Math.ceil(ipLimit.retryAfterSec / 60)} min.` },
+        { status: 429 },
+      );
+    }
+
     const { name, email, agencyName, password } = await req.json();
 
     if (!name || !email || !password) {

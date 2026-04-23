@@ -110,7 +110,8 @@ ${site.html_content}
     const { error: updateErr } = await supabaseAdmin
       .from("generated_websites")
       .update({ html_content: updatedHtml })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", session.userId);
 
     if (updateErr) {
       return NextResponse.json({ error: `Failed to save edit: ${updateErr.message}` }, { status: 500 });

@@ -9,10 +9,6 @@ export type AdminGuardResult =
   | { ok: false; response: NextResponse };
 
 export async function requireAdmin(): Promise<AdminGuardResult> {
-  if (IS_PROD) {
-    return { ok: false, response: new NextResponse("Not found", { status: 404 }) };
-  }
-
   const session = await getAuthSession();
   // During impersonation, the admin's real id is in impersonatorUserId; trust that for admin gates.
   const adminId = session.impersonatorUserId ?? session.userId;

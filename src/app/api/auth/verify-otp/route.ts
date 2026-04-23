@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getAuthSession } from "@/lib/session";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    // OTP is a 6-digit code (1M possibilities). Without this, an attacker with
+    // a session cookie could brute-force it in minutes.
+    const limit = rateLimit(`verify-otp:${session.userId}`, 10, 15 * 60_000);
+    if (!limit.ok) {
+      return NextResponse.json(
+        { error: `Too many attempts. Try again in ${limit.retryAfterSec}s.` },
+        { status: 429 },
+      );
     }
 
     const { code } = await req.json();
