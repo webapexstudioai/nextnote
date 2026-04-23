@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
 import { getAuthSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase";
+import AdminSidebar from "./AdminSidebar";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   if (process.env.NODE_ENV === "production") notFound();
@@ -18,27 +18,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!user?.is_admin) notFound();
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100">
-      <header className="border-b border-neutral-800 bg-neutral-900/60 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-6">
-            <Link href="/admin" className="text-lg font-semibold tracking-tight">
-              NextNote Admin
-            </Link>
-            <nav className="flex gap-4 text-sm text-neutral-400">
-              <Link href="/admin" className="hover:text-white">Dashboard</Link>
-              <Link href="/admin/users" className="hover:text-white">Users</Link>
-              <Link href="/admin/support" className="hover:text-white">Support</Link>
-              <Link href="/admin/audit" className="hover:text-white">Audit log</Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-3 text-xs text-neutral-500">
-            <span className="rounded bg-amber-500/10 px-2 py-1 text-amber-400">LOCAL DEV</span>
-            <span>{user.email}</span>
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+    <div className="flex min-h-screen bg-neutral-950 text-neutral-100">
+      <AdminSidebar email={user.email} />
+      <div className="flex flex-1 flex-col">
+        <header className="flex items-center justify-end border-b border-neutral-900 bg-neutral-950/80 px-8 py-3 backdrop-blur">
+          <span className="rounded-md bg-amber-500/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-amber-400">
+            Local dev
+          </span>
+        </header>
+        <main className="flex-1 px-8 py-8">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

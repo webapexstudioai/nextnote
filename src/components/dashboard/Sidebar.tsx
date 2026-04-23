@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Users, Calendar, Settings, LogOut, Zap, Crown, Phone, BarChart3, Bot, Coins, Globe, MapPin } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Settings, LogOut, Zap, Crown, Phone, BarChart3, Bot, Coins, Globe, MapPin, LifeBuoy } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 import { TIERS, SubscriptionTier } from "@/lib/subscriptions";
 
@@ -21,6 +21,7 @@ const navItems = [
   { icon: Globe, label: "AI Websites", href: "/dashboard/websites", minTier: "starter", tourId: "nav-websites" },
   { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics", minTier: "starter", tourId: "nav-analytics" },
   { icon: Coins, label: "Billing", href: "/dashboard/billing", minTier: "starter", tourId: "nav-billing" },
+  { icon: LifeBuoy, label: "Support", href: "/dashboard/support", minTier: "starter", tourId: "nav-support" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings", minTier: "starter", tourId: "nav-settings" },
 ] as const;
 
@@ -32,6 +33,27 @@ const tierRank: Record<SubscriptionTier, number> = {
 export default function Sidebar({ collapsed }: SidebarProps) {
   const pathname = usePathname();
   const [profile, setProfile] = useState({ name: "User", agencyName: "NextNote", subscriptionTier: "starter" as SubscriptionTier, profileImageUrl: null as string | null });
+  const [supportUnread, setSupportUnread] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/support/threads");
+        if (!res.ok) return;
+        const json = await res.json();
+        if (cancelled) return;
+        const threads = (json.threads ?? []) as { unread: boolean }[];
+        setSupportUnread(threads.filter((t) => t.unread).length);
+      } catch {}
+    }
+    load();
+    const int = setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(int);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     let mounted = true;
@@ -123,7 +145,16 @@ export default function Sidebar({ collapsed }: SidebarProps) {
               style={isActive ? { background: "rgba(232, 85, 61, 0.12)", color: "#e8553d" } : undefined}
             >
               <Icon className="w-4 h-4 shrink-0" />
-              {!collapsed && <span className="relative z-[1]">{item.label}</span>}
+              {!collapsed && (
+                <span className="relative z-[1] flex flex-1 items-center justify-between">
+                  <span>{item.label}</span>
+                  {item.label === "Support" && supportUnread > 0 && (
+                    <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                      {supportUnread}
+                    </span>
+                  )}
+                </span>
+              )}
             </Link>
           );
         })}

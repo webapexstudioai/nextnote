@@ -7,8 +7,8 @@ import CursorSpotlight from "@/components/dashboard/CursorSpotlight";
 import OnboardingTour from "@/components/dashboard/OnboardingTour";
 import GuidedTour from "@/components/dashboard/GuidedTour";
 import TourFinaleSplash from "@/components/dashboard/TourFinaleSplash";
+import CreditGiftCelebration from "@/components/dashboard/CreditGiftCelebration";
 import ImpersonationBanner from "@/components/dashboard/ImpersonationBanner";
-import SupportWidget from "@/components/dashboard/SupportWidget";
 import { ProspectsProvider } from "@/context/ProspectsContext";
 
 function applyAccent(hex: string) {
@@ -94,7 +94,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <OnboardingTour />
         <GuidedTour />
         <TourFinaleSplash />
-        <SupportWidget />
+        <CreditGiftCelebration />
 
         {showMobileMenu && (
           <div className="fixed inset-0 z-40 lg:hidden">
