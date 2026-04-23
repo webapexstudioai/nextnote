@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   MapPin, Search, Loader2, Coins, CheckCircle, AlertCircle,
-  Globe, ArrowRight, Info, Sparkles,
+  Globe, ArrowRight, Info, Sparkles, FolderPlus, Folder,
 } from "lucide-react";
 import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
 
@@ -38,12 +38,20 @@ interface ImportedProspect {
   website?: string;
 }
 
+interface FolderOption {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface ImportResponse {
   folder: { id: string; name: string; color: string; createdAt: string };
   prospects: ImportedProspect[];
   imported: number;
   creditsSpent: number;
 }
+
+type Destination = { mode: "new" } | { mode: "existing"; folderId: string };
 
 export default function SourcesPage() {
   const router = useRouter();
@@ -52,6 +60,8 @@ export default function SourcesPage() {
   const [city, setCity] = useState("");
   const [count, setCount] = useState(25);
   const [balance, setBalance] = useState<number | null>(null);
+  const [folders, setFolders] = useState<FolderOption[]>([]);
+  const [destination, setDestination] = useState<Destination>({ mode: "new" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ImportResponse | null>(null);
@@ -62,6 +72,18 @@ export default function SourcesPage() {
       .then((r) => (r.ok ? r.json() : { balance: 0 }))
       .then((d) => setBalance(d.balance ?? 0))
       .catch(() => setBalance(0));
+
+    fetch("/api/crm")
+      .then((r) => (r.ok ? r.json() : { folders: [] }))
+      .then((d) => {
+        const list: FolderOption[] = (d.folders ?? []).map((f: { id: string; name: string; color: string }) => ({
+          id: f.id,
+          name: f.name,
+          color: f.color,
+        }));
+        setFolders(list);
+      })
+      .catch(() => {});
   }, []);
 
   const maxCost = count * CREDITS_PER_PROSPECT;
@@ -83,6 +105,7 @@ export default function SourcesPage() {
           niche: niche.trim(),
           location: locationLabel,
           count,
+          folderId: destination.mode === "existing" ? destination.folderId : undefined,
         }),
       });
       const data = await res.json();
@@ -305,6 +328,72 @@ export default function SourcesPage() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Destination */}
+          <div>
+            <label className="block text-xs text-[var(--muted)] uppercase tracking-wider mb-2">
+              Where should they go
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setDestination({ mode: "new" })}
+                className={`rounded-xl border px-4 py-3 text-left transition-all ${
+                  destination.mode === "new"
+                    ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--foreground)]"
+                    : "border-white/10 bg-black/20 text-[var(--muted)] hover:text-[var(--foreground)] hover:border-white/20"
+                }`}
+              >
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <FolderPlus className="w-4 h-4" />
+                  New folder
+                </div>
+                <div className="text-[10px] text-[var(--muted)] mt-1 truncate">
+                  {niche.trim() && (state || city.trim())
+                    ? `"${niche.trim()} — ${locationLabel || state}"`
+                    : "Auto-named after your search"}
+                </div>
+              </button>
+              <button
+                onClick={() =>
+                  setDestination(
+                    folders.length > 0
+                      ? { mode: "existing", folderId: folders[0].id }
+                      : { mode: "new" },
+                  )
+                }
+                disabled={folders.length === 0}
+                className={`rounded-xl border px-4 py-3 text-left transition-all ${
+                  destination.mode === "existing"
+                    ? "border-[var(--accent)]/50 bg-[var(--accent)]/10 text-[var(--foreground)]"
+                    : "border-white/10 bg-black/20 text-[var(--muted)] hover:text-[var(--foreground)] hover:border-white/20"
+                } ${folders.length === 0 ? "opacity-40 cursor-not-allowed" : ""}`}
+              >
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Folder className="w-4 h-4" />
+                  Existing folder
+                </div>
+                <div className="text-[10px] text-[var(--muted)] mt-1 truncate">
+                  {folders.length === 0
+                    ? "You don't have any folders yet"
+                    : `Pick from ${folders.length} folder${folders.length === 1 ? "" : "s"}`}
+                </div>
+              </button>
+            </div>
+            {destination.mode === "existing" && folders.length > 0 && (
+              <div className="relative mt-2">
+                <Folder className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
+                <select
+                  value={destination.folderId}
+                  onChange={(e) => setDestination({ mode: "existing", folderId: e.target.value })}
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-black/20 border border-white/10 focus:border-[var(--accent)]/50 focus:outline-none text-sm transition-colors appearance-none"
+                >
+                  {folders.map((f) => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Cost summary */}

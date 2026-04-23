@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
   const location = typeof body.location === "string" ? body.location.trim() : "";
   const rawCount = Number(body.count);
   const count = Math.min(MAX_COUNT, Math.max(MIN_COUNT, Number.isFinite(rawCount) ? Math.floor(rawCount) : 25));
+  const existingFolderId = typeof body.folderId === "string" && body.folderId.trim() ? body.folderId.trim() : null;
 
   if (!niche) return NextResponse.json({ error: "Niche is required (e.g. 'Plumbers')." }, { status: 400 });
   if (!location) return NextResponse.json({ error: "Location is required (e.g. 'Texas' or 'Austin, TX')." }, { status: 400 });
@@ -112,17 +113,33 @@ export async function POST(req: NextRequest) {
 
   const actualCost = withPhone.length * IMPORT_PROSPECT_CREDITS;
 
-  // Auto-create a folder named after the search
-  const folderName = `${titleCase(niche)} — ${titleCase(location)}`;
-  const { data: folder, error: folderErr } = await supabaseAdmin
-    .from("folders")
-    .insert({ user_id: userId, name: folderName, color: "#6366f1" })
-    .select("*")
-    .single();
-
-  if (folderErr || !folder) {
-    console.error("Folder create failed:", folderErr);
-    return NextResponse.json({ error: "Couldn't create folder for imported prospects." }, { status: 500 });
+  // Use the selected existing folder, or auto-create a new one named after the search.
+  let folder: { id: string; name: string; color: string; created_at: string };
+  let createdFolder = false;
+  if (existingFolderId) {
+    const { data: existing, error: fetchErr } = await supabaseAdmin
+      .from("folders")
+      .select("id, name, color, created_at")
+      .eq("id", existingFolderId)
+      .eq("user_id", userId)
+      .single();
+    if (fetchErr || !existing) {
+      return NextResponse.json({ error: "Invalid folder" }, { status: 403 });
+    }
+    folder = existing;
+  } else {
+    const folderName = `${titleCase(niche)} — ${titleCase(location)}`;
+    const { data: created, error: folderErr } = await supabaseAdmin
+      .from("folders")
+      .insert({ user_id: userId, name: folderName, color: "#6366f1" })
+      .select("id, name, color, created_at")
+      .single();
+    if (folderErr || !created) {
+      console.error("Folder create failed:", folderErr);
+      return NextResponse.json({ error: "Couldn't create folder for imported prospects." }, { status: 500 });
+    }
+    folder = created;
+    createdFolder = true;
   }
 
   const rows = withPhone.map((p) => ({
@@ -151,8 +168,11 @@ export async function POST(req: NextRequest) {
 
   if (insertErr || !inserted) {
     console.error("Prospect insert failed:", insertErr);
-    // Roll back the folder so we don't leave orphaned empty folders around
-    await supabaseAdmin.from("folders").delete().eq("id", folder.id).eq("user_id", userId);
+    // Only roll back the folder if we created it for this import — don't touch
+    // a pre-existing folder the user chose.
+    if (createdFolder) {
+      await supabaseAdmin.from("folders").delete().eq("id", folder.id).eq("user_id", userId);
+    }
     return NextResponse.json({ error: "Couldn't save imported prospects." }, { status: 500 });
   }
 
