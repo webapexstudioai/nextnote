@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Users, Calendar, Settings, LogOut, Zap, Crown, Phone, BarChart3, Bot, Coins, Globe } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, Settings, LogOut, Zap, Crown, Phone, BarChart3, Bot, Coins, Globe, MapPin } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 import { TIERS, SubscriptionTier } from "@/lib/subscriptions";
 
@@ -12,15 +12,16 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", minTier: "starter" },
-  { icon: Users, label: "Prospects", href: "/dashboard/prospects", minTier: "starter" },
-  { icon: Calendar, label: "Appointments", href: "/dashboard/appointments", minTier: "starter" },
-  { icon: Zap, label: "AI Insights", href: "/dashboard/ai-insights", minTier: "pro" },
-  { icon: Bot, label: "AI Agents", href: "/dashboard/agents", minTier: "starter" },
-  { icon: Globe, label: "AI Websites", href: "/dashboard/websites", minTier: "starter" },
-  { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics", minTier: "starter" },
-  { icon: Coins, label: "Billing", href: "/dashboard/billing", minTier: "starter" },
-  { icon: Settings, label: "Settings", href: "/dashboard/settings", minTier: "starter" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", minTier: "starter", tourId: "nav-dashboard" },
+  { icon: Users, label: "Prospects", href: "/dashboard/prospects", minTier: "starter", tourId: "nav-prospects" },
+  { icon: MapPin, label: "Sources", href: "/dashboard/sources", minTier: "starter", tourId: "nav-sources" },
+  { icon: Calendar, label: "Appointments", href: "/dashboard/appointments", minTier: "starter", tourId: "nav-appointments" },
+  { icon: Zap, label: "AI Insights", href: "/dashboard/ai-insights", minTier: "pro", tourId: "nav-ai-insights" },
+  { icon: Bot, label: "AI Agents", href: "/dashboard/agents", minTier: "starter", tourId: "nav-agents" },
+  { icon: Globe, label: "AI Websites", href: "/dashboard/websites", minTier: "starter", tourId: "nav-websites" },
+  { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics", minTier: "starter", tourId: "nav-analytics" },
+  { icon: Coins, label: "Billing", href: "/dashboard/billing", minTier: "starter", tourId: "nav-billing" },
+  { icon: Settings, label: "Settings", href: "/dashboard/settings", minTier: "starter", tourId: "nav-settings" },
 ] as const;
 
 const tierRank: Record<SubscriptionTier, number> = {
@@ -86,7 +87,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
   }
 
   return (
-    <aside className={`liquid-glass-strong flex flex-col h-screen border-r border-white/5 ${collapsed ? "w-16" : "w-56"} transition-all duration-300 shrink-0`}>
+    <aside data-tour-id="sidebar" className={`liquid-glass-strong flex flex-col h-screen border-r border-white/5 ${collapsed ? "w-16" : "w-56"} transition-all duration-300 shrink-0`}>
       {/* Logo */}
       <div className="p-5 border-b border-white/5">
         <Link href="/dashboard" className="flex items-center gap-2.5">
@@ -108,6 +109,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
             <Link
               key={item.label}
               href={item.href}
+              data-tour-id={item.tourId}
               onMouseMove={(e) => {
                 const r = e.currentTarget.getBoundingClientRect();
                 e.currentTarget.style.setProperty("--sx", `${e.clientX - r.left}px`);

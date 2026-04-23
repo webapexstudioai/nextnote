@@ -5,6 +5,8 @@ import { Menu, X } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import CursorSpotlight from "@/components/dashboard/CursorSpotlight";
 import OnboardingTour from "@/components/dashboard/OnboardingTour";
+import GuidedTour from "@/components/dashboard/GuidedTour";
+import TourFinaleSplash from "@/components/dashboard/TourFinaleSplash";
 import ImpersonationBanner from "@/components/dashboard/ImpersonationBanner";
 import SupportWidget from "@/components/dashboard/SupportWidget";
 import { ProspectsProvider } from "@/context/ProspectsContext";
@@ -90,6 +92,8 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </main>
 
         <OnboardingTour />
+        <GuidedTour />
+        <TourFinaleSplash />
         <SupportWidget />
 
         {showMobileMenu && (

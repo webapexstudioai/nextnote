@@ -38,6 +38,7 @@ export const AI_PARSE_CREDITS = 5;                  // $0.05 per XLSX/Sheets col
 export const NOTE_SUMMARIZE_CREDITS = 5;            // $0.05 per note summarization
 export const RECEPTIONIST_BUILD_CREDITS = 25;       // $0.25 per AI receptionist draft
 export const AGENT_TEST_CHAT_CREDITS = 3;           // $0.03 per test chat message
+export const IMPORT_PROSPECT_CREDITS = 5;           // $0.05 per prospect imported from Google Maps
 
 // Sign-up bonus — enough to try 1 website + a few AI features.
 export const SIGNUP_BONUS_CREDITS = 150;

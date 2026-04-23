@@ -6,6 +6,7 @@ import {
   Users, Phone, CalendarCheck, Mic, CheckCircle2, X, Sparkles, ArrowRight, Loader2,
 } from "lucide-react";
 import { useProspects } from "@/context/ProspectsContext";
+import { maybeStartGuidedTour } from "@/components/dashboard/GuidedTour";
 
 const DISMISS_KEY = "nextnote_tour_dismissed";
 
@@ -64,6 +65,13 @@ export default function OnboardingTour() {
   const dismiss = () => {
     try { window.localStorage.setItem(DISMISS_KEY, "1"); } catch {}
     setOpen(false);
+  };
+
+  // Triggered by X and "Skip for now". If it's their first time skipping the
+  // setup guide, offer the guided tour as a softer intro before they're on their own.
+  const dismissAndOfferTour = () => {
+    dismiss();
+    maybeStartGuidedTour();
   };
 
   const go = (href: string) => {
@@ -138,7 +146,7 @@ export default function OnboardingTour() {
             </p>
           </div>
           <button
-            onClick={dismiss}
+            onClick={dismissAndOfferTour}
             className="p-2 rounded-lg hover:bg-white/5 text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
             aria-label="Close"
           >
@@ -232,7 +240,7 @@ export default function OnboardingTour() {
             {checking ? "Checking progress…" : "Progress saves automatically as you complete each step."}
           </div>
           <button
-            onClick={dismiss}
+            onClick={allDone ? dismiss : dismissAndOfferTour}
             className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
           >
             {allDone ? "Close" : "Skip for now"}

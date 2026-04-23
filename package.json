@@ -14,6 +14,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/uuid": "^10.0.0",
     "bcryptjs": "^3.0.3",
+    "driver.js": "^1.4.0",
     "googleapis": "^171.4.0",
     "iron-session": "^8.0.4",
     "lucide-react": "^1.7.0",

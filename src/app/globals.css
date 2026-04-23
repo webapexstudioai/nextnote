@@ -1050,3 +1050,147 @@ body {
   font-size: 0.875rem;
   line-height: 1.6;
 }
+
+/* ─── driver.js tour styling — match NextNote dark glass ─── */
+.driver-popover {
+  background: rgba(14, 14, 18, 0.96) !important;
+  color: var(--foreground) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(232, 85, 61, 0.15) !important;
+  backdrop-filter: blur(24px) saturate(1.2);
+  padding: 20px 22px !important;
+  max-width: 340px !important;
+}
+.driver-popover-title {
+  color: var(--foreground) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px !important;
+}
+.driver-popover-description {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+}
+.driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 18px !important;
+  top: 10px !important;
+  right: 12px !important;
+  transition: color 0.15s;
+}
+.driver-popover-close-btn:hover {
+  color: var(--foreground) !important;
+}
+.driver-popover-footer {
+  margin-top: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+}
+.driver-popover-progress-text {
+  color: rgba(255, 255, 255, 0.45) !important;
+  font-size: 11px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+.driver-popover-navigation-btns {
+  display: flex;
+  gap: 8px;
+}
+.driver-popover-prev-btn,
+.driver-popover-next-btn {
+  text-shadow: none !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+  padding: 7px 14px !important;
+  border-radius: 8px !important;
+  transition: all 0.15s;
+  border: none !important;
+  line-height: 1 !important;
+}
+.driver-popover-prev-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+.driver-popover-prev-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--foreground) !important;
+}
+.driver-popover-next-btn {
+  background: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 16px rgba(232, 85, 61, 0.3) !important;
+}
+.driver-popover-next-btn:hover {
+  background: var(--accent-hover) !important;
+}
+.driver-popover-arrow-side-left.driver-popover-arrow { border-left-color: rgba(14, 14, 18, 0.96) !important; }
+.driver-popover-arrow-side-right.driver-popover-arrow { border-right-color: rgba(14, 14, 18, 0.96) !important; }
+.driver-popover-arrow-side-top.driver-popover-arrow { border-top-color: rgba(14, 14, 18, 0.96) !important; }
+.driver-popover-arrow-side-bottom.driver-popover-arrow { border-bottom-color: rgba(14, 14, 18, 0.96) !important; }
+.driver-active-element {
+  border-radius: 12px !important;
+}
+
+/* ─── Tour finale splash ─── */
+.tour-finale-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(232, 85, 61, 0.18) 0%,
+    rgba(5, 5, 7, 0.92) 60%
+  );
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  animation: tour-finale-bg 2400ms ease both;
+  pointer-events: none;
+}
+.tour-finale-inner {
+  text-align: center;
+  animation: tour-finale-inner 2400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.tour-finale-logo {
+  display: inline-flex;
+  filter: drop-shadow(0 12px 40px rgba(232, 85, 61, 0.45));
+  animation: tour-finale-logo 2400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.tour-finale-title {
+  margin-top: 28px;
+  font-size: clamp(1.5rem, 3.2vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+.tour-finale-sub {
+  margin-top: 10px;
+  font-size: clamp(0.95rem, 1.6vw, 1.125rem);
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: -0.005em;
+}
+@keyframes tour-finale-bg {
+  0%   { opacity: 0; }
+  17%  { opacity: 1; }     /* 400ms fade in */
+  79%  { opacity: 1; }     /* hold 1500ms */
+  100% { opacity: 0; }     /* 500ms fade out */
+}
+@keyframes tour-finale-inner {
+  0%   { opacity: 0; transform: translateY(8px); }
+  17%  { opacity: 1; transform: translateY(0); }
+  79%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+@keyframes tour-finale-logo {
+  0%   { transform: scale(0.85); }
+  17%  { transform: scale(1); }
+  79%  { transform: scale(1); }
+  100% { transform: scale(1.04); }
+}
