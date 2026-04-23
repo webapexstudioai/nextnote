@@ -17,13 +17,14 @@ export const CREDIT_PACKS: CreditPack[] = [
   { id: "agency",  name: "Agency Pack",   credits: 13000, priceCents: 10000, bonusLabel: "+30% bonus" },
 ];
 
-// Minimum balance required to start a voice call (~3 minutes at 12 credits/min).
-export const MIN_CALL_BALANCE = 50;
+// Minimum balance required to start a voice call (~3 minutes at 15 credits/min).
+export const MIN_CALL_BALANCE = 60;
 
-// Rates — what we bill users. Cost basis to NextNote is lower (see README).
-export const RATE_CREDITS_PER_MIN = 12;          // conversation calls
-export const RATE_CREDITS_PER_1K_CHARS = 3;      // TTS
-export const RATE_CREDITS_PER_VOICEMAIL = 8;     // voicemail drop
+// Rates — what we bill users. Cost basis to NextNote is lower; see
+// /admin/pricing for the current cost vs retail breakdown.
+export const RATE_CREDITS_PER_MIN = 15;          // voice calls (covers ElevenLabs Conv AI ~$0.09/min + Twilio PSTN ~$0.01/min)
+export const RATE_CREDITS_PER_1K_CHARS = 15;     // TTS (ElevenLabs ~$0.15/1K chars — was 3, catastrophically underpriced)
+export const RATE_CREDITS_PER_VOICEMAIL = 12;    // voicemail drop (Twilio PSTN + ElevenLabs TTS ~$0.08 upstream)
 
 // Phone numbers. Twilio cost is ~$1.15/mo + $1 one-time; we mark up.
 export const PHONE_NUMBER_PURCHASE_CREDITS = 500;   // $5 one-time
@@ -32,7 +33,7 @@ export const PHONE_NUMBER_MONTHLY_CREDITS = 500;    // $5/mo (cron deducts later
 // AI feature costs — what we bill users per use.
 export const WEBSITE_GENERATION_CREDITS = 50;       // $0.50 per standard landing page
 export const WEBSITE_WHITELABEL_CREDITS = 200;      // $2.00 per white-label landing page
-export const WEBSITE_AI_EDIT_CREDITS = 15;          // $0.15 per AI-powered website edit
+export const WEBSITE_AI_EDIT_CREDITS = 25;          // $0.25 per AI-powered website edit (Claude re-emits full HTML ~$0.14 cost)
 export const AI_INSIGHTS_CREDITS = 15;              // $0.15 per insights report
 export const AI_PARSE_CREDITS = 5;                  // $0.05 per XLSX/Sheets column mapping
 export const NOTE_SUMMARIZE_CREDITS = 5;            // $0.05 per note summarization
@@ -42,6 +43,40 @@ export const IMPORT_PROSPECT_CREDITS = 5;           // $0.05 per prospect import
 
 // Sign-up bonus — enough to try 1 website + a few AI features.
 export const SIGNUP_BONUS_CREDITS = 150;
+
+// Pricing-page metadata: declarative list of every billable feature + its
+// upstream cost (best current estimate). Used by the admin pricing dashboard
+// so you can eyeball margins without re-reading this file.
+export interface PricingEntry {
+  key: string;
+  label: string;
+  unit: string;
+  creditsPerUnit: number;
+  estUpstreamCostUsd: number;
+  upstream: string;
+  notes?: string;
+}
+
+export const PRICING_TABLE: PricingEntry[] = [
+  { key: "website_gen",      label: "Website generation",   unit: "per site",         creditsPerUnit: WEBSITE_GENERATION_CREDITS, estUpstreamCostUsd: 0.19,  upstream: "Claude Sonnet 4 + gpt-image-1 logo + Pexels" },
+  { key: "website_wl",       label: "Website (white-label)", unit: "per site",        creditsPerUnit: WEBSITE_WHITELABEL_CREDITS, estUpstreamCostUsd: 0.19,  upstream: "Same as generation — branding-only delta" },
+  { key: "website_edit",     label: "Website AI edit",       unit: "per edit",        creditsPerUnit: WEBSITE_AI_EDIT_CREDITS,    estUpstreamCostUsd: 0.14,  upstream: "Claude Sonnet 4 (re-emits whole HTML)" },
+  { key: "ai_insights",      label: "AI insights report",    unit: "per report",      creditsPerUnit: AI_INSIGHTS_CREDITS,        estUpstreamCostUsd: 0.025, upstream: "Claude Sonnet 4 (summary)" },
+  { key: "ai_parse",         label: "XLSX column mapping",   unit: "per import",      creditsPerUnit: AI_PARSE_CREDITS,           estUpstreamCostUsd: 0.012, upstream: "Claude Haiku" },
+  { key: "note_summarize",   label: "Note summarization",    unit: "per note",        creditsPerUnit: NOTE_SUMMARIZE_CREDITS,     estUpstreamCostUsd: 0.010, upstream: "Claude Haiku" },
+  { key: "receptionist",     label: "AI receptionist build", unit: "per draft",       creditsPerUnit: RECEPTIONIST_BUILD_CREDITS, estUpstreamCostUsd: 0.020, upstream: "Claude Sonnet 4 (prompt draft)" },
+  { key: "agent_chat",       label: "Agent test chat",       unit: "per message",     creditsPerUnit: AGENT_TEST_CHAT_CREDITS,    estUpstreamCostUsd: 0.004, upstream: "Claude Haiku" },
+  { key: "import_prospect",  label: "Import prospect",       unit: "per lookup",      creditsPerUnit: IMPORT_PROSPECT_CREDITS,    estUpstreamCostUsd: 0.017, upstream: "Google Places Details API" },
+  { key: "voice_call",       label: "Voice call",            unit: "per minute",      creditsPerUnit: RATE_CREDITS_PER_MIN,       estUpstreamCostUsd: 0.100, upstream: "ElevenLabs Conv AI + Twilio PSTN" },
+  { key: "tts",              label: "Text-to-speech",        unit: "per 1K chars",    creditsPerUnit: RATE_CREDITS_PER_1K_CHARS,  estUpstreamCostUsd: 0.150, upstream: "ElevenLabs TTS" },
+  { key: "voicemail",        label: "Voicemail drop",        unit: "per drop",        creditsPerUnit: RATE_CREDITS_PER_VOICEMAIL, estUpstreamCostUsd: 0.080, upstream: "Twilio PSTN + ElevenLabs TTS (~500 chars)" },
+  { key: "phone_purchase",   label: "Phone number purchase", unit: "one-time",        creditsPerUnit: PHONE_NUMBER_PURCHASE_CREDITS, estUpstreamCostUsd: 1.00, upstream: "Twilio number purchase" },
+  { key: "phone_monthly",    label: "Phone number monthly",  unit: "per month",       creditsPerUnit: PHONE_NUMBER_MONTHLY_CREDITS, estUpstreamCostUsd: 1.15, upstream: "Twilio monthly fee" },
+];
+
+// 1 credit = $0.01 retail. Agency pack's effective rate drops to ~$0.0077.
+export const CREDIT_UNIT_USD_RETAIL = 0.01;
+export const CREDIT_UNIT_USD_FLOOR  = 0.0077;
 
 export function getPack(id: string): CreditPack | undefined {
   return CREDIT_PACKS.find((p) => p.id === id);
