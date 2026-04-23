@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getAuthSession } from "@/lib/session";
 import { addCredits, hasBeenProcessed } from "@/lib/credits";
+import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * Pulls recent Stripe checkout sessions for the current user and credits any
@@ -15,6 +16,14 @@ export async function POST() {
   const session = await getAuthSession();
   if (!session.isLoggedIn || !session.userId) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  const limit = rateLimit(`reconcile:${session.userId}`, 3, 60_000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: `Please wait ${limit.retryAfterSec}s before reconciling again.` },
+      { status: 429 },
+    );
   }
 
   const { data: user } = await supabaseAdmin

@@ -1,13 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
-    if (!session.isLoggedIn) {
+    if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userLimit = rateLimit(`transcribe:${session.userId}`, 20, 60_000);
+    if (!userLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many transcription requests. Try again in ${userLimit.retryAfterSec}s.` },
+        { status: 429 },
+      );
+    }
+    const ipLimit = rateLimit(clientKey(req, "transcribe"), 40, 60_000);
+    if (!ipLimit.ok) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     const apiKey = process.env.DEEPGRAM_API_KEY;

@@ -2,12 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { getUserAIConfig, aiChat } from "@/lib/ai";
 import { getBalance, deductCredits, AI_PARSE_CREDITS } from "@/lib/credits";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userLimit = rateLimit(`ai-parse:${session.userId}`, 10, 60_000);
+    if (!userLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many parse requests. Try again in ${userLimit.retryAfterSec}s.` },
+        { status: 429 },
+      );
+    }
+    const ipLimit = rateLimit(clientKey(req, "ai-parse"), 20, 60_000);
+    if (!ipLimit.ok) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     const { rows, headers } = await req.json();

@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { recordAgentOwnership } from "@/lib/agentOwnership";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userLimit = rateLimit(`agent-create:${session.userId}`, 5, 60_000);
+    if (!userLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many agent creations. Try again in ${userLimit.retryAfterSec}s.` },
+        { status: 429 },
+      );
+    }
+    const ipLimit = rateLimit(clientKey(req, "agent-create"), 10, 60_000);
+    if (!ipLimit.ok) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     const { agentName, firstMessage, systemPrompt, voiceId } = await req.json();

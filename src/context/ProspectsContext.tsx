@@ -160,6 +160,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
           const prospectEmail = email || prospect?.email;
           const prospectName = prospect?.name || "Prospect";
 
+          const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
           const res = await fetch("/api/appointments/create", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -170,6 +171,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
               time,
               duration,
               agenda,
+              timeZone,
             }),
           });
 

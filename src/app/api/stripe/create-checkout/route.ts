@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { stripe, PRICE_IDS } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getAuthSession } from "@/lib/session";
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     // Get user
     const { data: user, error: userError } = await supabaseAdmin
       .from("users")
-      .select("id, email")
+      .select("id, email, stripe_customer_id")
       .eq("id", session.userId)
       .single();
 
@@ -28,11 +29,45 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const customer = await stripe.customers.create({
-      email: user.email,
-      metadata: { userId: user.id },
-    });
-    const customerId = customer.id;
+    let customerId: string | null = user.stripe_customer_id ?? null;
+
+    // If we have a stored customer, verify it still exists in Stripe.
+    if (customerId) {
+      try {
+        const existing = await stripe.customers.retrieve(customerId);
+        if ((existing as Stripe.DeletedCustomer).deleted) {
+          customerId = null;
+        }
+      } catch {
+        customerId = null;
+      }
+    }
+
+    // Otherwise, try to find one in Stripe by email to avoid duplicates from
+    // a prior checkout that didn't persist the id.
+    if (!customerId && user.email) {
+      const existing = await stripe.customers.list({ email: user.email, limit: 1 });
+      if (existing.data[0]) {
+        customerId = existing.data[0].id;
+      }
+    }
+
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        metadata: { userId: user.id },
+      });
+      customerId = customer.id;
+    }
+
+    // Persist so future checkouts skip the lookup and so the webhook can
+    // correlate customer-level events back to this user.
+    if (customerId !== user.stripe_customer_id) {
+      await supabaseAdmin
+        .from("users")
+        .update({ stripe_customer_id: customerId })
+        .eq("id", user.id);
+    }
 
     const requestOrigin = new URL(req.headers.get("origin") || req.nextUrl.origin).origin;
     const appUrl = process.env.NODE_ENV === "development"

@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
+import { rateLimit, clientKey } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getAuthSession();
     if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const userLimit = rateLimit(`tts:${session.userId}`, 20, 60_000);
+    if (!userLimit.ok) {
+      return NextResponse.json(
+        { error: `Too many TTS requests. Try again in ${userLimit.retryAfterSec}s.` },
+        { status: 429 },
+      );
+    }
+    const ipLimit = rateLimit(clientKey(req, "tts"), 60, 60_000);
+    if (!ipLimit.ok) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     const { text, voiceId } = await req.json();

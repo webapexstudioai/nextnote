@@ -6,7 +6,6 @@ import {
   Users,
   Calendar,
   Zap,
-  Phone,
   BarChart3,
   ArrowRight,
   Check,
@@ -17,11 +16,13 @@ import {
   Mic,
   Brain,
   Target,
-  Clock,
   Shield,
   Sparkles,
   FileSpreadsheet,
   MousePointerClick,
+  Play,
+  MapPin,
+  Wand2,
 } from "lucide-react";
 import { OrbitGridLogo } from "@/components/OrbitGridLogo";
 
@@ -112,6 +113,93 @@ function FloatingOrbs() {
       <div className="orb orb-2" style={{ top: "40%", right: "5%" }} />
       <div className="orb orb-3" style={{ bottom: "20%", left: "20%" }} />
     </>
+  );
+}
+
+/* ─── Browser-chrome mockup — wraps a screenshot, video, or placeholder UI ─── */
+function BrowserMockup({
+  children,
+  url = "app.nextnote.to/dashboard",
+  className = "",
+}: {
+  children: React.ReactNode;
+  url?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`relative rounded-xl overflow-hidden border border-[var(--border)] bg-[rgba(8,8,12,0.9)] shadow-2xl shadow-black/50 ${className}`}
+    >
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border)] bg-[rgba(12,12,18,0.8)]">
+        <div className="flex gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
+        </div>
+        <div className="flex-1 text-center">
+          <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-[rgba(255,255,255,0.04)] text-[10px] text-[var(--muted)] font-mono">
+            <Shield className="w-2.5 h-2.5" />
+            {url}
+          </span>
+        </div>
+        <div className="w-12" />
+      </div>
+      <div className="relative aspect-[16/10] bg-gradient-to-br from-[#0a0a10] via-[#0f0f18] to-[#0a0a10]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* Fallback dashboard illustration that renders inside BrowserMockup before
+   real screenshots are dropped in. Mimics the sidebar + kanban pipeline. */
+function DashboardPreviewFallback() {
+  return (
+    <div className="absolute inset-0 flex">
+      <div className="w-44 border-r border-[var(--border)] bg-[rgba(12,12,18,0.5)] p-3 space-y-2">
+        <div className="h-6 rounded bg-gradient-to-r from-[rgba(232,85,61,0.4)] to-transparent w-24" />
+        <div className="pt-4 space-y-1.5">
+          {["Dashboard", "Prospects", "Sources", "Appointments", "Analytics"].map((l, i) => (
+            <div
+              key={l}
+              className={`h-7 rounded-md flex items-center px-2.5 text-[11px] ${
+                i === 1
+                  ? "bg-[rgba(232,85,61,0.12)] text-[var(--accent)]"
+                  : "text-[var(--muted)]"
+              }`}
+            >
+              {l}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="h-4 w-32 rounded bg-[rgba(255,255,255,0.1)]" />
+          <div className="h-6 w-20 rounded-md bg-gradient-to-r from-[#e8553d] to-[#d44429]" />
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {["New", "Contacted", "Booked", "Closed"].map((col, ci) => (
+            <div key={col} className="rounded-lg border border-[var(--border)] bg-[rgba(12,12,18,0.4)] p-2">
+              <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] mb-2">
+                {col}
+              </div>
+              <div className="space-y-1.5">
+                {Array.from({ length: 3 - (ci % 2) }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-md bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.05)] p-1.5 space-y-1"
+                  >
+                    <div className="h-1.5 w-4/5 rounded bg-[rgba(255,255,255,0.15)]" />
+                    <div className="h-1 w-1/2 rounded bg-[rgba(255,255,255,0.08)]" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -262,8 +350,9 @@ function Hero() {
             Get Started
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <a href="#how-it-works" className="cta-secondary">
-            See How It Works
+          <a href="#demo" className="cta-secondary inline-flex items-center gap-2">
+            <Play className="w-3.5 h-3.5 fill-current" />
+            Watch 45s demo
           </a>
         </div>
 
@@ -308,6 +397,80 @@ function Hero() {
   );
 }
 
+/* ─── Product Demo (video slot) ─── */
+const demoChapters = [
+  { key: "import", label: "Import leads", time: "0:00", desc: "Drop a spreadsheet or scrape Google Maps — AI maps columns and pulls phones/emails." },
+  { key: "voicemail", label: "AI voicemail drops", time: "0:12", desc: "Record once, drop to hundreds of prospects without ringing their phones." },
+  { key: "pipeline", label: "Pipeline & booking", time: "0:24", desc: "Drag cards across stages, book appointments with Google Calendar sync." },
+  { key: "insights", label: "AI insights", time: "0:36", desc: "Meeting summaries, stale-lead alerts, and conversion analytics in real time." },
+];
+
+function DemoSection() {
+  const [active, setActive] = useState(0);
+  const headRef = useReveal<HTMLDivElement>();
+  const frameRef = useReveal<HTMLDivElement>();
+
+  return (
+    <section id="demo" className="relative py-24 sm:py-28">
+      <div className="absolute inset-0 glow-section pointer-events-none" />
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div ref={headRef} className="text-center mb-12 reveal">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">
+            Live demo
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+            See NextNote close a lead in 45 seconds
+          </h2>
+          <p className="text-[var(--muted)] max-w-xl mx-auto">
+            Watch the full loop — from scraping a prospect off Google Maps to a booked appointment on your calendar.
+          </p>
+        </div>
+
+        <div ref={frameRef} className="reveal">
+          <BrowserMockup className="max-w-5xl mx-auto">
+            {/* TODO: swap the children below for a real <video> once demo.mp4 is recorded:
+                <video autoPlay muted loop playsInline poster="/demo-poster.jpg" className="absolute inset-0 w-full h-full object-cover">
+                  <source src="/demo.mp4" type="video/mp4" />
+                </video>
+            */}
+            <DashboardPreviewFallback />
+            <button
+              className="absolute inset-0 flex items-center justify-center group"
+              aria-label="Play demo"
+            >
+              <span className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
+              <span className="relative w-20 h-20 rounded-full bg-[#e8553d] flex items-center justify-center shadow-2xl shadow-[#e8553d]/40 group-hover:scale-110 transition-transform">
+                <Play className="w-8 h-8 text-white fill-white translate-x-0.5" />
+              </span>
+            </button>
+          </BrowserMockup>
+
+          {/* Chapter tabs */}
+          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
+            {demoChapters.map((c, i) => (
+              <button
+                key={c.key}
+                onClick={() => setActive(i)}
+                className={`text-left p-4 rounded-xl border transition-all ${
+                  active === i
+                    ? "border-[rgba(232,85,61,0.4)] bg-[rgba(232,85,61,0.08)]"
+                    : "border-[var(--border)] bg-[rgba(12,12,18,0.5)] hover:border-[rgba(232,85,61,0.2)]"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-semibold">{c.label}</span>
+                  <span className="text-[10px] font-mono text-[var(--muted)]">{c.time}</span>
+                </div>
+                <p className="text-[11px] text-[var(--muted)] leading-relaxed">{c.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ─── Trust Bar ─── */
 function TrustBar() {
   const ref = useReveal<HTMLDivElement>();
@@ -338,83 +501,121 @@ function TrustBar() {
   );
 }
 
-/* ─── Features ─── */
-const features = [
+/* ─── Feature Showcase — alternating image/text rows ─── */
+interface ShowcaseRow {
+  eyebrow: string;
+  title: string;
+  desc: string;
+  bullets: { icon: React.ComponentType<{ className?: string }>; label: string }[];
+  mockupUrl: string;
+  /* Optional screenshot path under /public; falls back to DashboardPreviewFallback */
+  imageSrc?: string;
+}
+
+const showcaseRows: ShowcaseRow[] = [
   {
-    icon: Users,
-    title: "Smart CRM",
-    desc: "Organize prospects in folders, track every touchpoint, and never let a lead slip through the cracks.",
+    eyebrow: "Lead intelligence",
+    title: "Import, organize, and never lose a lead",
+    desc: "Drop a spreadsheet or scrape Google Maps and NextNote does the boring parts — auto-mapping columns, deduping, enriching phone numbers, and dropping leads straight into your pipeline.",
+    bullets: [
+      { icon: FileSpreadsheet, label: "CSV · XLSX · Google Sheets import — AI maps your columns" },
+      { icon: MapPin, label: "Scrape Google Maps by niche + location with one click" },
+      { icon: Users, label: "Folder-based pipeline keeps every lead sorted" },
+    ],
+    mockupUrl: "app.nextnote.to/dashboard/prospects",
   },
   {
-    icon: Calendar,
-    title: "Appointment Booking",
-    desc: "Book, reschedule, and manage appointments with Google Calendar sync built right in.",
+    eyebrow: "AI that actually closes",
+    title: "Your AI agent that never sleeps",
+    desc: "Drop voicemails to hundreds of prospects without ringing their phones. Let AI summarize your calls, surface hot leads, and draft follow-ups — so your team does the part machines can't.",
+    bullets: [
+      { icon: Mic, label: "Voicemail drops at scale — carrier-grade detection" },
+      { icon: Brain, label: "AI meeting summaries + next-step suggestions" },
+      { icon: Wand2, label: "Smart follow-ups drafted in your voice" },
+    ],
+    mockupUrl: "app.nextnote.to/dashboard/voicemail",
   },
   {
-    icon: Brain,
-    title: "AI Summaries",
-    desc: "Let AI analyze your meeting notes, parse imports, and surface the insights that matter most.",
-  },
-  {
-    icon: Mic,
-    title: "Voicemail Drops",
-    desc: "Drop pre-recorded messages straight to a prospect's voicemail at scale. Reach more prospects without lifting a finger.",
-  },
-  {
-    icon: BarChart3,
-    title: "Pipeline Analytics",
-    desc: "Visual pipeline from New to Closed. See conversion rates, booking rates, and stale leads instantly.",
-  },
-  {
-    icon: FileSpreadsheet,
-    title: "Smart Import",
-    desc: "Import from XLSX, CSV, or Google Sheets. AI auto-maps your columns — zero manual config.",
+    eyebrow: "Outbound at scale",
+    title: "Every touchpoint, tracked and measured",
+    desc: "A clean pipeline from New to Closed with Google Calendar sync, real-time conversion analytics, and stale-lead alerts that tell you exactly where deals are leaking.",
+    bullets: [
+      { icon: Calendar, label: "Two-way Google Calendar sync for every appointment" },
+      { icon: BarChart3, label: "Conversion + booking analytics in real time" },
+      { icon: Target, label: "Stale-lead alerts so nothing falls through" },
+    ],
+    mockupUrl: "app.nextnote.to/dashboard/analytics",
   },
 ];
 
-function Features() {
+function FeatureShowcase() {
   const headRef = useReveal<HTMLDivElement>();
-  const gridRef = useReveal<HTMLDivElement>();
 
   return (
     <section id="features" className="relative py-24 sm:py-32">
       <div className="absolute inset-0 glow-section pointer-events-none" />
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={headRef} className="text-center mb-16 reveal">
+        <div ref={headRef} className="text-center mb-16 sm:mb-20 reveal">
           <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">
-            Features
+            What you get
           </p>
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Everything you need to close
+            Built for the entire close loop
           </h2>
           <p className="text-[var(--muted)] max-w-xl mx-auto">
-            A complete toolkit for agency owners and sales teams who want to move fast
-            and close more deals.
+            One platform replaces the CRM, voicemail tool, scraper, calendar app, and analytics dashboard your team is duct-taping together.
           </p>
         </div>
 
-        <div ref={gridRef} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 reveal-stagger">
-          {features.map((f) => {
-            const Icon = f.icon;
-            return (
-              <div
-                key={f.title}
-                className="reveal-child glass-card rounded-2xl p-6 sm:p-8 group"
-              >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-[#e8553d]/10"
-                  style={{ background: "rgba(232, 85, 61, 0.1)" }}
-                >
-                  <Icon className="w-5 h-5 text-[var(--accent)]" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
-                <p className="text-sm text-[var(--muted)] leading-relaxed">{f.desc}</p>
-              </div>
-            );
-          })}
+        <div className="space-y-20 sm:space-y-28">
+          {showcaseRows.map((row, i) => (
+            <ShowcaseBlock key={row.title} row={row} reversed={i % 2 === 1} />
+          ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function ShowcaseBlock({ row, reversed }: { row: ShowcaseRow; reversed: boolean }) {
+  const ref = useReveal<HTMLDivElement>();
+  return (
+    <div
+      ref={ref}
+      className={`reveal grid lg:grid-cols-2 gap-10 lg:gap-16 items-center ${
+        reversed ? "lg:[&>*:first-child]:order-2" : ""
+      }`}
+    >
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">
+          {row.eyebrow}
+        </p>
+        <h3 className="text-2xl sm:text-3xl font-bold mb-4 leading-tight">{row.title}</h3>
+        <p className="text-[var(--muted)] leading-relaxed mb-6">{row.desc}</p>
+        <ul className="space-y-3">
+          {row.bullets.map((b) => {
+            const Icon = b.icon;
+            return (
+              <li key={b.label} className="flex items-start gap-3">
+                <span className="mt-0.5 w-6 h-6 rounded-md flex items-center justify-center shrink-0 bg-[rgba(232,85,61,0.1)]">
+                  <Icon className="w-3.5 h-3.5 text-[var(--accent)]" />
+                </span>
+                <span className="text-sm text-[var(--foreground)]">{b.label}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <BrowserMockup url={row.mockupUrl}>
+        {/* TODO: swap DashboardPreviewFallback for an <img src={row.imageSrc} ... /> once screenshots are saved to /public */}
+        {row.imageSrc ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={row.imageSrc} alt={row.title} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <DashboardPreviewFallback />
+        )}
+      </BrowserMockup>
+    </div>
   );
 }
 
@@ -475,91 +676,6 @@ function HowItWorks() {
                 <p className="text-sm text-[var(--muted)] leading-relaxed max-w-xs mx-auto">
                   {s.desc}
                 </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Why NextNote ─── */
-const reasons = [
-  {
-    icon: Clock,
-    title: "Save 10+ Hours a Week",
-    desc: "Automate follow-ups, imports, and note-taking so your team focuses on selling, not admin work.",
-  },
-  {
-    icon: Zap,
-    title: "AI-Native from Day One",
-    desc: "Not a bolt-on. AI is woven into every workflow — from smart imports to automated meeting insights.",
-  },
-  {
-    icon: Phone,
-    title: "Built for Outbound Teams",
-    desc: "Voicemail drops, appointment booking, and pipeline tracking — purpose-built for closers who move fast.",
-  },
-  {
-    icon: BarChart3,
-    title: "Real-Time Analytics",
-    desc: "See your conversion funnel, stale leads, and team performance at a glance. Make data-driven decisions.",
-  },
-  {
-    icon: Shield,
-    title: "Enterprise-Grade Security",
-    desc: "Encrypted sessions, bcrypt-hashed passwords, HTTP-only cookies. Your data stays yours.",
-  },
-  {
-    icon: Sparkles,
-    title: "All-in-One Platform",
-    desc: "CRM, booking, voicemail, analytics, AI — one platform replaces five tools and eliminates tab-switching.",
-  },
-];
-
-function WhySection() {
-  const headRef = useReveal<HTMLDivElement>();
-  const gridRef = useReveal<HTMLDivElement>();
-
-  return (
-    <section className="relative py-24 sm:py-32">
-      <div className="absolute inset-0 glow-section pointer-events-none" />
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={headRef} className="text-center mb-16 reveal">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">
-            Why NextNote
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            The operating system your agency deserves
-          </h2>
-          <p className="text-[var(--muted)] max-w-xl mx-auto">
-            Built specifically for outbound teams, appointment setters, and agency owners
-            who need speed, simplicity, and results.
-          </p>
-        </div>
-
-        <div
-          ref={gridRef}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-5xl mx-auto reveal-stagger"
-        >
-          {reasons.map((r) => {
-            const Icon = r.icon;
-            return (
-              <div
-                key={r.title}
-                className="reveal-child flex gap-4 p-6 rounded-2xl border border-[var(--border)] bg-[rgba(12,12,18,0.6)] backdrop-blur-sm hover:border-[rgba(232,85,61,0.2)] hover:bg-[rgba(15,15,22,0.8)] transition-all duration-300"
-              >
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: "rgba(232, 85, 61, 0.1)" }}
-                >
-                  <Icon className="w-5 h-5 text-[var(--accent)]" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">{r.title}</h3>
-                  <p className="text-sm text-[var(--muted)] leading-relaxed">{r.desc}</p>
-                </div>
               </div>
             );
           })}
@@ -968,12 +1084,11 @@ export default function Home() {
       <FloatingOrbs />
       <Navbar />
       <Hero />
+      <DemoSection />
       <TrustBar />
-      <Features />
+      <FeatureShowcase />
       <div className="section-divider max-w-5xl mx-auto" />
       <HowItWorks />
-      <div className="section-divider max-w-5xl mx-auto" />
-      <WhySection />
       <Pricing />
       <FAQ />
       <FinalCTA />

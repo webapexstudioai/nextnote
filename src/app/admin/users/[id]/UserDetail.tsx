@@ -16,6 +16,7 @@ interface UserDetail {
   createdAt: string;
   creditBalance: number;
   suspendedAt?: string | null;
+  compedAt?: string | null;
 }
 
 interface Transaction {
@@ -224,6 +225,49 @@ export default function UserDetail({ userId }: { userId: string }) {
     }
   }
 
+  async function compAccount(tier: "pro" | "starter") {
+    const label = tier === "pro" ? "Pro" : "Starter";
+    if (!confirm(`Comp this user to ${label}? They'll get access immediately + welcome email + 100 bonus credits.`)) return;
+    setBusy("comp");
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/comp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed");
+      const parts = [`${label} activated`];
+      if (json.bonusGranted) parts.push(`+${json.bonusGranted} credits`);
+      if (json.emailSent) parts.push("welcome email sent");
+      say(parts.join(" · "));
+      if (Array.isArray(json.warnings) && json.warnings.length) {
+        alert(`Comp succeeded but:\n\n• ${json.warnings.join("\n• ")}`);
+      }
+      await loadDetail();
+    } catch (err) {
+      say(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function revokeComp() {
+    if (!confirm("Revoke this comped account? Their access will be removed.")) return;
+    setBusy("comp");
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/comp`, { method: "DELETE" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Failed");
+      say("Comp revoked.");
+      await loadDetail();
+    } catch (err) {
+      say(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function resendVerification() {
     setBusy("verify");
     try {
@@ -305,6 +349,11 @@ export default function UserDetail({ userId }: { userId: string }) {
               {isSuspended && (
                 <span className="rounded bg-red-500/15 px-2 py-1 text-red-400">suspended</span>
               )}
+              {user.compedAt && (
+                <span className="rounded bg-violet-500/15 px-2 py-1 text-violet-300">
+                  comped · {new Date(user.compedAt).toLocaleDateString()}
+                </span>
+              )}
             </div>
           </div>
           <div className="text-right">
@@ -383,10 +432,59 @@ export default function UserDetail({ userId }: { userId: string }) {
           </div>
         </div>
 
+        <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-6">
+          <h3 className="text-lg font-semibold">Comp account</h3>
+          <p className="mt-1 text-xs text-neutral-400">
+            Activate a free subscription — no Stripe checkout required. Grants dashboard access, 100 bonus credits, and sends the welcome email.
+          </p>
+          <div className="mt-4 space-y-2">
+            {user.compedAt ? (
+              <>
+                <div className="rounded-md border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs text-violet-200">
+                  Comped since {new Date(user.compedAt).toLocaleString()} · tier {user.subscriptionTier ?? "—"}
+                </div>
+                <button
+                  onClick={() => compAccount("pro")}
+                  disabled={busy === "comp"}
+                  className="w-full rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+                >
+                  {busy === "comp" ? "Working…" : "Re-apply Pro comp"}
+                </button>
+                <button
+                  onClick={revokeComp}
+                  disabled={busy === "comp"}
+                  className="w-full rounded-md bg-red-600/20 px-3 py-2 text-sm text-red-300 hover:bg-red-600/30 disabled:opacity-50"
+                >
+                  Revoke comp
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => compAccount("pro")}
+                  disabled={busy === "comp"}
+                  className="w-full rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
+                >
+                  {busy === "comp" ? "Activating…" : "Comp Pro account"}
+                </button>
+                <button
+                  onClick={() => compAccount("starter")}
+                  disabled={busy === "comp"}
+                  className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 disabled:opacity-50"
+                >
+                  Comp Starter instead
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-6 md:grid-cols-2">
         <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-6">
-          <h3 className="text-lg font-semibold">Override subscription</h3>
+          <h3 className="text-lg font-semibold">Override subscription (raw)</h3>
           <p className="mt-1 text-xs text-neutral-500">
-            Bypasses Stripe. Use for comped accounts or to grant dashboard access manually.
+            Low-level status/tier edit. Use &ldquo;Comp account&rdquo; above for activating paying-feeling accounts.
           </p>
           <div className="mt-4 space-y-3">
             <label className="block text-xs text-neutral-400">Status</label>

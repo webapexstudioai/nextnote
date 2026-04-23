@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
-import { addCredits, hasBeenProcessed } from "@/lib/credits";
+import { addCredits, deductCredits, getBalance, hasBeenProcessed } from "@/lib/credits";
 import { sendWelcomeEmail } from "@/lib/email-templates";
+
+const ALLOWED_PLANS = new Set(["starter", "pro"]);
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest) {
 
         // Subscription checkout
         const plan = session.metadata?.plan;
-        if (userId && plan) {
+        if (userId && plan && ALLOWED_PLANS.has(plan)) {
           const subscriptionId = typeof session.subscription === "string"
             ? session.subscription
             : session.subscription?.toString() || "";
@@ -126,11 +128,86 @@ export async function POST(req: NextRequest) {
         }
         break;
       }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = typeof invoice.customer === "string"
+          ? invoice.customer
+          : invoice.customer?.id;
+        if (!customerId) break;
+
+        const { data: user } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("stripe_customer_id", customerId)
+          .maybeSingle();
+
+        if (user?.id) {
+          await supabaseAdmin
+            .from("users")
+            .update({ subscription_status: "past_due" })
+            .eq("id", user.id);
+        }
+        break;
+      }
+
+      case "charge.refunded": {
+        const charge = event.data.object as Stripe.Charge;
+        const paymentIntentId = typeof charge.payment_intent === "string"
+          ? charge.payment_intent
+          : charge.payment_intent?.id;
+        if (!paymentIntentId) break;
+
+        // Correlate the refund back to the original checkout session so we
+        // know what it was for (credit purchase vs subscription payment).
+        const sessions = await stripe.checkout.sessions.list({
+          payment_intent: paymentIntentId,
+          limit: 1,
+        });
+        const originalSession = sessions.data[0];
+        if (!originalSession) break;
+
+        const userId = originalSession.metadata?.userId;
+        const kind = originalSession.metadata?.kind;
+        const credits = parseInt(originalSession.metadata?.credits || "0", 10);
+
+        // Reverse credits for credit-purchase refunds. Idempotent per refund.id
+        // so admin-initiated refunds (which use the same refId) don't
+        // double-reverse. Clamp to current balance — user may have already
+        // spent some of the credits.
+        if (userId && kind === "credit_purchase" && credits > 0) {
+          for (const refund of charge.refunds?.data ?? []) {
+            if (await hasBeenProcessed(refund.id)) continue;
+            const balance = await getBalance(userId);
+            const amount = Math.min(credits, balance);
+            if (amount > 0) {
+              await deductCredits(userId, amount, {
+                reason: "refund",
+                refId: refund.id,
+                metadata: {
+                  chargeId: charge.id,
+                  refundId: refund.id,
+                  originalSessionId: originalSession.id,
+                  originalCredits: credits,
+                  source: "stripe_webhook",
+                },
+              });
+            }
+          }
+        }
+        break;
+      }
     }
 
     return NextResponse.json({ received: true });
   } catch (err) {
-    console.error("Webhook processing error:", err);
-    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
+    // Return 200 so Stripe doesn't retry indefinitely on bugs in our handler.
+    // Log loudly so we can alert and replay manually if needed. Signature
+    // verification failures above still return 400 (they should be retried).
+    console.error(
+      `Webhook processing error [event=${event.type} id=${event.id}]:`,
+      err,
+    );
+    return NextResponse.json({ received: true, handled: false });
   }
 }

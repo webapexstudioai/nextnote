@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const { data: user, error } = await supabaseAdmin
     .from("users")
     .select(
-      "id, name, email, agency_name, subscription_tier, subscription_status, stripe_customer_id, stripe_subscription_id, email_verified, is_admin, created_at, suspended_at",
+      "id, name, email, agency_name, subscription_tier, subscription_status, stripe_customer_id, stripe_subscription_id, email_verified, is_admin, created_at, suspended_at, comped_at",
     )
     .eq("id", params.id)
     .single();
@@ -52,6 +52,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       createdAt: user.created_at,
       creditBalance: balance?.balance ?? 0,
       suspendedAt: user.suspended_at,
+      compedAt: user.comped_at,
     },
     stats: {
       prospects: prospectCount ?? 0,
