@@ -17,14 +17,16 @@ export const CREDIT_PACKS: CreditPack[] = [
   { id: "agency",  name: "Agency Pack",   credits: 13000, priceCents: 10000, bonusLabel: "+30% bonus" },
 ];
 
-// Minimum balance required to start a voice call (~3 minutes at 15 credits/min).
-export const MIN_CALL_BALANCE = 60;
+// Minimum balance required to start a voice call (~4 minutes at 16 credits/min).
+export const MIN_CALL_BALANCE = 64;
 
 // Rates — what we bill users. Cost basis to NextNote is lower; see
-// /admin/pricing for the current cost vs retail breakdown.
-export const RATE_CREDITS_PER_MIN = 15;          // voice calls (covers ElevenLabs Conv AI ~$0.09/min + Twilio PSTN ~$0.01/min)
-export const RATE_CREDITS_PER_1K_CHARS = 15;     // TTS (ElevenLabs ~$0.15/1K chars — was 3, catastrophically underpriced)
-export const RATE_CREDITS_PER_VOICEMAIL = 12;    // voicemail drop (Twilio PSTN + ElevenLabs TTS ~$0.08 upstream)
+// /admin/pricing for the current cost vs retail breakdown. All rates
+// are tuned so every feature clears at least 15% margin even at the
+// Agency-pack floor ($0.0077/credit).
+export const RATE_CREDITS_PER_MIN = 16;          // voice calls (covers ElevenLabs Conv AI ~$0.09/min + Twilio PSTN ~$0.01/min)
+export const RATE_CREDITS_PER_1K_CHARS = 25;     // TTS (ElevenLabs ~$0.15/1K chars — floor-safe with 15%+ margin)
+export const RATE_CREDITS_PER_VOICEMAIL = 13;    // voicemail drop (Twilio PSTN + ElevenLabs TTS ~$0.08 upstream)
 
 // Phone numbers. Twilio cost is ~$1.15/mo + $1 one-time; we mark up.
 export const PHONE_NUMBER_PURCHASE_CREDITS = 500;   // $5 one-time
