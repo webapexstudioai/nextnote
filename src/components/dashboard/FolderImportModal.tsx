@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Upload, Link2, FileSpreadsheet, Loader2, CheckCircle, AlertCircle, Sparkles, ArrowRight, Eye } from "lucide-react";
+import { X, Upload, Link2, FileSpreadsheet, Loader2, CheckCircle, AlertCircle, Wand2, ArrowRight, Eye } from "lucide-react";
 import { useProspects } from "@/context/ProspectsContext";
 import { Prospect } from "@/types";
 
@@ -258,7 +258,7 @@ export default function FolderImportModal({ folderId, onClose }: FolderImportMod
                     disabled={!googleSheetUrl}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Sparkles className="w-4 h-4" /> Analyze with AI
+                    <Wand2 className="w-4 h-4" /> Analyze with AI
                   </button>
                 </div>
               )}
@@ -279,7 +279,7 @@ export default function FolderImportModal({ folderId, onClose }: FolderImportMod
             <>
               <div className="space-y-2">
                 <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-[var(--accent)]" /> AI Column Mapping
+                  <Wand2 className="w-3 h-3 text-[var(--accent)]" /> AI Column Mapping
                 </h3>
                 <div className="grid grid-cols-2 gap-1.5">
                   {rawHeaders.map((h) => (

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Zap, TrendingUp, AlertTriangle, Star, Target, DollarSign,
-  Timer, RefreshCw, Sparkles, Loader2, ArrowRight, Clock, Trophy,
+  Timer, RefreshCw, Wand2, Loader2, ArrowRight, Clock, Trophy,
 } from "lucide-react";
 import { useProspects } from "@/context/ProspectsContext";
 import type { Prospect, ProspectStatus } from "@/types";
@@ -255,7 +255,7 @@ export default function AIInsightsPage() {
           <div className="relative">
             <div className="flex items-start gap-3 mb-3">
               <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/20 border border-[var(--accent)]/30 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5 text-[var(--accent)]" />
+                <Wand2 className="w-5 h-5 text-[var(--accent)]" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">

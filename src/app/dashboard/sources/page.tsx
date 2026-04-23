@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   MapPin, Search, Loader2, Coins, CheckCircle, AlertCircle,
-  Globe, ArrowRight, Info, Sparkles, FolderPlus, Folder,
+  Globe, ArrowRight, Info, Wand2, FolderPlus, Folder,
 } from "lucide-react";
 import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
 
@@ -145,7 +145,7 @@ export default function SourcesPage() {
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-8">
         <div className="flex items-center gap-2 text-xs text-[var(--muted)] mb-2">
-          <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
+          <Wand2 className="w-3.5 h-3.5 text-[var(--accent)]" />
           New — Prospect sourcing
         </div>
         <h1 className="text-2xl font-semibold text-[var(--foreground)] mb-1">Sources</h1>

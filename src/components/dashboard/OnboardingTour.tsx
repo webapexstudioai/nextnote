@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Users, Phone, CalendarCheck, Mic, CheckCircle2, X, Sparkles, ArrowRight, Loader2,
+  Users, Phone, CalendarCheck, Mic, CheckCircle2, X, Compass, ArrowRight, Loader2,
 } from "lucide-react";
 import { useProspects } from "@/context/ProspectsContext";
 import { maybeStartGuidedTour } from "@/components/dashboard/GuidedTour";
@@ -132,7 +132,7 @@ export default function OnboardingTour() {
 
         <div className="p-6 sm:p-8 border-b border-white/5 flex items-start gap-4">
           <div className="relative w-12 h-12 rounded-2xl bg-[var(--accent)]/15 border border-[var(--accent)]/30 flex items-center justify-center shrink-0">
-            <Sparkles className="w-6 h-6 text-[var(--accent)]" />
+            <Compass className="w-6 h-6 text-[var(--accent)]" />
             <span className="setup-sparkle-ring" />
           </div>
           <div className="flex-1 min-w-0">
@@ -259,7 +259,7 @@ function OnboardingLauncher({ open, completed, total }: { open: () => void; comp
       className="setup-launcher fixed bottom-6 right-6 z-40 liquid-glass-strong rounded-full pl-3 pr-4 py-2 flex items-center gap-2.5 text-xs font-medium hover:border-[var(--accent)]/40 hover:scale-105 transition-all shadow-xl group"
     >
       <span className="relative flex w-6 h-6 items-center justify-center rounded-full bg-[var(--accent)]/20 text-[var(--accent)]">
-        <Sparkles className="w-3.5 h-3.5" />
+        <Compass className="w-3.5 h-3.5" />
         <span className="absolute inset-0 rounded-full bg-[var(--accent)]/30 animate-ping opacity-60" />
       </span>
       <span className="hidden sm:inline">Setup guide</span>

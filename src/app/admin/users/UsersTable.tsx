@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, Sparkles } from "lucide-react";
+import { Search, Gift } from "lucide-react";
 
 interface AdminUser {
   id: string;
@@ -245,7 +245,7 @@ export default function UsersTable() {
                         disabled={compingId === u.id}
                         className="inline-flex items-center gap-1.5 rounded-md border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[11px] text-violet-200 transition-colors hover:bg-violet-500/20 disabled:opacity-50"
                       >
-                        <Sparkles className="h-3 w-3" />
+                        <Gift className="h-3 w-3" />
                         {compingId === u.id ? "Activating…" : "Comp Pro"}
                       </button>
                     )}

@@ -17,12 +17,12 @@ import {
   Brain,
   Target,
   Shield,
-  Sparkles,
+  Wand2,
+  Gift,
   FileSpreadsheet,
   MousePointerClick,
   Play,
   MapPin,
-  Wand2,
 } from "lucide-react";
 import { OrbitGridLogo } from "@/components/OrbitGridLogo";
 
@@ -319,7 +319,7 @@ function Hero() {
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 text-center">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[rgba(232,85,61,0.2)] bg-[rgba(232,85,61,0.06)] text-xs text-[var(--accent)] mb-8 fade-in-up backdrop-blur-sm">
-          <Sparkles className="w-3 h-3" />
+          <Wand2 className="w-3 h-3" />
           AI-Powered Sales OS
         </div>
 
@@ -789,7 +789,7 @@ function Pricing() {
 
               {plan.creditBadge && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium mb-4">
-                  <Sparkles className="w-3 h-3" />
+                  <Gift className="w-3 h-3" />
                   {plan.creditBadge}
                 </div>
               )}

@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, Loader2, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Loader2, Crown, Zap } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 import { TIERS, SubscriptionTier } from "@/lib/subscriptions";
 
 const planIcons = {
   starter: Zap,
-  pro: Sparkles,
+  pro: Crown,
 } as const;
 
 export default function WelcomePage() {

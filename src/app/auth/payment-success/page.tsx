@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle, Loader2, PartyPopper } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 
 export default function PaymentSuccessPage() {
@@ -86,9 +86,9 @@ export default function PaymentSuccessPage() {
             </div>
 
             <div className="flex items-center justify-center gap-2 text-[var(--accent)] text-sm font-medium">
-              <Sparkles className="w-4 h-4 animate-pulse" />
+              <PartyPopper className="w-4 h-4 animate-pulse" />
               <span>Preparing your workspace</span>
-              <Sparkles className="w-4 h-4 animate-pulse" />
+              <PartyPopper className="w-4 h-4 animate-pulse" />
             </div>
 
             <div className="flex justify-center gap-1.5 pt-2">

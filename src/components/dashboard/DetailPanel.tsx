@@ -1,7 +1,7 @@
 "use client";
 
 import { Prospect, ProspectStatus, AppointmentDuration, CancelReason } from "@/types";
-import { X, Phone, Mail, Briefcase, FileText, Calendar, ArrowRight, Video, Sparkles, Loader2, Save, Check, XCircle, RefreshCw, UserX, Voicemail, Upload, Music, Trash2, Play, Bot, DollarSign, ExternalLink, User as UserIcon, Building2, MapPin, Globe, Pencil, Plus } from "lucide-react";
+import { X, Phone, Mail, Briefcase, FileText, Calendar, ArrowRight, Video, Wand2, Loader2, Save, Check, XCircle, RefreshCw, UserX, Voicemail, Upload, Music, Trash2, Play, Bot, DollarSign, ExternalLink, User as UserIcon, Building2, MapPin, Globe, Pencil, Plus } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useProspects } from "@/context/ProspectsContext";
@@ -1046,7 +1046,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
                       <Save className="w-3 h-3" /> Save
                     </button>
                     <button onClick={() => handleSummarizeNotes(latestPending.id)} disabled={summarizing || !meetingNotesValue.trim()} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[rgba(232,85,61,0.1)] text-[var(--accent)] text-xs font-medium hover:bg-[rgba(232,85,61,0.2)] disabled:opacity-50">
-                      {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} AI Summary
+                      {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />} AI Summary
                     </button>
                   </div>
                   {summarizeError && <p className="text-[10px] text-rose-400">{summarizeError}</p>}
@@ -1143,7 +1143,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
                           {appt.summarizedNotes && (
                             <div className="p-2 rounded-lg bg-[rgba(232,85,61,0.05)] border border-[rgba(232,85,61,0.1)]">
                               <div className="text-[10px] text-[var(--accent)] uppercase tracking-wider mb-1 font-medium flex items-center gap-1">
-                                <Sparkles className="w-3 h-3" /> AI Summary
+                                <Wand2 className="w-3 h-3" /> AI Summary
                               </div>
                               <div className="text-xs text-[var(--muted)] whitespace-pre-wrap">{appt.summarizedNotes}</div>
                             </div>
@@ -1248,7 +1248,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
               {vmTab === "ai" && (
                 <div className="flex flex-col items-center justify-center py-8 space-y-3">
                   <div className="w-12 h-12 rounded-full bg-[rgba(232,85,61,0.1)] flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-[var(--accent)]" />
+                    <Wand2 className="w-6 h-6 text-[var(--accent)]" />
                   </div>
                   <p className="text-sm font-medium text-[var(--foreground)]">AI Voice Generation</p>
                   <p className="text-xs text-[var(--muted)] text-center">
@@ -1450,7 +1450,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
             <div className="flex gap-3">
               <button onClick={() => setShowReceptionistBuilder(false)} className="px-4 py-3 rounded-xl border border-[var(--border)] text-sm hover:bg-[var(--card-hover)] transition-colors">Close</button>
               <button onClick={handleBuildReceptionist} disabled={buildingReceptionist} className="px-4 py-3 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors inline-flex items-center gap-2 disabled:opacity-50">
-                {buildingReceptionist ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Generate Draft
+                {buildingReceptionist ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} Generate Draft
               </button>
             </div>
 

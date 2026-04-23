@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, FileSpreadsheet, Link2, Loader2, CheckCircle, AlertCircle, Sparkles, ArrowRight, Eye } from "lucide-react";
+import { ArrowLeft, Upload, FileSpreadsheet, Link2, Loader2, CheckCircle, AlertCircle, Wand2, ArrowRight, Eye } from "lucide-react";
 import { useProspects } from "@/context/ProspectsContext";
 import { Prospect } from "@/types";
 
@@ -237,7 +237,7 @@ export default function ImportPage() {
                   disabled={!googleSheetUrl}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Wand2 className="w-4 h-4" />
                   Analyze with AI
                 </button>
               </div>
@@ -246,7 +246,7 @@ export default function ImportPage() {
             {/* How it works */}
             <div className="rounded-xl liquid-glass p-5">
               <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[var(--accent)]" /> How AI Import Works
+                <Wand2 className="w-4 h-4 text-[var(--accent)]" /> How AI Import Works
               </h3>
               <div className="space-y-2 text-xs text-[var(--muted)]">
                 <div className="flex items-start gap-2">
@@ -281,7 +281,7 @@ export default function ImportPage() {
             {/* Column Mapping */}
             <div className="rounded-xl liquid-glass p-5">
               <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[var(--accent)]" /> AI Column Mapping
+                <Wand2 className="w-4 h-4 text-[var(--accent)]" /> AI Column Mapping
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {rawHeaders.map((header) => (

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import {
-  Calendar, Clock, User, Briefcase, CheckCircle, Video, Mail, Sparkles, Loader2,
+  Calendar, Clock, User, Briefcase, CheckCircle, Video, Mail, Wand2, Loader2,
   FileText, Save, ChevronLeft, ChevronRight, List, Grid3X3, XCircle, RefreshCw, UserX, BarChart3,
 } from "lucide-react";
 import { useProspects } from "@/context/ProspectsContext";
@@ -354,7 +354,7 @@ export default function AppointmentsPage() {
                 disabled={summarizing || !notesInput.trim()}
                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[rgba(232,85,61,0.1)] text-[var(--accent)] text-xs font-medium hover:bg-[rgba(232,85,61,0.2)] disabled:opacity-50"
               >
-                {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
                 {summarizing ? "Summarizing..." : "AI Summarize"}
               </button>
             </div>
@@ -364,7 +364,7 @@ export default function AppointmentsPage() {
             {appt.summarizedNotes && (
               <div className="p-3 rounded-lg bg-[rgba(232,85,61,0.05)] border border-[rgba(232,85,61,0.1)]">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                  <Sparkles className="w-3 h-3 text-[var(--accent)]" />
+                  <Wand2 className="w-3 h-3 text-[var(--accent)]" />
                   <span className="text-[10px] font-medium text-[var(--accent)] uppercase tracking-wider">AI Summary</span>
                 </div>
                 <p className="text-xs text-[var(--muted)] leading-relaxed whitespace-pre-wrap">{appt.summarizedNotes}</p>

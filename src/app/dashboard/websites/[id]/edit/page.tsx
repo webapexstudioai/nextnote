@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft, Loader2, Sparkles, Send, MousePointerClick, MessageSquare,
+  ArrowLeft, Loader2, Wand2, Send, MousePointerClick, MessageSquare,
   Save, RotateCcw, ExternalLink, Check,
 } from "lucide-react";
 import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
@@ -405,7 +405,7 @@ export default function WebsiteEditPage() {
                       </button>
                     </div>
                     <p className="mt-2 text-[10px] text-[var(--muted)] flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> {WEBSITE_AI_EDIT_CREDITS} credits per AI edit
+                      <Wand2 className="w-3 h-3" /> {WEBSITE_AI_EDIT_CREDITS} credits per AI edit
                     </p>
                   </div>
                 </div>

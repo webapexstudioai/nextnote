@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Settings, User, Bell, Palette, Save, CheckCircle, Loader2,
   Crown, Sun, Moon, AlertCircle,
-  Shield, Camera, ArrowUpRight, ArrowDownRight, Phone, Coins, Link2, Calendar, Sparkles,
+  Shield, Camera, ArrowUpRight, ArrowDownRight, Phone, Coins, Link2, Calendar, Compass,
 } from "lucide-react";
 import { TIERS } from "@/lib/subscriptions";
 import type { SubscriptionTier } from "@/lib/subscriptions";
@@ -702,7 +702,7 @@ export default function SettingsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h3 className="text-sm font-medium flex items-center gap-2 text-[var(--foreground)]">
-                      <Sparkles className="w-4 h-4 text-[var(--accent)]" /> Guided tour
+                      <Compass className="w-4 h-4 text-[var(--accent)]" /> Guided tour
                     </h3>
                     <p className="text-xs text-[var(--muted)] mt-1 max-w-md">
                       Replay the 30-second walkthrough of NextNote&apos;s dashboard — Prospects, Sources, Agents, and more.
@@ -712,7 +712,7 @@ export default function SettingsPage() {
                     onClick={startGuidedTour}
                     className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] text-xs font-medium transition-colors"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Compass className="w-3.5 h-3.5" />
                     Take the tour
                   </button>
                 </div>

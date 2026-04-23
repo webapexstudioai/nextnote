@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, UserRound, Plus, Send, MessageSquare, Inbox } from "lucide-react";
+import { Wand2, UserRound, Plus, Send, MessageSquare, Inbox } from "lucide-react";
 
 interface Thread {
   id: string;
@@ -186,7 +186,7 @@ export default function SupportView() {
             <TabButton
               active={view.kind === "ai"}
               onClick={() => setView({ kind: "ai" })}
-              icon={Sparkles}
+              icon={Wand2}
               label="AI assistant"
               hint="Instant answers"
               accent

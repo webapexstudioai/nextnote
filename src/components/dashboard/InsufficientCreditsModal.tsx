@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Coins, Zap, X, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { Coins, Zap, X, ArrowRight, Loader2 } from "lucide-react";
 
 interface CreditPack {
   id: string;
@@ -172,7 +172,7 @@ export default function InsufficientCreditsModal({ open, onClose, required, bala
         {recommendedPack && (
           <div className="border-t border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent px-6 py-4">
             <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">
-              <Sparkles className="w-3 h-3" />
+              <Zap className="w-3 h-3" />
               Better value
             </div>
             <button

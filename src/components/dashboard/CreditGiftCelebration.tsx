@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Coins, Gift, Sparkles, X } from "lucide-react";
+import { Coins, Gift, PartyPopper, X } from "lucide-react";
 
 const SEEN_KEY = "nextnote_gifts_seen";
 const DISPLAY_MS = 5200;
@@ -117,7 +117,7 @@ export default function CreditGiftCelebration() {
         </div>
 
         <div className="gift-label">
-          <Sparkles className="w-3 h-3 text-[var(--accent)]" />
+          <PartyPopper className="w-3 h-3 text-[var(--accent)]" />
           You&apos;ve been gifted credits
         </div>
 

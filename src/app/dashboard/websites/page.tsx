@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Globe, Plus, ExternalLink, Copy, Loader2, Search,
-  Sparkles, Crown, Check, X, ChevronDown, Trash2, Wand2,
+  Crown, Check, X, ChevronDown, Trash2, Wand2,
 } from "lucide-react";
 import { Folder as FolderIcon, FileText, ChevronRight, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -277,7 +277,7 @@ export default function WebsitesPage() {
                 onClick={() => { setShowForm(true); resetForm(); }}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[var(--accent)] text-white font-medium hover:bg-[var(--accent-hover)] transition-colors shadow-lg shadow-[var(--accent)]/20"
               >
-                <Sparkles className="w-4 h-4" /> Generate Your First Website
+                <Wand2 className="w-4 h-4" /> Generate Your First Website
               </button>
             )}
           </div>
@@ -650,7 +650,7 @@ export default function WebsitesPage() {
                   {generating ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
                   ) : (
-                    <><Sparkles className="w-4 h-4" /> Generate</>
+                    <><Wand2 className="w-4 h-4" /> Generate</>
                   )}
                 </button>
               </div>
@@ -669,7 +669,7 @@ export default function WebsitesPage() {
 
             <div className="relative">
               <div className="mx-auto w-16 h-16 rounded-2xl bg-[var(--accent)]/15 flex items-center justify-center mb-5">
-                <Sparkles className="w-7 h-7 text-[var(--accent)] animate-pulse" />
+                <Wand2 className="w-7 h-7 text-[var(--accent)] animate-pulse" />
               </div>
 
               <h2 className="text-xl font-bold tracking-tight mb-1">

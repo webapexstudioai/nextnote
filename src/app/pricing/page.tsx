@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, Loader2, ArrowRight, Sparkles, Zap } from "lucide-react";
+import { Check, Loader2, ArrowRight, Crown, Zap, Gift } from "lucide-react";
 import { OrbitGridIcon } from "@/components/OrbitGridLogo";
 
 const plans = [
@@ -28,7 +28,7 @@ const plans = [
     name: "Pro",
     price: 79,
     tagline: "For growing agencies",
-    icon: Sparkles,
+    icon: Crown,
     featured: true,
     creditBadge: "250 free AI credits",
     features: [
@@ -170,7 +170,7 @@ export default function PricingPage() {
                   {/* Credit badge */}
                   {plan.creditBadge && (
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium mb-4">
-                      <Sparkles className="w-3 h-3" />
+                      <Gift className="w-3 h-3" />
                       {plan.creditBadge}
                     </div>
                   )}
