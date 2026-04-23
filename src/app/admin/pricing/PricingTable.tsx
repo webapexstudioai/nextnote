@@ -5,7 +5,6 @@ import type { PricingEntry } from "@/lib/credits";
 interface Props {
   entries: PricingEntry[];
   retail: number;
-  floor: number;
 }
 
 function marginBadge(marginPct: number) {
@@ -28,14 +27,12 @@ function verdict(marginPct: number) {
   return "Healthy";
 }
 
-export default function PricingTable({ entries, retail, floor }: Props) {
+export default function PricingTable({ entries, retail }: Props) {
   const rows = entries.map((e) => {
     const retailUsd = e.creditsPerUnit * retail;
-    const floorUsd = e.creditsPerUnit * floor;
     const marginUsd = retailUsd - e.estUpstreamCostUsd;
     const marginPct = retailUsd > 0 ? (marginUsd / retailUsd) * 100 : 0;
-    const floorMarginPct = floorUsd > 0 ? ((floorUsd - e.estUpstreamCostUsd) / floorUsd) * 100 : 0;
-    return { ...e, retailUsd, floorUsd, marginUsd, marginPct, floorMarginPct };
+    return { ...e, retailUsd, marginUsd, marginPct };
   });
 
   return (
@@ -49,7 +46,6 @@ export default function PricingTable({ entries, retail, floor }: Props) {
             <th className="px-5 py-3 text-right font-medium">Est. cost</th>
             <th className="px-5 py-3 text-right font-medium">Margin</th>
             <th className="px-5 py-3 text-right font-medium">Margin %</th>
-            <th className="px-5 py-3 text-right font-medium">Agency floor %</th>
             <th className="px-5 py-3 text-left font-medium">Upstream</th>
           </tr>
         </thead>
@@ -80,9 +76,6 @@ export default function PricingTable({ entries, retail, floor }: Props) {
                 >
                   {r.marginPct.toFixed(0)}%
                 </span>
-              </td>
-              <td className="px-5 py-3 text-right font-mono text-neutral-500">
-                {r.floorMarginPct.toFixed(0)}%
               </td>
               <td className="px-5 py-3 text-[11px] text-neutral-500">{r.upstream}</td>
             </tr>

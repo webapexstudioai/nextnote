@@ -1,21 +1,8 @@
 import { supabaseAdmin } from "@/lib/supabase";
 
-// Credit packs — invisible to user, they just see "credits".
-// 1 credit = $0.01 retail. Margin built into pack bonuses.
-export interface CreditPack {
-  id: string;
-  name: string;
-  credits: number;
-  priceCents: number;
-  bonusLabel?: string;
-}
-
-export const CREDIT_PACKS: CreditPack[] = [
-  { id: "starter", name: "Starter Pack",  credits: 1000,  priceCents: 1000 },
-  { id: "growth",  name: "Growth Pack",   credits: 2750,  priceCents: 2500, bonusLabel: "+10% bonus" },
-  { id: "scale",   name: "Scale Pack",    credits: 6000,  priceCents: 5000, bonusLabel: "+20% bonus" },
-  { id: "agency",  name: "Agency Pack",   credits: 13000, priceCents: 10000, bonusLabel: "+30% bonus" },
-];
+// Credits model (simplified): users subscribe to Starter or Pro and can
+// ad-hoc top up at a flat $0.01/credit via /api/credits/topup. There are
+// no tiered "credit packs" anymore.
 
 // Minimum balance required to start a voice call (~4 minutes at 16 credits/min).
 export const MIN_CALL_BALANCE = 64;
@@ -76,13 +63,8 @@ export const PRICING_TABLE: PricingEntry[] = [
   { key: "phone_monthly",    label: "Phone number monthly",  unit: "per month",       creditsPerUnit: PHONE_NUMBER_MONTHLY_CREDITS, estUpstreamCostUsd: 1.15, upstream: "Twilio monthly fee" },
 ];
 
-// 1 credit = $0.01 retail. Agency pack's effective rate drops to ~$0.0077.
+// 1 credit = $0.01 retail (exact-topup rate, the only rate users pay).
 export const CREDIT_UNIT_USD_RETAIL = 0.01;
-export const CREDIT_UNIT_USD_FLOOR  = 0.0077;
-
-export function getPack(id: string): CreditPack | undefined {
-  return CREDIT_PACKS.find((p) => p.id === id);
-}
 
 export async function getBalance(userId: string): Promise<number> {
   const { data } = await supabaseAdmin

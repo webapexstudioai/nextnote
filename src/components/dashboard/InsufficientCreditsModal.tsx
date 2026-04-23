@@ -1,15 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Coins, Zap, X, ArrowRight, Loader2 } from "lucide-react";
-
-interface CreditPack {
-  id: string;
-  name: string;
-  credits: number;
-  priceCents: number;
-  bonusLabel?: string;
-}
 
 interface Props {
   open: boolean;
@@ -26,17 +18,8 @@ function formatUsd(cents: number) {
 }
 
 export default function InsufficientCreditsModal({ open, onClose, required, balance, action }: Props) {
-  const [packs, setPacks] = useState<CreditPack[]>([]);
-  const [buying, setBuying] = useState<"exact" | string | null>(null);
+  const [buying, setBuying] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!open) return;
-    fetch("/api/credits/packs")
-      .then((res) => (res.ok ? res.json() : { packs: [] }))
-      .then((data) => setPacks(data.packs ?? []))
-      .catch(() => setPacks([]));
-  }, [open]);
 
   if (!open) return null;
 
@@ -45,11 +28,9 @@ export default function InsufficientCreditsModal({ open, onClose, required, bala
   const topupCents = topupCredits;
   const minBumped = topupCredits !== shortfall;
 
-  const recommendedPack = packs.find((p) => p.credits >= topupCredits && p.bonusLabel);
-
   async function buyExact() {
     setError("");
-    setBuying("exact");
+    setBuying(true);
     try {
       const res = await fetch("/api/credits/topup", {
         method: "POST",
@@ -62,35 +43,13 @@ export default function InsufficientCreditsModal({ open, onClose, required, bala
       const json = await res.json();
       if (!res.ok || !json.url) {
         setError(json.error || "Couldn't start checkout. Try again in a moment.");
-        setBuying(null);
+        setBuying(false);
         return;
       }
       window.location.href = json.url;
     } catch {
       setError("Network error. Try again in a moment.");
-      setBuying(null);
-    }
-  }
-
-  async function buyPack(packId: string) {
-    setError("");
-    setBuying(packId);
-    try {
-      const res = await fetch("/api/credits/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packId }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.url) {
-        setError(json.error || "Couldn't start checkout. Try again in a moment.");
-        setBuying(null);
-        return;
-      }
-      window.location.href = json.url;
-    } catch {
-      setError("Network error. Try again in a moment.");
-      setBuying(null);
+      setBuying(false);
     }
   }
 
@@ -148,10 +107,10 @@ export default function InsufficientCreditsModal({ open, onClose, required, bala
 
           <button
             onClick={buyExact}
-            disabled={buying !== null}
+            disabled={buying}
             className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-semibold px-4 py-3 shadow-lg shadow-[var(--accent)]/30 transition-all disabled:opacity-60"
           >
-            {buying === "exact" ? (
+            {buying ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Opening Stripe…
@@ -169,34 +128,6 @@ export default function InsufficientCreditsModal({ open, onClose, required, bala
           </p>
         </div>
 
-        {recommendedPack && (
-          <div className="border-t border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent px-6 py-4">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">
-              <Zap className="w-3 h-3" />
-              Better value
-            </div>
-            <button
-              onClick={() => buyPack(recommendedPack.id)}
-              disabled={buying !== null}
-              className="mt-2 w-full flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 hover:border-[var(--accent)]/40 hover:bg-[var(--accent)]/5 px-4 py-3 text-left transition-all disabled:opacity-60"
-            >
-              <div>
-                <div className="text-sm font-semibold text-[var(--foreground)]">
-                  {recommendedPack.name} — {recommendedPack.credits.toLocaleString()} credits
-                </div>
-                <div className="text-[11px] text-[var(--muted)] mt-0.5">
-                  {recommendedPack.bonusLabel} · {formatUsd(recommendedPack.priceCents)}
-                </div>
-              </div>
-              {buying === recommendedPack.id ? (
-                <Loader2 className="w-4 h-4 animate-spin text-[var(--muted)] shrink-0" />
-              ) : (
-                <ArrowRight className="w-4 h-4 text-[var(--muted)] shrink-0" />
-              )}
-            </button>
-          </div>
-        )}
-
         <div className="border-t border-white/5 px-6 py-3 flex items-center justify-between">
           <button
             onClick={onClose}
@@ -208,7 +139,7 @@ export default function InsufficientCreditsModal({ open, onClose, required, bala
             href="/dashboard/billing"
             className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
           >
-            See all packs →
+            Billing →
           </a>
         </div>
       </div>

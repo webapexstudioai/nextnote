@@ -224,7 +224,7 @@ export default function MetricsHome() {
           <CreditCard
             label="Purchased"
             value={m.credits.thisMonth.purchased}
-            hint="from credit packs"
+            hint="from top-ups"
             tint="text-emerald-400"
           />
           <CreditCard

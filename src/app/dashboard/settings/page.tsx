@@ -969,7 +969,7 @@ export default function SettingsPage() {
               <div className="rounded-xl liquid-glass p-5">
                 <h3 className="text-sm font-medium mb-2 text-[var(--foreground)]">Need more credits?</h3>
                 <p className="text-xs text-[var(--muted)] mb-4">
-                  Purchase credit packs to power all AI features. Bigger packs include bonus credits.
+                  Top up credits any time at $0.01 each. They power voice calls, AI agents, and voicemail drops.
                 </p>
                 <a
                   href="/dashboard/billing"

@@ -2,15 +2,11 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { Coins, Loader2, CheckCircle, AlertCircle, Zap, RefreshCw } from "lucide-react";
+import { Coins, Loader2, CheckCircle, AlertCircle, Zap, RefreshCw, ArrowRight } from "lucide-react";
 
-interface Pack {
-  id: string;
-  name: string;
-  credits: number;
-  priceCents: number;
-  bonusLabel?: string;
-}
+const PRESETS = [100, 500, 1000, 2500];
+const MIN_TOPUP = 50;
+const MAX_TOPUP = 100_000;
 
 export default function BillingPage() {
   return (
@@ -23,9 +19,9 @@ export default function BillingPage() {
 function BillingInner() {
   const search = useSearchParams();
   const [balance, setBalance] = useState<number | null>(null);
-  const [packs, setPacks] = useState<Pack[]>([]);
   const [loading, setLoading] = useState(true);
-  const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [amount, setAmount] = useState<number>(500);
+  const [purchasing, setPurchasing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
   const [error, setError] = useState("");
@@ -33,14 +29,9 @@ function BillingInner() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [bRes, pRes] = await Promise.all([
-        fetch("/api/credits/balance"),
-        fetch("/api/credits/packs"),
-      ]);
-      const bData = await bRes.json();
-      const pData = await pRes.json();
-      setBalance(bData.balance ?? 0);
-      setPacks(pData.packs || []);
+      const res = await fetch("/api/credits/balance");
+      const data = await res.json();
+      setBalance(data.balance ?? 0);
     } catch {
       setError("Failed to load billing info");
     } finally {
@@ -52,10 +43,9 @@ function BillingInner() {
     load();
   }, [load]);
 
-  // When Stripe redirects back with ?purchase=success, auto-reconcile in case
-  // the webhook didn't reach us (common in local dev).
   useEffect(() => {
-    if (search.get("purchase") === "success") {
+    const ok = search.get("purchase") === "success" || search.get("topup") === "success";
+    if (ok) {
       fetch("/api/credits/reconcile", { method: "POST" })
         .then((r) => r.json())
         .then((d) => {
@@ -66,21 +56,24 @@ function BillingInner() {
     }
   }, [search, load]);
 
-  const buy = async (packId: string) => {
-    setPurchasing(packId);
+  const clamped = Math.min(MAX_TOPUP, Math.max(MIN_TOPUP, Math.floor(amount || 0)));
+  const priceUsd = (clamped / 100).toFixed(2);
+
+  const buy = async () => {
+    setPurchasing(true);
     setError("");
     try {
-      const res = await fetch("/api/credits/checkout", {
+      const res = await fetch("/api/credits/topup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packId }),
+        body: JSON.stringify({ credits: clamped, returnTo: "/dashboard/billing" }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Checkout failed");
       window.location.href = data.url;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Checkout failed");
-      setPurchasing(null);
+      setPurchasing(false);
     }
   };
 
@@ -101,7 +94,7 @@ function BillingInner() {
     }
   };
 
-  const purchaseStatus = search.get("purchase");
+  const purchaseStatus = search.get("purchase") || search.get("topup");
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -133,7 +126,7 @@ function BillingInner() {
             </div>
           </div>
         </div>
-        <p className="text-xs text-[var(--muted)]">~{Math.floor((balance ?? 0) / 12)} minutes of voice calls remaining</p>
+        <p className="text-xs text-[var(--muted)]">~{Math.floor((balance ?? 0) / 16)} minutes of voice calls remaining</p>
 
         <button
           onClick={reconcile}
@@ -153,46 +146,80 @@ function BillingInner() {
       )}
 
       <h2 className="text-sm font-medium text-[var(--foreground)] mb-3 uppercase tracking-wide">Top up</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {packs.map((pack) => {
-          const highlight = pack.id === "growth";
-          return (
-            <div
-              key={pack.id}
-              className={`rounded-2xl p-5 flex flex-col liquid-in ${highlight ? "liquid-accent" : "liquid-glass"}`}
-            >
-              {highlight && (
-                <div className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--accent)] uppercase tracking-wider mb-3">
-                  <Zap className="w-3 h-3" /> Most popular
-                </div>
-              )}
-              <div className="text-sm text-[var(--muted)] mb-1">{pack.name}</div>
-              <div className="text-2xl font-semibold text-[var(--foreground)]">
-                ${(pack.priceCents / 100).toFixed(0)}
-              </div>
-              <div className="text-sm text-[var(--foreground)] mt-2">
-                {pack.credits.toLocaleString()} credits
-              </div>
-              {pack.bonusLabel && (
-                <div className="text-xs text-emerald-400 mt-1">{pack.bonusLabel}</div>
-              )}
-              <div className="text-xs text-[var(--muted)] mt-2">
-                ~{Math.floor(pack.credits / 12)} minutes of calls
-              </div>
+      <div className="liquid-glass rounded-2xl p-6">
+        <p className="text-sm text-[var(--muted)] mb-4">
+          Credits are <span className="text-[var(--foreground)] font-medium">$0.01 each</span>. Minimum top-up is {MIN_TOPUP} credits. Credits never expire.
+        </p>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          {PRESETS.map((p) => {
+            const active = clamped === p;
+            return (
               <button
-                onClick={() => buy(pack.id)}
-                disabled={purchasing !== null}
-                className="mt-4 w-full px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                key={p}
+                onClick={() => setAmount(p)}
+                className={`rounded-xl px-4 py-3 text-sm font-medium transition-all border ${
+                  active
+                    ? "bg-[var(--accent)]/15 border-[var(--accent)]/50 text-[var(--foreground)]"
+                    : "bg-[var(--background)] border-white/10 text-[var(--muted)] hover:text-[var(--foreground)] hover:border-white/20"
+                }`}
               >
-                {purchasing === pack.id ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
-                ) : (
-                  "Top up"
-                )}
+                <div className="font-semibold">{p.toLocaleString()}</div>
+                <div className="text-[11px] text-[var(--muted)]">${(p / 100).toFixed(2)}</div>
               </button>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        <label className="block text-xs text-[var(--muted)] mb-1.5 uppercase tracking-wider">Or enter a custom amount</label>
+        <div className="flex items-stretch gap-2">
+          <input
+            type="number"
+            min={MIN_TOPUP}
+            max={MAX_TOPUP}
+            value={amount}
+            onChange={(e) => setAmount(Number(e.target.value))}
+            className="flex-1 px-4 py-3 bg-[var(--background)] border border-white/10 rounded-xl text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
+            placeholder="Credits"
+          />
+          <div className="flex items-center px-4 rounded-xl border border-white/10 bg-[var(--background)] text-sm font-mono text-[var(--muted)]">
+            ${priceUsd}
+          </div>
+        </div>
+
+        <button
+          onClick={buy}
+          disabled={purchasing}
+          className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-semibold px-4 py-3 shadow-lg shadow-[var(--accent)]/25 transition-all disabled:opacity-60"
+        >
+          {purchasing ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Opening Stripe…
+            </>
+          ) : (
+            <>
+              <Zap className="w-4 h-4" />
+              Buy {clamped.toLocaleString()} credits — ${priceUsd}
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
+        </button>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-white/10 bg-[var(--background)] p-5 flex items-center justify-between gap-4">
+        <div>
+          <div className="text-sm font-medium text-[var(--foreground)]">Need more every month?</div>
+          <div className="text-xs text-[var(--muted)] mt-0.5">
+            Upgrade to a Pro subscription to get 250 bonus credits included each month.
+          </div>
+        </div>
+        <a
+          href="/dashboard/settings?tab=subscription"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 hover:bg-white/10 px-4 py-2 text-sm text-[var(--foreground)] transition-colors"
+        >
+          Manage plan <ArrowRight className="w-3.5 h-3.5" />
+        </a>
       </div>
 
       <p className="text-xs text-[var(--muted)] mt-8">

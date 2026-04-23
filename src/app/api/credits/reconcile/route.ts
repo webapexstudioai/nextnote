@@ -7,7 +7,7 @@ import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * Pulls recent Stripe checkout sessions for the current user and credits any
- * completed credit-pack purchases that haven't been processed yet.
+ * completed credit purchases (top-ups) that haven't been processed yet.
  *
  * Useful when the Stripe webhook can't reach localhost (dev) or missed an event.
  * Safe to call repeatedly — idempotent via credit_transactions.ref_id.

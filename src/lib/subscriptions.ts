@@ -7,6 +7,10 @@ export interface TierConfig {
   tagline: string;
   features: string[];
   bonusCredits: number;
+  // Monthly subscription price in USD cents. Kept here only for UI / admin
+  // margin math — the authoritative price lives in Stripe (env-configured
+  // price IDs STRIPE_PRICE_STARTER / STRIPE_PRICE_PRO).
+  monthlyPriceCents: number;
   limits: {
     prospects: number;
     folders: number;
@@ -25,6 +29,7 @@ export const TIERS: Record<SubscriptionTier, TierConfig> = {
     tier: "starter",
     tagline: "For solo agents getting started",
     bonusCredits: 150,
+    monthlyPriceCents: 2900,
     features: [
       "Basic CRM / prospect pipeline",
       "Folders + lead organization",
@@ -49,6 +54,7 @@ export const TIERS: Record<SubscriptionTier, TierConfig> = {
     tier: "pro",
     tagline: "For growing agencies",
     bonusCredits: 250,
+    monthlyPriceCents: 7900,
     features: [
       "Everything in Starter",
       "AI summaries & insights",
