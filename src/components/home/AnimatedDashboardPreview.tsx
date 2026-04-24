@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import {
   DollarSign,
   TrendingUp,
@@ -15,43 +15,67 @@ import {
 const ACCENT = "#e8553d";
 const EMERALD = "#10b981";
 
-function useInView<T extends HTMLElement>(threshold = 0.2) {
-  const ref = useRef<T>(null);
-  const [inView, setInView] = useState(false);
+const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
+const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+function subProgress(p: number, start: number, end: number) {
+  if (end <= start) return p >= end ? 1 : 0;
+  return clamp01((p - start) / (end - start));
+}
+
+/**
+ * Monotonically-increasing scroll progress (0→1) tied to a section's position.
+ * Progress only ever goes up — scrolling back up holds the max value.
+ * Starts at 0 when the element's top edge is one viewport-height below the
+ * top of the viewport (i.e. just entering) and hits 1 when its top reaches
+ * the top of the viewport.
+ */
+function useMonotonicScrollProgress<T extends HTMLElement>(
+  ref: RefObject<T | null>,
+) {
+  const [progress, setProgress] = useState(0);
+  const maxRef = useRef(0);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          obs.disconnect();
-        }
-      },
-      { threshold },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return { ref, inView };
-}
 
-function useCountUp(target: number, start: boolean, duration = 1400) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    if (!start) return;
-    let raf = 0;
-    const t0 = performance.now();
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - t0) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setValue(target * eased);
-      if (p < 1) raf = requestAnimationFrame(tick);
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      maxRef.current = 1;
+      setProgress(1);
+      return;
+    }
+
+    let rafId = 0;
+    const compute = () => {
+      rafId = 0;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || 1;
+      const raw = (vh - rect.top) / vh;
+      const clamped = clamp01(raw);
+      if (clamped > maxRef.current) {
+        maxRef.current = clamped;
+        setProgress(clamped);
+      }
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, start, duration]);
-  return value;
+
+    const onScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(compute);
+    };
+
+    compute();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [ref]);
+
+  return progress;
 }
 
 const money = (n: number) =>
@@ -70,7 +94,6 @@ const moneyCompact = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
-// Synthetic but realistic 30-day trajectory (daily closed revenue $)
 const DAILY_REVENUE = [
   180, 240, 190, 310, 280, 420, 380, 470, 540, 490, 620, 710, 660, 820, 860,
   820, 940, 1020, 960, 1100, 1080, 1230, 1180, 1340, 1280, 1410, 1390, 1520,
@@ -109,8 +132,26 @@ const RECENT_WINS = [
   { name: "Ironside Fitness", service: "Voicemail blast", value: 4800, when: "5d ago" },
 ];
 
-/** Renders an inline SVG line + area chart with stroke-draw animation on scroll. */
-function RevenueChart({ animate }: { animate: boolean }) {
+// Progress ranges for each block. Tuned so the viewer scrolls through the
+// section and each element completes before the next dominates the eye.
+const RANGES = {
+  kpiStart: 0.05,
+  kpiEnd: 0.45,
+  kpiStagger: 0.04,
+  chartStart: 0.18,
+  chartEnd: 0.65,
+  pipelineStart: 0.25,
+  pipelineEnd: 0.7,
+  pipelineStagger: 0.05,
+  earnersStart: 0.4,
+  earnersEnd: 0.85,
+  earnersStagger: 0.04,
+  winsStart: 0.5,
+  winsEnd: 0.95,
+  winsStagger: 0.04,
+};
+
+function RevenueChart({ progress }: { progress: number }) {
   const W = 560;
   const H = 200;
   const PAD_X = 12;
@@ -141,6 +182,10 @@ function RevenueChart({ animate }: { animate: boolean }) {
   const cumPath = toPath(cumPoints);
   const areaPath = `${linePath} L${points[points.length - 1][0]},${H - PAD_BOTTOM} L${points[0][0]},${H - PAD_BOTTOM} Z`;
 
+  const drawP = easeOutCubic(subProgress(progress, RANGES.chartStart, RANGES.chartEnd));
+  const cumDrawP = easeOutCubic(subProgress(progress, RANGES.chartStart + 0.05, RANGES.chartEnd + 0.05));
+  const areaOpacity = easeOutCubic(subProgress(progress, RANGES.chartStart + 0.1, RANGES.chartEnd));
+
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
@@ -159,7 +204,6 @@ function RevenueChart({ animate }: { animate: boolean }) {
         </linearGradient>
       </defs>
 
-      {/* gridlines */}
       {[0.25, 0.5, 0.75].map((f) => (
         <line
           key={f}
@@ -172,14 +216,7 @@ function RevenueChart({ animate }: { animate: boolean }) {
         />
       ))}
 
-      <path
-        d={areaPath}
-        fill="url(#dashRevGradHome)"
-        style={{
-          opacity: animate ? 1 : 0,
-          transition: "opacity 900ms ease-out 500ms",
-        }}
-      />
+      <path d={areaPath} fill="url(#dashRevGradHome)" style={{ opacity: areaOpacity }} />
 
       <path
         d={linePath}
@@ -190,10 +227,8 @@ function RevenueChart({ animate }: { animate: boolean }) {
         strokeLinejoin="round"
         pathLength={1}
         strokeDasharray={1}
-        strokeDashoffset={animate ? 0 : 1}
-        style={{ transition: "stroke-dashoffset 1800ms ease-in-out 200ms" }}
+        strokeDashoffset={1 - drawP}
       />
-
       <path
         d={cumPath}
         fill="none"
@@ -203,8 +238,7 @@ function RevenueChart({ animate }: { animate: boolean }) {
         strokeLinejoin="round"
         pathLength={1}
         strokeDasharray={1}
-        strokeDashoffset={animate ? 0 : 1}
-        style={{ transition: "stroke-dashoffset 1800ms ease-in-out 500ms" }}
+        strokeDashoffset={1 - cumDrawP}
       />
     </svg>
   );
@@ -216,25 +250,21 @@ function Kpi({
   icon: Icon,
   value,
   accent,
-  trigger,
-  delayMs,
+  progress,
+  index,
 }: {
   label: string;
   sub: string;
   icon: React.ComponentType<{ className?: string }>;
   value: number;
   accent: "accent" | "emerald";
-  trigger: boolean;
-  delayMs: number;
+  progress: number;
+  index: number;
 }) {
-  const [armed, setArmed] = useState(false);
-  useEffect(() => {
-    if (!trigger) return;
-    const t = setTimeout(() => setArmed(true), delayMs);
-    return () => clearTimeout(t);
-  }, [trigger, delayMs]);
-
-  const animated = useCountUp(value, armed, 1400);
+  const start = RANGES.kpiStart + index * RANGES.kpiStagger;
+  const end = start + (RANGES.kpiEnd - RANGES.kpiStart) * 0.75;
+  const local = easeOutCubic(subProgress(progress, start, end));
+  const animated = value * local;
   const isMoney = label !== "Active Prospects";
   const display = isMoney
     ? moneyCompact(animated)
@@ -244,9 +274,8 @@ function Kpi({
     <div
       className="liquid-glass rounded-2xl p-4 sm:p-5"
       style={{
-        opacity: armed ? 1 : 0,
-        transform: armed ? "translateY(0)" : "translateY(12px)",
-        transition: "opacity 500ms ease-out, transform 500ms ease-out",
+        opacity: 0.35 + 0.65 * local,
+        transform: `translateY(${(1 - local) * 14}px) scale(${0.985 + 0.015 * local})`,
       }}
     >
       <div
@@ -258,9 +287,7 @@ function Kpi({
       >
         <Icon className="w-4 h-4" />
       </div>
-      <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums">
-        {display}
-      </p>
+      <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums">{display}</p>
       <p className="text-[11px] sm:text-xs text-[var(--muted)] mt-1">{label}</p>
       <p
         className={`text-[10px] sm:text-[11px] mt-0.5 font-medium ${
@@ -274,13 +301,21 @@ function Kpi({
 }
 
 export default function AnimatedDashboardPreview() {
-  const { ref, inView } = useInView<HTMLDivElement>(0.18);
+  const ref = useRef<HTMLDivElement>(null);
+  const progress = useMonotonicScrollProgress(ref);
+
+  const last30Local = easeOutCubic(subProgress(progress, RANGES.chartStart, RANGES.chartEnd));
+  const loggedLocal = easeOutCubic(subProgress(progress, RANGES.pipelineStart, RANGES.pipelineEnd));
+
+  const chartCardLocal = easeOutCubic(subProgress(progress, RANGES.chartStart - 0.04, RANGES.chartStart + 0.18));
+  const pipelineCardLocal = easeOutCubic(subProgress(progress, RANGES.pipelineStart - 0.04, RANGES.pipelineStart + 0.18));
+  const earnersCardLocal = easeOutCubic(subProgress(progress, RANGES.earnersStart - 0.04, RANGES.earnersStart + 0.18));
+  const winsCardLocal = easeOutCubic(subProgress(progress, RANGES.winsStart - 0.04, RANGES.winsStart + 0.18));
+
+  const frameLocal = easeOutCubic(subProgress(progress, 0, 0.15));
 
   return (
-    <section
-      id="preview"
-      className="relative py-20 sm:py-28"
-    >
+    <section id="preview" className="relative py-20 sm:py-28">
       <div className="absolute inset-0 glow-section pointer-events-none" />
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -292,15 +327,19 @@ export default function AnimatedDashboardPreview() {
             This is what closing looks like
           </h2>
           <p className="text-[var(--muted)] max-w-xl mx-auto">
-            Every dollar, every prospect, every win — rolled up into a dashboard that updates the second a deal closes. Scroll to see it come alive.
+            Every dollar, every prospect, every win — rolled up into a dashboard that updates the second a deal closes. Scroll and watch it come alive.
           </p>
         </div>
 
         <div
           ref={ref}
-          className="relative rounded-3xl border border-white/10 bg-[rgba(10,10,14,0.85)] shadow-[0_40px_120px_-20px_rgba(232,85,61,0.25)] overflow-hidden"
+          className="relative rounded-3xl border border-white/10 bg-[rgba(10,10,14,0.85)] overflow-hidden"
+          style={{
+            opacity: 0.6 + 0.4 * frameLocal,
+            transform: `translateY(${(1 - frameLocal) * 24}px)`,
+            boxShadow: `0 40px 120px -20px rgba(232,85,61,${0.08 + 0.2 * frameLocal})`,
+          }}
         >
-          {/* Fake browser chrome */}
           <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-black/30">
             <div className="flex gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
@@ -314,9 +353,7 @@ export default function AnimatedDashboardPreview() {
             </div>
           </div>
 
-          {/* Dashboard page content */}
           <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
-            {/* Header row */}
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg sm:text-xl font-bold tracking-tight">Dashboard</h3>
@@ -330,7 +367,6 @@ export default function AnimatedDashboardPreview() {
               </div>
             </div>
 
-            {/* KPI row */}
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
               <Kpi
                 label="Today's Revenue"
@@ -338,8 +374,8 @@ export default function AnimatedDashboardPreview() {
                 icon={DollarSign}
                 value={TODAY_REVENUE_TARGET}
                 accent="accent"
-                trigger={inView}
-                delayMs={0}
+                progress={progress}
+                index={0}
               />
               <Kpi
                 label="Last 7 Days"
@@ -347,8 +383,8 @@ export default function AnimatedDashboardPreview() {
                 icon={TrendingUp}
                 value={LAST_7_REVENUE_TARGET}
                 accent="emerald"
-                trigger={inView}
-                delayMs={120}
+                progress={progress}
+                index={1}
               />
               <Kpi
                 label="Last 30 Days"
@@ -356,8 +392,8 @@ export default function AnimatedDashboardPreview() {
                 icon={Calendar}
                 value={LAST_30_REVENUE_TARGET}
                 accent="emerald"
-                trigger={inView}
-                delayMs={240}
+                progress={progress}
+                index={2}
               />
               <Kpi
                 label="Active Prospects"
@@ -365,20 +401,17 @@ export default function AnimatedDashboardPreview() {
                 icon={Users}
                 value={ACTIVE_PROSPECTS_TARGET}
                 accent="accent"
-                trigger={inView}
-                delayMs={360}
+                progress={progress}
+                index={3}
               />
             </div>
 
-            {/* Chart + pipeline */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
               <div
                 className="liquid-glass rounded-2xl p-4 sm:p-5 xl:col-span-2"
                 style={{
-                  opacity: inView ? 1 : 0,
-                  transform: inView ? "translateY(0)" : "translateY(16px)",
-                  transition:
-                    "opacity 600ms ease-out 300ms, transform 600ms ease-out 300ms",
+                  opacity: 0.35 + 0.65 * chartCardLocal,
+                  transform: `translateY(${(1 - chartCardLocal) * 16}px)`,
                 }}
               >
                 <div className="flex items-center justify-between mb-3">
@@ -391,12 +424,12 @@ export default function AnimatedDashboardPreview() {
                   <div className="text-right hidden sm:block">
                     <div className="text-[10px] uppercase tracking-wider text-[var(--muted)]">30d total</div>
                     <div className="text-sm font-semibold text-emerald-400 tabular-nums">
-                      <Last30Total trigger={inView} />
+                      {moneyCompact(LAST_30_REVENUE_TARGET * last30Local)}
                     </div>
                   </div>
                 </div>
                 <div className="h-48 sm:h-56">
-                  <RevenueChart animate={inView} />
+                  <RevenueChart progress={progress} />
                 </div>
                 <div className="flex flex-wrap items-center gap-4 mt-3 text-[10px] sm:text-[11px] text-[var(--muted)]">
                   <span className="flex items-center gap-2">
@@ -413,10 +446,8 @@ export default function AnimatedDashboardPreview() {
               <div
                 className="liquid-glass rounded-2xl p-4 sm:p-5 flex flex-col"
                 style={{
-                  opacity: inView ? 1 : 0,
-                  transform: inView ? "translateY(0)" : "translateY(16px)",
-                  transition:
-                    "opacity 600ms ease-out 450ms, transform 600ms ease-out 450ms",
+                  opacity: 0.35 + 0.65 * pipelineCardLocal,
+                  transform: `translateY(${(1 - pipelineCardLocal) * 16}px)`,
                 }}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -430,22 +461,22 @@ export default function AnimatedDashboardPreview() {
                 </div>
                 <div className="space-y-3 flex-1">
                   {PIPELINE.map((s, i) => {
+                    const start = RANGES.pipelineStart + i * RANGES.pipelineStagger;
+                    const end = start + (RANGES.pipelineEnd - RANGES.pipelineStart) * 0.65;
+                    const local = easeOutCubic(subProgress(progress, start, end));
                     const pct = (s.count / PIPELINE_MAX) * 100;
                     return (
                       <div key={s.label}>
                         <div className="flex items-center justify-between text-[11px] mb-1">
                           <span className={`font-medium ${s.color}`}>{s.label}</span>
                           <span className="text-[var(--muted)] tabular-nums">
-                            {s.count}
+                            {Math.round(s.count * local)}
                           </span>
                         </div>
                         <div className="h-2 rounded-full bg-white/5 overflow-hidden">
                           <div
                             className={`h-full rounded-full ${s.bar}`}
-                            style={{
-                              width: inView ? `${pct}%` : "0%",
-                              transition: `width 900ms cubic-bezier(0.22,1,0.36,1) ${600 + i * 110}ms`,
-                            }}
+                            style={{ width: `${pct * local}%` }}
                           />
                         </div>
                       </div>
@@ -455,21 +486,18 @@ export default function AnimatedDashboardPreview() {
                 <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
                   <span className="text-[11px] text-[var(--muted)]">Logged deal value</span>
                   <span className="text-sm font-semibold text-emerald-400 tabular-nums">
-                    <LoggedDealValue trigger={inView} />
+                    {moneyCompact(LOGGED_DEAL_VALUE_TARGET * loggedLocal)}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Top earners + recent wins */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <div
                 className="liquid-glass rounded-2xl overflow-hidden"
                 style={{
-                  opacity: inView ? 1 : 0,
-                  transform: inView ? "translateY(0)" : "translateY(16px)",
-                  transition:
-                    "opacity 600ms ease-out 700ms, transform 600ms ease-out 700ms",
+                  opacity: 0.35 + 0.65 * earnersCardLocal,
+                  transform: `translateY(${(1 - earnersCardLocal) * 16}px)`,
                 }}
               >
                 <div className="px-4 sm:px-5 py-3.5 border-b border-white/5 flex items-center gap-2">
@@ -480,46 +508,46 @@ export default function AnimatedDashboardPreview() {
                   </span>
                 </div>
                 <div>
-                  {TOP_EARNERS.map((p, i) => (
-                    <div
-                      key={p.name}
-                      className={`flex items-center justify-between px-4 sm:px-5 py-3 ${
-                        i < TOP_EARNERS.length - 1 ? "border-b border-white/5" : ""
-                      }`}
-                      style={{
-                        opacity: inView ? 1 : 0,
-                        transform: inView ? "translateX(0)" : "translateX(-10px)",
-                        transition: `opacity 450ms ease-out ${850 + i * 80}ms, transform 450ms ease-out ${850 + i * 80}ms`,
-                      }}
-                    >
-                      <div className="min-w-0 flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                          <span className="text-[11px] font-bold text-emerald-400">
-                            #{i + 1}
-                          </span>
+                  {TOP_EARNERS.map((p, i) => {
+                    const start = RANGES.earnersStart + i * RANGES.earnersStagger;
+                    const end = start + 0.12;
+                    const local = easeOutCubic(subProgress(progress, start, end));
+                    return (
+                      <div
+                        key={p.name}
+                        className={`flex items-center justify-between px-4 sm:px-5 py-3 ${
+                          i < TOP_EARNERS.length - 1 ? "border-b border-white/5" : ""
+                        }`}
+                        style={{
+                          opacity: local,
+                          transform: `translateX(${(1 - local) * -14}px)`,
+                        }}
+                      >
+                        <div className="min-w-0 flex items-center gap-3">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                            <span className="text-[11px] font-bold text-emerald-400">#{i + 1}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{p.name}</p>
+                            <p className="text-[11px] text-[var(--muted)] truncate">
+                              {p.service} · {p.status}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{p.name}</p>
-                          <p className="text-[11px] text-[var(--muted)] truncate">
-                            {p.service} · {p.status}
-                          </p>
-                        </div>
+                        <p className="text-sm font-semibold text-emerald-400 tabular-nums shrink-0 ml-3">
+                          {money(p.value * local)}
+                        </p>
                       </div>
-                      <p className="text-sm font-semibold text-emerald-400 tabular-nums shrink-0 ml-3">
-                        {money(p.value)}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
               <div
                 className="liquid-glass rounded-2xl overflow-hidden"
                 style={{
-                  opacity: inView ? 1 : 0,
-                  transform: inView ? "translateY(0)" : "translateY(16px)",
-                  transition:
-                    "opacity 600ms ease-out 850ms, transform 600ms ease-out 850ms",
+                  opacity: 0.35 + 0.65 * winsCardLocal,
+                  transform: `translateY(${(1 - winsCardLocal) * 16}px)`,
                 }}
               >
                 <div className="px-4 sm:px-5 py-3.5 border-b border-white/5 flex items-center gap-2">
@@ -530,34 +558,38 @@ export default function AnimatedDashboardPreview() {
                   </span>
                 </div>
                 <div>
-                  {RECENT_WINS.map((p, i) => (
-                    <div
-                      key={`${p.name}-${i}`}
-                      className={`flex items-center justify-between px-4 sm:px-5 py-3 ${
-                        i < RECENT_WINS.length - 1 ? "border-b border-white/5" : ""
-                      }`}
-                      style={{
-                        opacity: inView ? 1 : 0,
-                        transform: inView ? "translateX(0)" : "translateX(10px)",
-                        transition: `opacity 450ms ease-out ${1000 + i * 80}ms, transform 450ms ease-out ${1000 + i * 80}ms`,
-                      }}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                          <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                  {RECENT_WINS.map((p, i) => {
+                    const start = RANGES.winsStart + i * RANGES.winsStagger;
+                    const end = start + 0.12;
+                    const local = easeOutCubic(subProgress(progress, start, end));
+                    return (
+                      <div
+                        key={`${p.name}-${i}`}
+                        className={`flex items-center justify-between px-4 sm:px-5 py-3 ${
+                          i < RECENT_WINS.length - 1 ? "border-b border-white/5" : ""
+                        }`}
+                        style={{
+                          opacity: local,
+                          transform: `translateX(${(1 - local) * 14}px)`,
+                        }}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                            <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{p.name}</p>
+                            <p className="text-[10px] text-[var(--muted)] truncate">
+                              {p.service} · {p.when}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{p.name}</p>
-                          <p className="text-[10px] text-[var(--muted)] truncate">
-                            {p.service} · {p.when}
-                          </p>
-                        </div>
+                        <p className="text-sm font-semibold text-emerald-400 tabular-nums shrink-0 ml-3">
+                          {money(p.value * local)}
+                        </p>
                       </div>
-                      <p className="text-sm font-semibold text-emerald-400 tabular-nums shrink-0 ml-3">
-                        {money(p.value)}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -570,14 +602,4 @@ export default function AnimatedDashboardPreview() {
       </div>
     </section>
   );
-}
-
-function Last30Total({ trigger }: { trigger: boolean }) {
-  const v = useCountUp(LAST_30_REVENUE_TARGET, trigger, 1600);
-  return <>{moneyCompact(v)}</>;
-}
-
-function LoggedDealValue({ trigger }: { trigger: boolean }) {
-  const v = useCountUp(LOGGED_DEAL_VALUE_TARGET, trigger, 1600);
-  return <>{moneyCompact(v)}</>;
 }
