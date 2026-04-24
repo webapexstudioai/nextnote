@@ -22,7 +22,7 @@ import {
   FileSpreadsheet,
   MousePointerClick,
   Play,
-  MapPin,
+  Link2,
 } from "lucide-react";
 import { OrbitGridLogo } from "@/components/OrbitGridLogo";
 
@@ -399,7 +399,7 @@ function Hero() {
 
 /* ─── Product Demo (video slot) ─── */
 const demoChapters = [
-  { key: "import", label: "Import leads", time: "0:00", desc: "Drop a spreadsheet or scrape Google Maps — AI maps columns and pulls phones/emails." },
+  { key: "import", label: "Import leads", time: "0:00", desc: "Bring prospects from the tools you already use or drop a spreadsheet — AI maps columns and enriches phones/emails." },
   { key: "voicemail", label: "AI voicemail drops", time: "0:12", desc: "Record once, drop to hundreds of prospects without ringing their phones." },
   { key: "pipeline", label: "Pipeline & booking", time: "0:24", desc: "Drag cards across stages, book appointments with Google Calendar sync." },
   { key: "insights", label: "AI insights", time: "0:36", desc: "Meeting summaries, stale-lead alerts, and conversion analytics in real time." },
@@ -422,7 +422,7 @@ function DemoSection() {
             See NextNote close a lead in 45 seconds
           </h2>
           <p className="text-[var(--muted)] max-w-xl mx-auto">
-            Watch the full loop — from scraping a prospect off Google Maps to a booked appointment on your calendar.
+            Watch the full loop — from importing a prospect to a booked appointment on your calendar.
           </p>
         </div>
 
@@ -515,11 +515,11 @@ interface ShowcaseRow {
 const showcaseRows: ShowcaseRow[] = [
   {
     eyebrow: "Lead intelligence",
-    title: "Import, organize, and never lose a lead",
-    desc: "Drop a spreadsheet or scrape Google Maps and NextNote does the boring parts — auto-mapping columns, deduping, enriching phone numbers, and dropping leads straight into your pipeline.",
+    title: "Bring your prospects, however you get them",
+    desc: "Already have a list? Drop it in. Already using another tool? Connect it and pull prospects straight over. NextNote auto-maps columns, dedupes, enriches phone numbers, and drops every lead into a clean pipeline — no copy-pasting, no lost data.",
     bullets: [
       { icon: FileSpreadsheet, label: "CSV · XLSX · Google Sheets import — AI maps your columns" },
-      { icon: MapPin, label: "Scrape Google Maps by niche + location with one click" },
+      { icon: Link2, label: "Pull prospects in from the accounts and tools you already use" },
       { icon: Users, label: "Folder-based pipeline keeps every lead sorted" },
     ],
     mockupUrl: "app.nextnote.to/dashboard/prospects",
@@ -563,7 +563,7 @@ function FeatureShowcase() {
             Built for the entire close loop
           </h2>
           <p className="text-[var(--muted)] max-w-xl mx-auto">
-            One platform replaces the CRM, voicemail tool, scraper, calendar app, and analytics dashboard your team is duct-taping together.
+            One platform replaces the CRM, voicemail tool, calendar app, and analytics dashboard your team is duct-taping together.
           </p>
         </div>
 
