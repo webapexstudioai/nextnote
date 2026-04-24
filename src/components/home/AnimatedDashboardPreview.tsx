@@ -26,9 +26,10 @@ function subProgress(p: number, start: number, end: number) {
 /**
  * Monotonically-increasing scroll progress (0→1) tied to a section's position.
  * Progress only ever goes up — scrolling back up holds the max value.
- * Starts at 0 when the element's top edge is one viewport-height below the
- * top of the viewport (i.e. just entering) and hits 1 when its top reaches
- * the top of the viewport.
+ * Starts at 0 when the element is ~25% visible above the fold (user has just
+ * scrolled it into view) and hits 1 after they've scrolled ~35% of the element's
+ * height past the top — so the animation runs *while* the dashboard is on screen,
+ * not before the user reaches it.
  */
 function useMonotonicScrollProgress<T extends HTMLElement>(
   ref: RefObject<T | null>,
@@ -52,7 +53,10 @@ function useMonotonicScrollProgress<T extends HTMLElement>(
       if (!el) return;
       const rect = el.getBoundingClientRect();
       const vh = window.innerHeight || 1;
-      const raw = (vh - rect.top) / vh;
+      const startTop = vh * 0.75;
+      const endTop = -rect.height * 0.35;
+      const span = startTop - endTop;
+      const raw = span > 0 ? (startTop - rect.top) / span : 0;
       const clamped = clamp01(raw);
       if (clamped > maxRef.current) {
         maxRef.current = clamped;
@@ -95,41 +99,41 @@ const moneyCompact = (n: number) =>
   }).format(n);
 
 const DAILY_REVENUE = [
-  180, 240, 190, 310, 280, 420, 380, 470, 540, 490, 620, 710, 660, 820, 860,
-  820, 940, 1020, 960, 1100, 1080, 1230, 1180, 1340, 1280, 1410, 1390, 1520,
-  1470, 1620,
+  420, 560, 480, 720, 680, 940, 880, 1120, 1280, 1180, 1480, 1680, 1580, 1920,
+  2040, 1940, 2240, 2420, 2320, 2620, 2560, 2880, 2780, 3140, 3020, 3360, 3280,
+  3620, 3540, 3880,
 ];
 
-const TODAY_REVENUE_TARGET = 4200;
+const TODAY_REVENUE_TARGET = 12480;
 const LAST_7_REVENUE_TARGET = DAILY_REVENUE.slice(-7).reduce((a, b) => a + b, 0);
 const LAST_30_REVENUE_TARGET = DAILY_REVENUE.reduce((a, b) => a + b, 0);
-const ACTIVE_PROSPECTS_TARGET = 127;
+const ACTIVE_PROSPECTS_TARGET = 312;
 
 const PIPELINE = [
-  { label: "New", count: 42, color: "text-blue-400", bar: "bg-blue-500" },
-  { label: "Contacted", count: 28, color: "text-amber-400", bar: "bg-amber-500" },
-  { label: "Qualified", count: 19, color: "text-purple-400", bar: "bg-purple-500" },
-  { label: "Booked", count: 14, color: "text-emerald-400", bar: "bg-emerald-500" },
-  { label: "Closed", count: 24, color: "text-rose-400", bar: "bg-rose-500" },
+  { label: "New", count: 104, color: "text-blue-400", bar: "bg-blue-500" },
+  { label: "Contacted", count: 68, color: "text-amber-400", bar: "bg-amber-500" },
+  { label: "Qualified", count: 47, color: "text-purple-400", bar: "bg-purple-500" },
+  { label: "Booked", count: 34, color: "text-emerald-400", bar: "bg-emerald-500" },
+  { label: "Closed", count: 59, color: "text-rose-400", bar: "bg-rose-500" },
 ];
 const PIPELINE_MAX = Math.max(...PIPELINE.map((s) => s.count));
 const PIPELINE_TOTAL = PIPELINE.reduce((s, p) => s + p.count, 0);
-const LOGGED_DEAL_VALUE_TARGET = 186400;
+const LOGGED_DEAL_VALUE_TARGET = 428600;
 
 const TOP_EARNERS = [
-  { name: "Horizon Dental Group", service: "Full-service CRM setup", status: "Closed", value: 18400 },
-  { name: "Birch & Vale Law", service: "Inbound lead system", status: "Closed", value: 14200 },
-  { name: "Nova Fitness Studio", service: "Website + follow-up", status: "Booked", value: 9800 },
-  { name: "Sunset Auto Detailing", service: "Voicemail outreach", status: "Qualified", value: 7600 },
-  { name: "Maple Ridge Roofing", service: "Pipeline cleanup", status: "Closed", value: 6200 },
+  { name: "Horizon Dental Group", service: "Full-service CRM setup", status: "Closed", value: 42800 },
+  { name: "Birch & Vale Law", service: "Inbound lead system", status: "Closed", value: 32400 },
+  { name: "Nova Fitness Studio", service: "Website + follow-up", status: "Booked", value: 24600 },
+  { name: "Sunset Auto Detailing", service: "Voicemail outreach", status: "Qualified", value: 18200 },
+  { name: "Maple Ridge Roofing", service: "Pipeline cleanup", status: "Closed", value: 15400 },
 ];
 
 const RECENT_WINS = [
-  { name: "Horizon Dental Group", service: "Full-service CRM setup", value: 18400, when: "2h ago" },
-  { name: "Birch & Vale Law", service: "Inbound lead system", value: 14200, when: "Yesterday" },
-  { name: "Maple Ridge Roofing", service: "Pipeline cleanup", value: 6200, when: "2d ago" },
-  { name: "Coastal Med Spa", service: "Booking automation", value: 5400, when: "4d ago" },
-  { name: "Ironside Fitness", service: "Voicemail blast", value: 4800, when: "5d ago" },
+  { name: "Horizon Dental Group", service: "Full-service CRM setup", value: 42800, when: "2h ago" },
+  { name: "Birch & Vale Law", service: "Inbound lead system", value: 32400, when: "Yesterday" },
+  { name: "Maple Ridge Roofing", service: "Pipeline cleanup", value: 15400, when: "2d ago" },
+  { name: "Coastal Med Spa", service: "Booking automation", value: 13200, when: "4d ago" },
+  { name: "Ironside Fitness", service: "Voicemail blast", value: 11600, when: "5d ago" },
 ];
 
 // Progress ranges for each block. Tuned so the viewer scrolls through the
