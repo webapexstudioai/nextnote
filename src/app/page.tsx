@@ -21,10 +21,10 @@ import {
   Gift,
   FileSpreadsheet,
   MousePointerClick,
-  Play,
   Link2,
 } from "lucide-react";
 import { OrbitGridLogo } from "@/components/OrbitGridLogo";
+import AnimatedDashboardPreview from "@/components/home/AnimatedDashboardPreview";
 
 /* ─── Intersection Observer hook for scroll reveal ─── */
 function useReveal<T extends HTMLElement>() {
@@ -350,9 +350,9 @@ function Hero() {
             Get Started
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <a href="#demo" className="cta-secondary inline-flex items-center gap-2">
-            <Play className="w-3.5 h-3.5 fill-current" />
-            Watch 45s demo
+          <a href="#preview" className="cta-secondary inline-flex items-center gap-2">
+            See the dashboard
+            <ArrowRight className="w-3.5 h-3.5" />
           </a>
         </div>
 
@@ -390,80 +390,6 @@ function Hero() {
                 </span>
               )
             )}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Product Demo (video slot) ─── */
-const demoChapters = [
-  { key: "import", label: "Import leads", time: "0:00", desc: "Bring prospects from the tools you already use or drop a spreadsheet — AI maps columns and enriches phones/emails." },
-  { key: "voicemail", label: "AI voicemail drops", time: "0:12", desc: "Record once, drop to hundreds of prospects without ringing their phones." },
-  { key: "pipeline", label: "Pipeline & booking", time: "0:24", desc: "Drag cards across stages, book appointments with Google Calendar sync." },
-  { key: "insights", label: "AI insights", time: "0:36", desc: "Meeting summaries, stale-lead alerts, and conversion analytics in real time." },
-];
-
-function DemoSection() {
-  const [active, setActive] = useState(0);
-  const headRef = useReveal<HTMLDivElement>();
-  const frameRef = useReveal<HTMLDivElement>();
-
-  return (
-    <section id="demo" className="relative py-24 sm:py-28">
-      <div className="absolute inset-0 glow-section pointer-events-none" />
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={headRef} className="text-center mb-12 reveal">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">
-            Live demo
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            See NextNote close a lead in 45 seconds
-          </h2>
-          <p className="text-[var(--muted)] max-w-xl mx-auto">
-            Watch the full loop — from importing a prospect to a booked appointment on your calendar.
-          </p>
-        </div>
-
-        <div ref={frameRef} className="reveal">
-          <BrowserMockup className="max-w-5xl mx-auto">
-            {/* TODO: swap the children below for a real <video> once demo.mp4 is recorded:
-                <video autoPlay muted loop playsInline poster="/demo-poster.jpg" className="absolute inset-0 w-full h-full object-cover">
-                  <source src="/demo.mp4" type="video/mp4" />
-                </video>
-            */}
-            <DashboardPreviewFallback />
-            <button
-              className="absolute inset-0 flex items-center justify-center group"
-              aria-label="Play demo"
-            >
-              <span className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors" />
-              <span className="relative w-20 h-20 rounded-full bg-[#e8553d] flex items-center justify-center shadow-2xl shadow-[#e8553d]/40 group-hover:scale-110 transition-transform">
-                <Play className="w-8 h-8 text-white fill-white translate-x-0.5" />
-              </span>
-            </button>
-          </BrowserMockup>
-
-          {/* Chapter tabs */}
-          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
-            {demoChapters.map((c, i) => (
-              <button
-                key={c.key}
-                onClick={() => setActive(i)}
-                className={`text-left p-4 rounded-xl border transition-all ${
-                  active === i
-                    ? "border-[rgba(232,85,61,0.4)] bg-[rgba(232,85,61,0.08)]"
-                    : "border-[var(--border)] bg-[rgba(12,12,18,0.5)] hover:border-[rgba(232,85,61,0.2)]"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-semibold">{c.label}</span>
-                  <span className="text-[10px] font-mono text-[var(--muted)]">{c.time}</span>
-                </div>
-                <p className="text-[11px] text-[var(--muted)] leading-relaxed">{c.desc}</p>
-              </button>
-            ))}
           </div>
         </div>
       </div>
@@ -1084,7 +1010,7 @@ export default function Home() {
       <FloatingOrbs />
       <Navbar />
       <Hero />
-      <DemoSection />
+      <AnimatedDashboardPreview />
       <TrustBar />
       <FeatureShowcase />
       <div className="section-divider max-w-5xl mx-auto" />
