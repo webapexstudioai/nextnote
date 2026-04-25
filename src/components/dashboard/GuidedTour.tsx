@@ -162,8 +162,9 @@ export default function GuidedTour() {
     const build = () => {
       let reachedLast = false;
 
-      // driver.js step array — we strip our custom fields (route, side) and
-      // map them into the shape driver.js expects.
+      // driver.js step array. Important: onNextClick / onPrevClick MUST live
+      // INSIDE the popover object — at the step level they're silently ignored
+      // and driver.js uses its default "just advance" behavior.
       const steps = TOUR_STEPS.map((s, idx) => ({
         element: s.element,
         popover: {
@@ -171,30 +172,40 @@ export default function GuidedTour() {
           description: s.description,
           side: s.side,
           align: "start" as const,
+          onNextClick: async () => {
+            const next = TOUR_STEPS[idx + 1];
+            if (next?.route && window.location.pathname !== next.route) {
+              router.push(next.route);
+              if (next.element) {
+                await waitForElement(next.element, 5000);
+              } else {
+                await new Promise((r) => setTimeout(r, 350));
+              }
+            }
+            driverRef.current?.moveNext();
+            setTimeout(() => driverRef.current?.refresh(), 60);
+          },
+          onPrevClick: async () => {
+            const prev = TOUR_STEPS[idx - 1];
+            if (prev?.route && window.location.pathname !== prev.route) {
+              router.push(prev.route);
+              if (prev.element) {
+                await waitForElement(prev.element, 5000);
+              } else {
+                await new Promise((r) => setTimeout(r, 350));
+              }
+            }
+            driverRef.current?.movePrevious();
+            setTimeout(() => driverRef.current?.refresh(), 60);
+          },
         },
         onHighlightStarted: async () => {
-          // If this step needs a specific element and it's not there yet
-          // (e.g. we just navigated), wait for it before driver.js tries to
-          // position the popover. Driver.js will re-query when we call
-          // refresh(), so we wait then nudge.
-          if (s.element) {
+          // Safety net: if this step's target isn't mounted yet (route transition
+          // still settling), wait for it and nudge driver.js to re-position.
+          if (s.element && !document.querySelector(s.element)) {
             const el = await waitForElement(s.element, 3500);
-            if (el && driverRef.current) {
-              driverRef.current.refresh();
-            }
+            if (el) driverRef.current?.refresh();
           }
-        },
-        onNextClick: async () => {
-          const next = TOUR_STEPS[idx + 1];
-          if (next?.route) {
-            router.push(next.route);
-            if (next.element) {
-              await waitForElement(next.element, 4000);
-            } else {
-              await new Promise((r) => setTimeout(r, 250));
-            }
-          }
-          driverRef.current?.moveNext();
         },
       }));
 
