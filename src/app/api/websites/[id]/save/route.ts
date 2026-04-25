@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase";
+import { ensureFormHandler } from "@/lib/websiteForms";
 
 export async function POST(
   req: Request,
@@ -34,9 +35,12 @@ export async function POST(
     return NextResponse.json({ error: "Not authorized" }, { status: 403 });
   }
 
+  // Re-assert the form-submit handler so visual edits don't strip lead capture.
+  const finalHtml = ensureFormHandler(html, id);
+
   const { error } = await supabaseAdmin
     .from("generated_websites")
-    .update({ html_content: html })
+    .update({ html_content: finalHtml })
     .eq("id", id)
     .eq("user_id", session.userId);
 

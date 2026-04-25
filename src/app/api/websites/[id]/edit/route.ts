@@ -3,6 +3,7 @@ import { getAuthSession } from "@/lib/session";
 import { getUserAIConfig, aiChat } from "@/lib/ai";
 import { getBalance, deductCredits, WEBSITE_AI_EDIT_CREDITS } from "@/lib/credits";
 import { supabaseAdmin } from "@/lib/supabase";
+import { ensureFormHandler } from "@/lib/websiteForms";
 
 export async function POST(
   req: Request,
@@ -59,7 +60,14 @@ EDIT RULES:
 - When the user asks to change the color palette, update EVERY Tailwind color utility class (bg-*, text-*, from-*, to-*, via-*, border-*, ring-*, hover:bg-*, etc.) AND every inline style color/background/gradient to the new palette across the ENTIRE document — hero, sections, buttons, CTAs, footer, links. Do not leave remnants of the old palette.
 - Preserve non-color structure: Tailwind CDN script, Google Fonts link, hero <img> URL, contact links (tel:, mailto:), overall section layout.
 - Keep responsive design and accessibility intact.
-- Do NOT remove the "Powered by NextNote" badge if it is present in the footer.`;
+- Do NOT remove the "Powered by NextNote" badge if it is present in the footer.
+- PRESERVE EXACTLY (these wire the form to our lead-capture backend — removing them breaks lead capture):
+  • Every <form data-nn-form> element and its data-nn-form attribute
+  • The hidden honeypot field: <input type="text" name="company_website" ...>
+  • The field name attributes: name="name", name="email", name="phone", name="message"
+  • The <p data-nn-form-status> status line inside each form
+  • The <script id="nn-form-handler"> block (do not remove, do not rewrite its contents)
+  You MAY restyle the form, change the heading copy, re-arrange layout, or change the submit button label — but do NOT remove or rename the attributes and script above.`;
 
     const userPrompt = `Requested change from the user:
 """
@@ -106,6 +114,10 @@ ${site.html_content}
         { status: 500 },
       );
     }
+
+    // Re-assert the form-submit handler — if the edit stripped the script,
+    // we re-inject it so lead capture never silently breaks after an AI edit.
+    updatedHtml = ensureFormHandler(updatedHtml, id);
 
     const { error: updateErr } = await supabaseAdmin
       .from("generated_websites")

@@ -5,6 +5,7 @@ import { getUserAIConfig, aiChat } from "@/lib/ai";
 import { getBalance, deductCredits, WEBSITE_GENERATION_CREDITS, WEBSITE_WHITELABEL_CREDITS } from "@/lib/credits";
 import { supabaseAdmin } from "@/lib/supabase";
 import { generateBusinessLogo } from "@/lib/logo";
+import { ensureFormHandler } from "@/lib/websiteForms";
 
 type ServiceSpec = { name: string; keyword: string };
 
@@ -531,7 +532,7 @@ function formatPaletteInstructions(
   ].join("\n");
 }
 
-const PREMIUM_STRUCTURE_BLOCK = `MANDATORY PAGE STRUCTURE (follow this 9-section template in EXACT order — no skipping, no reordering):
+const PREMIUM_STRUCTURE_BLOCK = `MANDATORY PAGE STRUCTURE (follow this template in EXACT order — no skipping, no reordering):
 
 1. STICKY NAV (header)
    - Solid white background, subtle bottom border or shadow on scroll
@@ -582,11 +583,31 @@ const PREMIUM_STRUCTURE_BLOCK = `MANDATORY PAGE STRUCTURE (follow this 9-section
      • Right column: embedded Google Map iframe — src="https://www.google.com/maps?q=[URL-ENCODED-ADDRESS]&output=embed", width="100%", height="420", loading="lazy", class="rounded-2xl border border-gray-100 shadow-sm", style="border:0", referrerpolicy="no-referrer-when-downgrade"
    - If no address was provided, OMIT this section entirely — do not render an empty map.
 
-9. FINAL CTA BAND
-   - Full-width section, accent-colored background OR dark with accent button
-   - Center-aligned: short bold heading ("Ready to transform your [outcome]?"), one-line supporting text, single filled CTA button, phone tel: link below
+9. CONTACT / LEAD FORM (this is where leads get captured — MUST be a real working form)
+   - Full-width section with a light tinted background (e.g. #f7f9f8 or subtle accent tint)
+   - Eyebrow small-caps ("GET IN TOUCH" or "REQUEST A QUOTE") + H2 ("Let's talk about your project" / "Tell us what you need")
+   - One-line kicker describing the response commitment ("We'll get back to you within 24 hours.")
+   - The form MUST have these EXACT attributes so our server can wire it up:
+     <form data-nn-form class="..."> — attribute "data-nn-form" is REQUIRED, do NOT add action=, method=, or an onsubmit handler, server-side JS will handle submission.
+   - The form MUST include these fields in this order, using these EXACT name attributes:
+     a) Hidden honeypot — wrap in <div class="sr-only" aria-hidden="true"> containing <label>Website<input type="text" name="company_website" tabindex="-1" autocomplete="off" /></label>. DO NOT style this field, DO NOT show it visually.
+     b) <input required name="name" type="text" placeholder="Your name" />
+     c) <input name="email" type="email" placeholder="Email address" />
+     d) <input name="phone" type="tel" placeholder="Phone number" />
+     e) <textarea name="message" rows="4" placeholder="How can we help?"></textarea>
+     f) <button type="submit">Send My Request</button> (or niche-appropriate label like "Get My Free Quote")
+     g) <p data-nn-form-status class="text-sm text-center min-h-[20px]"></p> — REQUIRED status line, kept empty; the submit script populates it with success/error text.
+   - Style the inputs: full width, border border-gray-200, rounded-lg, px-4 py-3 text-base, focus:outline-none focus:ring-2 focus:ring-accent bg-white, placeholder:text-gray-400.
+   - Layout: single column on mobile; two-column grid for name + phone on desktop, email + textarea full-width below.
+   - Wrap the form in a rounded-2xl border border-gray-100 shadow-sm p-8 bg-white card.
+   - Next to or above the form, include a second column or block with: big clickable phone (tel:), email (mailto:), business hours, and one trust line ("Licensed & Insured" etc.) — so prospects who prefer to call still have the info.
+   - The form MUST be a valid HTML5 form. Do NOT include action=, method=, or any custom JS — the server injects the submit handler.
 
-10. FOOTER
+10. FINAL CTA BAND
+    - Full-width section, accent-colored background OR dark with accent button
+    - Center-aligned: short bold heading ("Ready to transform your [outcome]?"), one-line supporting text, single filled CTA button that scrolls to #contact (add id="contact" to the section above), phone tel: link below.
+
+11. FOOTER
    - Dark (#0f172a) or white-gray with top border; 4 columns on desktop
    - Col 1: business name + 2-line mission + big clickable phone (tel:) and email (mailto:)
    - Col 2: Services (6 niche-specific links, # anchors are fine)
@@ -917,7 +938,7 @@ BUSINESS INFO:
 
 Niche category detected: ${palette.label}. Commit to this niche's visual identity (${palette.mood}) — imagery, accent color, and tone should feel native to this industry, not generic.
 
-Produce the full 9-section page per the structure above, at the quality of a professionally designed agency site. Return the complete HTML document only.`;
+Produce the full page per the structure above, at the quality of a professionally designed agency site. Return the complete HTML document only.`;
 
   try {
     // Premium template requires a bigger output budget — Anthropic supports it, OpenAI caps at 16k.
@@ -984,6 +1005,11 @@ Produce the full 9-section page per the structure above, at the quality of a pro
     if (logoUrl) {
       html = html.split("__NN_LOGO_URL__").join(logoUrl);
     }
+
+    // Inject the form-submit handler. Any <form data-nn-form> in the generated
+    // markup gets wired to POST /api/websites/{siteId}/submit — that's how
+    // leads make it from the public site back into the owner's prospects CRM.
+    html = ensureFormHandler(html, siteId);
 
     const { error: dbErr } = await supabaseAdmin.from("generated_websites").insert({
       id: siteId,
