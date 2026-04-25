@@ -268,7 +268,7 @@ export default function SourcesPage() {
 
           {/* Location */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
+            <div data-tour-id="sources-location">
               <label className="block text-xs text-[var(--muted)] uppercase tracking-wider mb-2">
                 State
               </label>
@@ -304,7 +304,7 @@ export default function SourcesPage() {
           </div>
 
           {/* Count */}
-          <div>
+          <div data-tour-id="sources-count">
             <label className="block text-xs text-[var(--muted)] uppercase tracking-wider mb-2">
               How many prospects
             </label>
@@ -433,12 +433,13 @@ export default function SourcesPage() {
           <button
             onClick={handleImport}
             disabled={loading || !niche.trim() || !state}
+            data-tour-id="sources-import"
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-semibold px-4 py-3 shadow-lg shadow-[var(--accent)]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Pulling from Google Maps… (up to 60s)
+                Pulling prospects… (up to 60s)
               </>
             ) : (
               <>

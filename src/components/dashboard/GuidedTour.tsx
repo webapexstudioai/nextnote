@@ -20,29 +20,25 @@ type TourStep = {
 /**
  * The tour actually walks users through each page — clicking Next on a step
  * with a `route` navigates to that page, waits for the target to mount,
- * then highlights it. No more "highlight the sidebar and hope they figure it out".
+ * then highlights it. On pages like Sources it steps through the ACTUAL
+ * workflow (type niche → pick location → choose count → hit import).
  */
 const TOUR_STEPS: TourStep[] = [
   {
     element: '[data-tour-id="sidebar"]',
     title: "Welcome to NextNote",
     description:
-      "This is your outbound command center. Everything — prospects, calls, AI agents, billing — lives in this sidebar. I'll walk you through each section in about a minute.",
+      "This is your outbound command center. Everything — prospects, calls, AI agents, billing — lives in this sidebar. I'll walk you through each section in about 90 seconds.",
     side: "right",
   },
-  {
-    element: '[data-tour-id="nav-prospects"]',
-    route: "/dashboard/prospects",
-    title: "Prospects — the heart of NextNote",
-    description:
-      "Click Next and I'll take you to the Prospects page so you can see how the pipeline works.",
-    side: "right",
-  },
+
+  // ─── Prospects ────────────────────────────────────────────
   {
     element: '[data-tour-id="prospects-import"]',
-    title: "Import your list",
+    route: "/dashboard/prospects",
+    title: "Prospects — import your list",
     description:
-      "Upload a CSV or XLSX — Claude auto-maps columns like Name, Phone, Company. Bring your own prospects or pull from Sources.",
+      "First stop: the Prospects page. Click this Import button to upload a CSV or XLSX — Claude auto-maps columns like Name, Phone, and Company.",
     side: "bottom",
   },
   {
@@ -54,90 +50,88 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     element: '[data-tour-id="prospects-kanban"]',
-    title: "Your Kanban pipeline",
+    title: "Drag through your pipeline",
     description:
-      "Drag prospects through stages: New → Contacted → Qualified → Booked → Closed. Click any card for a full detail panel with call history, voicedrops, and deal value.",
+      "Prospects flow through New → Contacted → Qualified → Booked → Closed. Drag cards between columns. Click any card for a full detail panel with call history, voicedrops, and deal value.",
     side: "top",
   },
-  {
-    element: '[data-tour-id="nav-sources"]',
-    route: "/dashboard/sources",
-    title: "Sources — find new prospects",
-    description:
-      "Next up: how to fill your pipeline when you don't have a list yet.",
-    side: "right",
-  },
+
+  // ─── Sources ──────────────────────────────────────────────
   {
     element: '[data-tour-id="sources-niche"]',
-    title: "Type a niche, pick a region",
+    route: "/dashboard/sources",
+    title: "Sources — don't have a list yet?",
     description:
-      "Tell NextNote who you want (e.g. 'Plumbers') and where. We'll pull verified prospects with phone numbers into a folder ready to work. 5 credits per prospect.",
+      "No prospects? No problem. Sources pulls real businesses with phone numbers in ~60 seconds. Start here: type a niche (Plumbers, Roofers, Dentists…).",
     side: "bottom",
   },
   {
-    element: '[data-tour-id="nav-appointments"]',
-    route: "/dashboard/appointments",
-    title: "Appointments",
+    element: '[data-tour-id="sources-location"]',
+    title: "Pick where they are",
     description:
-      "Every booked meeting shows here — let's take a look.",
-    side: "right",
+      "Choose a state — and optionally narrow down to a city. This is how you keep the list geographically focused so the outreach actually converts.",
+    side: "bottom",
   },
   {
+    element: '[data-tour-id="sources-count"]',
+    title: "Choose how many",
+    description:
+      "25, 50, or 100 per batch. Each prospect costs 5 credits — and you're only charged for ones that come back with a verified phone number.",
+    side: "top",
+  },
+  {
+    element: '[data-tour-id="sources-import"]',
+    title: "Hit import",
+    description:
+      "Click this and NextNote drops the results into a new folder under Prospects, ready to call, email, or voicedrop. That's how you go from zero to a working pipeline in under a minute.",
+    side: "top",
+  },
+
+  // ─── Appointments ─────────────────────────────────────────
+  {
     element: '[data-tour-id="appointments-calendar"]',
-    title: "Calendar + Google sync",
+    route: "/dashboard/appointments",
+    title: "Appointments — every booking in one view",
     description:
       "Bookings auto-create Google Calendar events with Meet links. Confirmation emails send from your Gmail once you connect it in Settings → Integrations.",
     side: "top",
   },
+
+  // ─── Agents ───────────────────────────────────────────────
   {
-    element: '[data-tour-id="nav-agents"]',
+    element: '[data-tour-id="agents-buy-number"]',
     route: "/dashboard/agents",
     title: "AI Agents — voice receptionists",
     description:
-      "Build an AI agent that answers calls for you 24/7. Let me show you.",
-    side: "right",
-  },
-  {
-    element: '[data-tour-id="agents-buy-number"]',
-    title: "Buy a US phone number",
-    description:
-      "500 credits one-time + 500/mo. Point the number at any agent and it handles inbound calls in your voice — no call-center needed.",
+      "Buy a US phone number (500 credits one-time, 500/mo) and point it at an AI agent. It answers calls in your voice 24/7 — no call-center needed.",
     side: "bottom",
   },
-  {
-    element: '[data-tour-id="nav-websites"]',
-    route: "/dashboard/websites",
-    title: "AI Websites",
-    description:
-      "Generate a full custom landing page for any prospect in ~60 seconds. Great for pitching before a call.",
-    side: "right",
-  },
+
+  // ─── Websites ─────────────────────────────────────────────
   {
     element: '[data-tour-id="websites-generate"]',
-    title: "Generate in one click",
+    route: "/dashboard/websites",
+    title: "AI Websites — custom page in 60s",
     description:
-      "Describe the business, pick a style, hit generate. You get a live, editable website on a NextNote subdomain.",
+      "Describe the business, pick a style, hit generate. You get a live, editable landing page on a NextNote subdomain — great for pitching a prospect before the call.",
     side: "left",
   },
+
+  // ─── Billing ──────────────────────────────────────────────
   {
-    element: '[data-tour-id="nav-billing"]',
+    element: '[data-tour-id="billing-topup"]',
     route: "/dashboard/billing",
     title: "Credits run everything",
     description:
-      "1 credit = $0.01. Voicemail drops, AI calls, websites, prospect imports — all metered in credits.",
-    side: "right",
-  },
-  {
-    element: '[data-tour-id="billing-topup"]',
-    title: "Top up anytime",
-    description:
-      "Pick a preset or type a custom amount — credits never expire. Your subscription includes a monthly allotment; top-ups only kick in if you go above it.",
+      "1 credit = $0.01. Voicemail drops, AI calls, websites, prospect imports — all metered in credits. Top up anytime; credits never expire.",
     side: "top",
   },
+
+  // ─── Finish ───────────────────────────────────────────────
   {
     title: "You're good to go",
     description:
-      "Start with Sources or Prospects to build your first pipeline. You can re-run this tour anytime from Settings → Profile.",
+      "Start with Sources to build your first folder, or import a list you already have. You can re-run this tour anytime from Settings → Profile.",
   },
 ];
 
