@@ -154,6 +154,54 @@ function waitForElement(selector: string, timeout = 4000): Promise<Element | nul
   });
 }
 
+const nextFrame = () =>
+  new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+/**
+ * Fade the driver.js popover + highlight cutout during a route transition
+ * so the old position doesn't visibly hang before snapping to the new target.
+ */
+function fadeDriverUI(visible: boolean) {
+  const apply = (el: HTMLElement) => {
+    el.style.transition = "opacity 180ms ease";
+    el.style.opacity = visible ? "1" : "0";
+  };
+  document.querySelectorAll<HTMLElement>(".driver-popover").forEach(apply);
+  document.querySelectorAll<HTMLElement>(".driver-active-element").forEach(apply);
+}
+
+async function transitionToStep(
+  route: string | undefined,
+  selector: string | undefined,
+  router: ReturnType<typeof useRouter>,
+) {
+  if (!route || window.location.pathname === route) return;
+
+  fadeDriverUI(false);
+  // Let the fade start visibly before we yank the page out from under the user.
+  await new Promise((r) => setTimeout(r, 120));
+
+  router.push(route);
+
+  if (selector) {
+    await waitForElement(selector, 5000);
+  } else {
+    await new Promise((r) => setTimeout(r, 300));
+  }
+
+  // Two frames of paint time after mount so layout + fonts are settled.
+  await nextFrame();
+  await nextFrame();
+
+  if (selector) {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      await new Promise((r) => setTimeout(r, 280));
+    }
+  }
+}
+
 export default function GuidedTour() {
   const driverRef = useRef<Driver | null>(null);
   const router = useRouter();
@@ -174,29 +222,17 @@ export default function GuidedTour() {
           align: "start" as const,
           onNextClick: async () => {
             const next = TOUR_STEPS[idx + 1];
-            if (next?.route && window.location.pathname !== next.route) {
-              router.push(next.route);
-              if (next.element) {
-                await waitForElement(next.element, 5000);
-              } else {
-                await new Promise((r) => setTimeout(r, 350));
-              }
-            }
+            await transitionToStep(next?.route, next?.element, router);
             driverRef.current?.moveNext();
-            setTimeout(() => driverRef.current?.refresh(), 60);
+            await nextFrame();
+            fadeDriverUI(true);
           },
           onPrevClick: async () => {
             const prev = TOUR_STEPS[idx - 1];
-            if (prev?.route && window.location.pathname !== prev.route) {
-              router.push(prev.route);
-              if (prev.element) {
-                await waitForElement(prev.element, 5000);
-              } else {
-                await new Promise((r) => setTimeout(r, 350));
-              }
-            }
+            await transitionToStep(prev?.route, prev?.element, router);
             driverRef.current?.movePrevious();
-            setTimeout(() => driverRef.current?.refresh(), 60);
+            await nextFrame();
+            fadeDriverUI(true);
           },
         },
         onHighlightStarted: async () => {
