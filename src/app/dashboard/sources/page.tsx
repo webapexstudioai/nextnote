@@ -246,6 +246,7 @@ export default function SourcesPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
               <input
                 type="text"
+                data-tour-id="sources-niche"
                 value={niche}
                 onChange={(e) => setNiche(e.target.value)}
                 placeholder="e.g. Plumbers, Roofers, HVAC contractors"

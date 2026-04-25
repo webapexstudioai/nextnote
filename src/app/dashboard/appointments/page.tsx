@@ -490,7 +490,7 @@ export default function AppointmentsPage() {
 
         {/* Calendar Grid (shown in calendar view) */}
         {viewMode === "calendar" && (
-          <div className="rounded-xl liquid-glass p-4">
+          <div data-tour-id="appointments-calendar" className="rounded-xl liquid-glass p-4">
             <div className="flex items-center justify-between mb-4">
               <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-[var(--background)] transition-colors">
                 <ChevronLeft className="w-4 h-4" />

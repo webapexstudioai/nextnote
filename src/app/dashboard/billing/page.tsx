@@ -146,7 +146,7 @@ function BillingInner() {
       )}
 
       <h2 className="text-sm font-medium text-[var(--foreground)] mb-3 uppercase tracking-wide">Top up</h2>
-      <div className="liquid-glass rounded-2xl p-6">
+      <div data-tour-id="billing-topup" className="liquid-glass rounded-2xl p-6">
         <p className="text-sm text-[var(--muted)] mb-4">
           Credits are <span className="text-[var(--foreground)] font-medium">$0.01 each</span>. Minimum top-up is {MIN_TOPUP} credits. Credits never expire.
         </p>

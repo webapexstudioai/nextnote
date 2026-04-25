@@ -164,13 +164,14 @@ function ProspectsPageInner() {
               </button>
               <Link
                 href="/dashboard/import"
+                data-tour-id="prospects-import"
                 className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border)] text-sm hover:bg-white/[0.04] transition-colors"
                 title="Import prospects from CSV, XLSX, or Google Sheets"
               >
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Import</span>
               </Link>
-              <button onClick={() => setShowAddModal(true)} className="liquid-btn">
+              <button onClick={() => setShowAddModal(true)} data-tour-id="prospects-add" className="liquid-btn">
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Add Prospect</span>
               </button>
@@ -203,12 +204,14 @@ function ProspectsPageInner() {
               </div>
             )}
           </div>
-          <ProspectKanban
-            prospects={kanbanProspects}
-            onSelect={(p) => setSelectedId(p.id)}
-            onAdd={(status) => { setAddStatus(status); setShowAddModal(true); }}
-            onMoveToFile={isTriage ? (id) => setMovingProspectId(id) : undefined}
-          />
+          <div data-tour-id="prospects-kanban">
+            <ProspectKanban
+              prospects={kanbanProspects}
+              onSelect={(p) => setSelectedId(p.id)}
+              onAdd={(status) => { setAddStatus(status); setShowAddModal(true); }}
+              onMoveToFile={isTriage ? (id) => setMovingProspectId(id) : undefined}
+            />
+          </div>
         </div>
 
         {selected && <DetailPanel prospect={selected} onClose={() => setSelectedId(null)} />}

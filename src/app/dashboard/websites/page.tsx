@@ -213,6 +213,7 @@ export default function WebsitesPage() {
           </div>
           <button
             onClick={() => { setShowForm(true); resetForm(); }}
+            data-tour-id="websites-generate"
             className="liquid-btn shrink-0"
           >
             <Plus className="w-4 h-4" />

@@ -392,6 +392,7 @@ export default function AgentsPage() {
                 <h2 className="text-sm font-semibold">Phone Numbers</h2>
                 <div className="flex items-center gap-2">
                   <button onClick={() => { setShowBuyNumber(!showBuyNumber); setShowImportPhone(false); setBuyError(""); setBuySuccess(""); setAvailableNumbers([]); }}
+                    data-tour-id="agents-buy-number"
                     className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--border)] text-xs hover:bg-white/[0.04] transition-all">
                     <Phone className="w-3.5 h-3.5 text-[var(--accent)]" /> Buy a Number
                   </button>
