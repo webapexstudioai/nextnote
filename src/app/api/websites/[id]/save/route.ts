@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase";
-import { ensureFormHandler } from "@/lib/websiteForms";
+import { ensureFormHandler, stripPoweredByBadge } from "@/lib/websiteForms";
 
 export async function POST(
   req: Request,
@@ -24,7 +24,7 @@ export async function POST(
 
   const { data: site } = await supabaseAdmin
     .from("generated_websites")
-    .select("user_id")
+    .select("user_id, tier")
     .eq("id", id)
     .maybeSingle();
 
@@ -36,7 +36,13 @@ export async function POST(
   }
 
   // Re-assert the form-submit handler so visual edits don't strip lead capture.
-  const finalHtml = ensureFormHandler(html, id);
+  let finalHtml = ensureFormHandler(html, id);
+
+  // White-label sites must never carry a "Powered by NextNote" badge — if the
+  // visual editor re-introduced one, strip it before persisting.
+  if (site.tier === "whitelabel") {
+    finalHtml = stripPoweredByBadge(finalHtml);
+  }
 
   const { error } = await supabaseAdmin
     .from("generated_websites")

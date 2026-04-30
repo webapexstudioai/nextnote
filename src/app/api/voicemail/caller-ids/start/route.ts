@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase";
+import { requirePro } from "@/lib/tierGuard";
 
 function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/[^\d+]/g, "");
@@ -16,6 +17,9 @@ export async function POST(req: NextRequest) {
     if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    const gate = await requirePro(session.userId, "Voicemail drops");
+    if (!gate.ok) return gate.response;
 
     const sid = process.env.TWILIO_ACCOUNT_SID;
     const token = process.env.TWILIO_AUTH_TOKEN;

@@ -34,6 +34,7 @@ interface ProspectsContextType {
     meetLink?: string,
     agenda?: string,
   ) => Promise<void>;
+  refresh: () => Promise<void>;
   createFolder: (name: string, color: string) => Promise<Folder>;
   updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
   deleteFolder: (id: string) => Promise<void>;
@@ -63,6 +64,16 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await api("/api/crm");
+      setProspects(data.prospects || []);
+      setFolders(data.folders || []);
+    } catch (err) {
+      console.error("Failed to refresh CRM:", err);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -450,6 +461,7 @@ export function ProspectsProvider({ children }: { children: ReactNode }) {
         loaded,
         googleConnected,
         setGoogleConnected,
+        refresh,
         addProspect,
         addProspects,
         updateProspect,

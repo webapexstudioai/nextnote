@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { mapProspect, requireUser } from "@/lib/crm";
+import { assertProspectQuota } from "@/lib/tierGuard";
 import type { Prospect } from "@/types";
 
 type ProspectInput = Partial<Prospect> & { folderId: string; name: string };
@@ -37,6 +38,9 @@ export async function POST(req: NextRequest) {
     const inputs = body.prospects as ProspectInput[];
     if (inputs.length === 0) return NextResponse.json({ prospects: [] });
 
+    const quota = await assertProspectQuota(userId, inputs.length);
+    if (!quota.ok) return quota.response;
+
     // Validate folder ownership for all unique folder_ids
     const folderIds = Array.from(new Set(inputs.map((p) => p.folderId).filter(Boolean)));
     if (folderIds.length === 0) {
@@ -68,6 +72,9 @@ export async function POST(req: NextRequest) {
   if (!input.folderId || !input.name) {
     return NextResponse.json({ error: "folderId and name required" }, { status: 400 });
   }
+
+  const quota = await assertProspectQuota(userId, 1);
+  if (!quota.ok) return quota.response;
 
   const { data: folder } = await supabaseAdmin
     .from("folders")

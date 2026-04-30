@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase";
+import { requirePro } from "@/lib/tierGuard";
 import {
   getBalance,
   deductCredits,
@@ -28,6 +29,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    const gate = await requirePro(session.userId, "Voicemail drops");
+    if (!gate.ok) return gate.response;
+
     const sid = process.env.TWILIO_ACCOUNT_SID;
     const token = process.env.TWILIO_AUTH_TOKEN;
     if (!sid || !token) {
@@ -46,19 +50,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Maximum 100 drops per batch" }, { status: 400 });
     }
 
-    // Verify caller ID belongs to user and is verified
+    // Two valid sources for the "from" number:
+    //   1. A verified caller ID — the user's own cell. Callbacks ring their
+    //      personal phone with no NextNote attribution.
+    //   2. A Twilio agency number — callbacks land in /api/twilio/voice/forward,
+    //      get logged to voicemail_callbacks, then forwarded to the user's cell.
     const { data: callerIdRow } = await supabaseAdmin
       .from("user_caller_ids")
-      .select("*")
+      .select("phone_number")
       .eq("user_id", session.userId)
       .eq("phone_number", from_number)
       .eq("verified", true)
       .maybeSingle();
+
+    let fromKind: "caller_id" | "agency_number" = "caller_id";
     if (!callerIdRow) {
-      return NextResponse.json(
-        { error: "Caller ID not verified. Add and verify it in Settings first." },
-        { status: 400 }
-      );
+      const { data: agencyNumber } = await supabaseAdmin
+        .from("user_phone_numbers")
+        .select("phone_number")
+        .eq("user_id", session.userId)
+        .eq("phone_number", from_number)
+        .eq("purpose", "agency")
+        .maybeSingle();
+      if (!agencyNumber) {
+        return NextResponse.json(
+          { error: "From number not recognized. Verify a caller ID or claim a NextNote number first." },
+          { status: 400 }
+        );
+      }
+      fromKind = "agency_number";
     }
 
     // Dedupe + validate targets

@@ -8,6 +8,7 @@ import {
   Globe, ArrowRight, Info, Wand2, FolderPlus, Folder,
 } from "lucide-react";
 import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
+import { useProspects } from "@/context/ProspectsContext";
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
@@ -55,6 +56,7 @@ type Destination = { mode: "new" } | { mode: "existing"; folderId: string };
 
 export default function SourcesPage() {
   const router = useRouter();
+  const { refresh } = useProspects();
   const [niche, setNiche] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
@@ -123,6 +125,9 @@ export default function SourcesPage() {
       }
 
       setResult(data as ImportResponse);
+      // Pull the new folder + prospects into the shared CRM context so they
+      // appear on the Prospects page without a hard refresh.
+      refresh().catch(() => {});
       // Refresh balance
       fetch("/api/credits/balance")
         .then((r) => (r.ok ? r.json() : { balance }))

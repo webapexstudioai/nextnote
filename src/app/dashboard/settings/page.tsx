@@ -113,6 +113,7 @@ export default function SettingsPage() {
     if (activeTab === "caller_id") loadCallerIds();
   }, [activeTab]);
 
+
   async function loadSubscription() {
     try {
       const res = await fetch("/api/stripe/subscription");

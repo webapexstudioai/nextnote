@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
+import { requirePro } from "@/lib/tierGuard";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const MAX_SIZE = 10 * 1024 * 1024;
@@ -44,6 +45,9 @@ export async function POST(req: NextRequest) {
   if (!session.isLoggedIn || !session.userId) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
+
+  const gate = await requirePro(session.userId, "Voicemail drops");
+  if (!gate.ok) return gate.response;
 
   const form = await req.formData();
   const file = form.get("audio");

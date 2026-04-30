@@ -14,6 +14,7 @@ export const MIN_CALL_BALANCE = 64;
 export const RATE_CREDITS_PER_MIN = 16;          // voice calls (covers ElevenLabs Conv AI ~$0.09/min + Twilio PSTN ~$0.01/min)
 export const RATE_CREDITS_PER_1K_CHARS = 25;     // TTS (ElevenLabs ~$0.15/1K chars — floor-safe with 15%+ margin)
 export const RATE_CREDITS_PER_VOICEMAIL = 13;    // voicemail drop (Twilio PSTN + ElevenLabs TTS ~$0.08 upstream)
+export const RATE_CREDITS_PER_SMS = 5;           // SMS send (Twilio ~$0.0079 per segment, US/Canada — generous margin for multi-segment)
 
 // Phone numbers. Twilio cost is ~$1.15/mo + $1 one-time; we mark up.
 export const PHONE_NUMBER_PURCHASE_CREDITS = 500;   // $5 one-time
@@ -59,6 +60,7 @@ export const PRICING_TABLE: PricingEntry[] = [
   { key: "voice_call",       label: "Voice call",            unit: "per minute",      creditsPerUnit: RATE_CREDITS_PER_MIN,       estUpstreamCostUsd: 0.100, upstream: "ElevenLabs Conv AI + Twilio PSTN" },
   { key: "tts",              label: "Text-to-speech",        unit: "per 1K chars",    creditsPerUnit: RATE_CREDITS_PER_1K_CHARS,  estUpstreamCostUsd: 0.150, upstream: "ElevenLabs TTS" },
   { key: "voicemail",        label: "Voicemail drop",        unit: "per drop",        creditsPerUnit: RATE_CREDITS_PER_VOICEMAIL, estUpstreamCostUsd: 0.080, upstream: "Twilio PSTN + ElevenLabs TTS (~500 chars)" },
+  { key: "sms",              label: "SMS follow-up",         unit: "per message",     creditsPerUnit: RATE_CREDITS_PER_SMS,       estUpstreamCostUsd: 0.0079, upstream: "Twilio SMS (US/Canada per segment)" },
   { key: "phone_purchase",   label: "Phone number purchase", unit: "one-time",        creditsPerUnit: PHONE_NUMBER_PURCHASE_CREDITS, estUpstreamCostUsd: 1.00, upstream: "Twilio number purchase" },
   { key: "phone_monthly",    label: "Phone number monthly",  unit: "per month",       creditsPerUnit: PHONE_NUMBER_MONTHLY_CREDITS, estUpstreamCostUsd: 1.15, upstream: "Twilio monthly fee" },
 ];

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { mapFolder, requireUser } from "@/lib/crm";
+import { assertFolderQuota } from "@/lib/tierGuard";
 
 export async function POST(req: NextRequest) {
   const userId = await requireUser();
@@ -8,6 +9,9 @@ export async function POST(req: NextRequest) {
 
   const { name, color } = await req.json();
   if (!name) return NextResponse.json({ error: "Name required" }, { status: 400 });
+
+  const quota = await assertFolderQuota(userId);
+  if (!quota.ok) return quota.response;
 
   const { data, error } = await supabaseAdmin
     .from("folders")

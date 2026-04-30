@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { requireUser, mapProspect } from "@/lib/crm";
+import { assertProspectQuota } from "@/lib/tierGuard";
 import { deductCredits, getBalance, IMPORT_PROSPECT_CREDITS } from "@/lib/credits";
 
 export const maxDuration = 60;
@@ -53,6 +54,9 @@ export async function POST(req: NextRequest) {
 
   if (!niche) return NextResponse.json({ error: "Niche is required (e.g. 'Plumbers')." }, { status: 400 });
   if (!location) return NextResponse.json({ error: "Location is required (e.g. 'Texas' or 'Austin, TX')." }, { status: 400 });
+
+  const quota = await assertProspectQuota(userId, count);
+  if (!quota.ok) return quota.response;
 
   const totalCost = count * IMPORT_PROSPECT_CREDITS;
   const balance = await getBalance(userId);

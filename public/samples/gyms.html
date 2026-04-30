@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BLACKIRON Performance — Strength · Conditioning · Hybrid Athletes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --carbon: #141414;
+    --steel: #1f1f1f;
+    --steel-2: #2a2a2a;
+    --line: #3a3a3a;
+    --neon: #d4ff3a;
+    --neon-deep: #b3da1f;
+    --hot: #ff3b3b;
+    --text: #f4f4f4;
+    --muted: #888;
+    --muted-bright: #b8b8b8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text);
+    background: var(--black);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+  .display { font-family: 'Oswald', sans-serif; letter-spacing: 0.01em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* TICKER BAR */
+  .ticker-bar {
+    background: var(--neon);
+    color: var(--black);
+    padding: 9px 0;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .ticker {
+    display: flex; gap: 48px; white-space: nowrap;
+    animation: scroll 40s linear infinite;
+  }
+  .ticker span::after {
+    content: '·';
+    color: var(--black); margin-left: 48px;
+  }
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* NAV */
+  nav.main {
+    background: var(--black);
+    border-bottom: 1px solid var(--steel-2);
+    position: sticky; top: 0; z-index: 50;
+  }
+  nav.main .row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--text); }
+  .brand-mark {
+    width: 44px; height: 44px;
+    background: var(--neon); border-radius: 0;
+    display: grid; place-items: center;
+    transform: skew(-8deg);
+  }
+  .brand-mark svg { transform: skew(8deg); }
+  .brand-name {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 22px; line-height: 1;
+    letter-spacing: 0.04em;
+  }
+  .brand-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links a {
+    color: var(--text); text-decoration: none; font-weight: 600; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .nav-links a:hover { color: var(--neon); }
+  .nav-cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--neon); color: var(--black);
+    padding: 12px 24px; border-radius: 0;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; text-decoration: none; font-size: 14px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    transform: skew(-8deg);
+  }
+  .nav-cta span { display: inline-block; transform: skew(8deg); }
+  .nav-cta:hover { background: var(--neon-deep); }
+
+  /* HERO */
+  .hero {
+    background: var(--black);
+    position: relative; overflow: hidden;
+    padding: 0;
+  }
+  .hero-img-bg {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(135deg, rgba(10,10,10,0.92) 0%, rgba(10,10,10,0.65) 50%, rgba(10,10,10,0.4) 100%),
+      url('https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=2000') center/cover;
+  }
+  .hero-img-bg::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+    background: var(--neon);
+  }
+  .hero-content {
+    position: relative; z-index: 2;
+    padding: 100px 0 90px;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: rgba(212,255,58,0.08);
+    border: 1px solid var(--neon);
+    padding: 8px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--neon);
+    margin-bottom: 32px;
+  }
+  .hero-tag .pulse {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--neon);
+    box-shadow: 0 0 0 0 rgba(212,255,58,0.6); animation: ping 2s infinite;
+  }
+  @keyframes ping {
+    0% { box-shadow: 0 0 0 0 rgba(212,255,58,0.6); }
+    70% { box-shadow: 0 0 0 12px rgba(212,255,58,0); }
+    100% { box-shadow: 0 0 0 0 rgba(212,255,58,0); }
+  }
+  h1.hero-title {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: clamp(64px, 11vw, 180px);
+    line-height: 0.88; letter-spacing: 0;
+    margin: 0 0 32px;
+    text-transform: uppercase;
+  }
+  h1.hero-title .neon-text {
+    color: var(--neon);
+    -webkit-text-stroke: 0;
+  }
+  h1.hero-title .outline {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--text);
+  }
+  .hero-lead {
+    font-size: 19px; line-height: 1.6; color: var(--muted-bright);
+    max-width: 580px; margin: 0 0 44px;
+  }
+  .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+  .btn-primary {
+    background: var(--neon); color: var(--black);
+    padding: 18px 36px; border-radius: 0;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; text-decoration: none;
+    font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase;
+    transform: skew(-8deg);
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .btn-primary span { display: inline-block; transform: skew(8deg); }
+  .btn-primary:hover { background: var(--neon-deep); }
+  .btn-outline {
+    color: var(--text); padding: 18px 32px; border-radius: 0;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; text-decoration: none;
+    font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase;
+    border: 2px solid var(--line);
+    transform: skew(-8deg);
+  }
+  .btn-outline span { display: inline-block; transform: skew(8deg); }
+  .btn-outline:hover { border-color: var(--neon); color: var(--neon); }
+
+  /* HERO STAT STRIP */
+  .hero-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    border-top: 1px solid var(--steel-2);
+    border-bottom: 1px solid var(--steel-2);
+    background: var(--carbon);
+  }
+  .hero-stats .stat {
+    padding: 36px 32px;
+    border-right: 1px solid var(--steel-2);
+  }
+  .hero-stats .stat:last-child { border-right: none; }
+  .hero-stats .num {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 64px; line-height: 1;
+    color: var(--neon);
+  }
+  .hero-stats .lab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin-top: 10px;
+  }
+
+  /* SECTION */
+  .section { padding: 120px 0; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--neon);
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-bottom: 18px;
+  }
+  .eyebrow::before { content: ''; width: 32px; height: 2px; background: var(--neon); }
+  h2.section-title {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: clamp(46px, 6.5vw, 96px);
+    line-height: 0.95; letter-spacing: 0;
+    margin: 0 0 22px;
+    text-transform: uppercase;
+  }
+  h2.section-title .neon-text { color: var(--neon); }
+  .section-lead { font-size: 17px; color: var(--muted-bright); max-width: 640px; line-height: 1.7; }
+
+  /* TRANSFORMATIONS */
+  .transformations { background: var(--black); }
+  .trans-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    margin-top: 64px;
+  }
+  .trans-card {
+    background: var(--carbon);
+    border: 1px solid var(--steel-2);
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .trans-card:hover { border-color: var(--neon); transform: translateY(-4px); }
+  .trans-pair {
+    display: grid; grid-template-columns: 1fr 1fr;
+    position: relative;
+  }
+  .trans-pair .img {
+    aspect-ratio: 3 / 4;
+    background-size: cover; background-position: center;
+    position: relative;
+  }
+  .trans-pair .img::after {
+    content: attr(data-label);
+    position: absolute; top: 14px; left: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
+    background: rgba(10,10,10,0.85); color: var(--text);
+    padding: 5px 9px;
+  }
+  .trans-pair .img.after::after { background: var(--neon); color: var(--black); }
+  .trans-info { padding: 24px 28px; }
+  .trans-name {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 24px; letter-spacing: 0.01em;
+    text-transform: uppercase;
+    margin: 0 0 4px;
+  }
+  .trans-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .trans-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    padding-top: 18px; border-top: 1px solid var(--steel-2);
+  }
+  .trans-stats .num {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 22px; line-height: 1;
+    color: var(--neon);
+  }
+  .trans-stats .lab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin-top: 4px;
+  }
+
+  /* CLASS SCHEDULE — calendar grid */
+  .schedule {
+    background: var(--carbon);
+    border-top: 1px solid var(--steel-2);
+    border-bottom: 1px solid var(--steel-2);
+  }
+  .sched-table {
+    background: var(--black);
+    border: 1px solid var(--steel-2);
+    margin-top: 56px;
+    overflow: hidden;
+  }
+  .sched-row {
+    display: grid; grid-template-columns: 100px repeat(5, 1fr);
+    border-bottom: 1px solid var(--steel-2);
+  }
+  .sched-row:last-child { border-bottom: none; }
+  .sched-row.head {
+    background: var(--steel);
+  }
+  .sched-row.head > div {
+    padding: 18px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+    border-right: 1px solid var(--steel-2);
+  }
+  .sched-row.head > div:last-child { border-right: none; }
+  .sched-row .time-col {
+    padding: 22px 16px;
+    background: var(--steel);
+    font-family: 'Oswald', sans-serif;
+    font-size: 17px; font-weight: 600;
+    color: var(--text);
+    border-right: 1px solid var(--steel-2);
+  }
+  .sched-cell {
+    padding: 14px 14px;
+    border-right: 1px solid var(--steel-2);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .sched-cell:last-child { border-right: none; }
+  .sched-cell:hover { background: var(--steel); }
+  .sched-cell.empty { background: rgba(0,0,0,0.4); }
+  .sched-cell .class-name {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 14px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .sched-cell .coach {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  .sched-cell.lift .class-name { color: var(--neon); }
+  .sched-cell.metcon .class-name { color: var(--hot); }
+  .sched-cell.hybrid .class-name { color: #4cc9f0; }
+  .sched-legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin-top: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .sched-legend .leg {
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .sched-legend .leg::before {
+    content: ''; width: 10px; height: 10px;
+  }
+  .sched-legend .leg.lift::before { background: var(--neon); }
+  .sched-legend .leg.metcon::before { background: var(--hot); }
+  .sched-legend .leg.hybrid::before { background: #4cc9f0; }
+
+  /* COACH CARDS */
+  .coaches { background: var(--black); }
+  .coach-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+    margin-top: 56px;
+  }
+  .coach-card {
+    background: var(--carbon);
+    border: 1px solid var(--steel-2);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .coach-card:hover { border-color: var(--neon); }
+  .coach-img {
+    aspect-ratio: 1 / 1;
+    background-size: cover; background-position: center top;
+    position: relative;
+    border-bottom: 2px solid var(--neon);
+  }
+  .coach-num {
+    position: absolute; top: 14px; left: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
+    background: rgba(10,10,10,0.85); color: var(--neon);
+    padding: 5px 9px;
+  }
+  .coach-info { padding: 22px 24px; }
+  .coach-name {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 22px;
+    letter-spacing: 0.02em; text-transform: uppercase;
+    margin: 0 0 6px;
+  }
+  .coach-spec {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--neon);
+    margin-bottom: 14px;
+  }
+  .coach-bio {
+    font-size: 13px; color: var(--muted-bright);
+    line-height: 1.6; margin: 0 0 18px;
+  }
+  .coach-creds {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding-top: 16px; border-top: 1px solid var(--steel-2);
+  }
+  .cred {
+    background: var(--black); color: var(--text);
+    padding: 4px 10px; border-radius: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.06em;
+    border: 1px solid var(--steel-2);
+  }
+
+  /* PROGRAMS / MEMBERSHIP TIERS */
+  .programs {
+    background: var(--carbon);
+    border-top: 1px solid var(--steel-2);
+    border-bottom: 1px solid var(--steel-2);
+  }
+  .prog-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    margin-top: 56px;
+  }
+  .prog-card {
+    background: var(--black);
+    border: 1px solid var(--steel-2);
+    padding: 40px 36px;
+    position: relative;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .prog-card:hover { transform: translateY(-4px); }
+  .prog-card.featured {
+    border-color: var(--neon);
+    background: linear-gradient(180deg, var(--black) 0%, rgba(212,255,58,0.04) 100%);
+  }
+  .prog-card.featured::before {
+    content: 'MOST POPULAR';
+    position: absolute; top: -1px; right: 24px;
+    background: var(--neon); color: var(--black);
+    padding: 6px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
+  }
+  .prog-card .tier {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .prog-card h3 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 32px;
+    letter-spacing: 0.02em; text-transform: uppercase;
+    margin: 0 0 18px;
+  }
+  .prog-card .price {
+    display: flex; align-items: baseline; gap: 6px;
+    margin-bottom: 28px;
+  }
+  .prog-card .price .num {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 56px; line-height: 1;
+    color: var(--neon);
+  }
+  .prog-card .price .per {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  .prog-card ul {
+    list-style: none; padding: 0; margin: 0 0 32px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .prog-card ul li {
+    font-size: 14px; color: var(--text);
+    padding-left: 28px; position: relative;
+    line-height: 1.5;
+  }
+  .prog-card ul li::before {
+    content: '+'; position: absolute; left: 0; top: -2px;
+    color: var(--neon); font-size: 22px; font-weight: 700;
+  }
+  .prog-cta {
+    display: block; width: 100%;
+    background: var(--steel); color: var(--text);
+    padding: 16px; text-align: center;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 14px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    text-decoration: none;
+    border: 1px solid var(--line);
+  }
+  .prog-cta:hover { background: var(--steel-2); border-color: var(--neon); color: var(--neon); }
+  .prog-card.featured .prog-cta {
+    background: var(--neon); color: var(--black);
+    border-color: var(--neon);
+  }
+  .prog-card.featured .prog-cta:hover { background: var(--neon-deep); color: var(--black); }
+
+  /* TESTIMONIALS */
+  .testimonials { background: var(--black); }
+  .test-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px;
+    margin-top: 56px;
+  }
+  .test-card {
+    background: var(--carbon);
+    border: 1px solid var(--steel-2);
+    border-left: 3px solid var(--neon);
+    padding: 38px;
+  }
+  .test-stars {
+    color: var(--neon); font-size: 16px; letter-spacing: 3px;
+    margin-bottom: 20px;
+  }
+  .test-quote {
+    font-size: 17px; line-height: 1.7; color: var(--text);
+    margin: 0 0 28px;
+    font-weight: 500;
+  }
+  .test-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 22px; border-top: 1px solid var(--steel-2);
+    gap: 16px;
+  }
+  .test-author { display: flex; align-items: center; gap: 14px; }
+  .test-avatar {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--neon), #94c020);
+    color: var(--black); font-weight: 800; font-size: 16px;
+    display: grid; place-items: center;
+    font-family: 'Oswald', sans-serif;
+    transform: skew(-8deg);
+  }
+  .test-avatar span { display: inline-block; transform: skew(8deg); }
+  .test-name { font-weight: 700; font-size: 15px; }
+  .test-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+  .test-stat {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 22px; color: var(--neon);
+    text-align: right;
+  }
+  .test-stat .lab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-top: 2px; font-weight: 500;
+  }
+
+  /* CTA */
+  .cta {
+    background: var(--neon);
+    color: var(--black);
+    position: relative;
+    overflow: hidden;
+  }
+  .cta::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+  .cta .container { position: relative; z-index: 2; }
+  .cta-grid {
+    display: grid; grid-template-columns: 1.1fr 1fr; gap: 80px; align-items: center;
+  }
+  .cta h2 {
+    color: var(--black);
+    -webkit-text-stroke: 0;
+  }
+  .cta .eyebrow { color: var(--black); }
+  .cta .eyebrow::before { background: var(--black); }
+  .cta-form {
+    background: var(--black); color: var(--text);
+    padding: 44px;
+    border: 4px solid var(--black);
+  }
+  .cta-form h3 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 32px;
+    letter-spacing: 0.02em; text-transform: uppercase;
+    margin: 0 0 8px;
+  }
+  .cta-form .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 0.12em; margin: 0 0 28px;
+  }
+  .form-row { margin-bottom: 16px; }
+  .form-row label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--neon); margin-bottom: 6px; font-weight: 600;
+  }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 14px;
+    background: var(--carbon); color: var(--text);
+    border: 1px solid var(--line); border-radius: 0;
+    font-size: 14px; font-family: inherit;
+  }
+  .form-row textarea { min-height: 90px; resize: vertical; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-submit {
+    width: 100%; background: var(--neon); color: var(--black);
+    padding: 18px; border: none; border-radius: 0;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 16px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    cursor: pointer; margin-top: 8px;
+  }
+  .form-submit:hover { background: var(--neon-deep); }
+
+  /* FOOTER */
+  footer {
+    background: var(--black);
+    border-top: 1px solid var(--steel-2);
+    color: var(--muted);
+    padding: 60px 0 28px;
+  }
+  .footer-grid {
+    display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 40px;
+    padding-bottom: 36px; border-bottom: 1px solid var(--steel-2);
+  }
+  .footer-grid h4 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 14px; color: var(--text);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin: 0 0 16px;
+  }
+  .footer-grid a {
+    display: block; color: var(--muted);
+    text-decoration: none; font-size: 14px; padding: 4px 0;
+  }
+  .footer-grid a:hover { color: var(--neon); }
+  .footer-bottom {
+    padding-top: 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+
+  @media (max-width: 980px) {
+    .cta-grid { grid-template-columns: 1fr; gap: 40px; }
+    .trans-grid, .coach-grid, .prog-grid { grid-template-columns: 1fr; }
+    .test-grid { grid-template-columns: 1fr; }
+    .hero-stats { grid-template-columns: repeat(2, 1fr); }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .sched-row { grid-template-columns: 80px repeat(5, 1fr); font-size: 12px; }
+    h1.hero-title { font-size: 56px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker">
+    <span>NEW MEMBER · 7-DAY FREE TRIAL</span>
+    <span>HYBRID ATHLETE PROGRAM · SPRING 2026</span>
+    <span>OPEN 5AM — 11PM · 7 DAYS</span>
+    <span>STRENGTH · CONDITIONING · COMPETITION PREP</span>
+    <span>DOORS OPEN AT 5</span>
+    <span>NEW MEMBER · 7-DAY FREE TRIAL</span>
+    <span>HYBRID ATHLETE PROGRAM · SPRING 2026</span>
+    <span>OPEN 5AM — 11PM · 7 DAYS</span>
+    <span>STRENGTH · CONDITIONING · COMPETITION PREP</span>
+    <span>DOORS OPEN AT 5</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="main">
+  <div class="container row">
+    <a href="#" class="brand">
+      <div class="brand-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 6.5l-3-3m-7 7l3 3m11-11l3 3m-15 15l-3-3M6.5 14.5l-3 3M17.5 6.5l-3 3M9.5 14.5l-3 3M14.5 9.5l3-3M9.5 9.5l-3-3"/>
+          <path d="M3 21l9-9 9 9"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">BLACKIRON</div>
+        <div class="brand-sub">Performance · Austin TX · Est. 2017</div>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="#programs">Programs</a>
+      <a href="#schedule">Schedule</a>
+      <a href="#coaches">Coaches</a>
+      <a href="#results">Results</a>
+      <a href="#contact">Join</a>
+    </div>
+    <a href="#contact" class="nav-cta"><span>Free 7-Day Trial</span></a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-img-bg"></div>
+  <div class="hero-content">
+    <div class="container">
+      <div class="hero-tag"><span class="pulse"></span> ENROLLING · SPRING COHORT 2026</div>
+      <h1 class="hero-title">
+        TRAIN<br/>
+        <span class="outline">LIKE YOUR</span><br/>
+        <span class="neon-text">LIFE</span> DEPENDS<br/>
+        ON IT.
+      </h1>
+      <p class="hero-lead">No mirrors. No fluff. No "tone up." Strength and conditioning programming for adults who'd rather get measurably better than feel vaguely encouraged.</p>
+      <div class="hero-actions">
+        <a href="#contact" class="btn-primary"><span>Start free trial →</span></a>
+        <a href="#programs" class="btn-outline"><span>See programs</span></a>
+      </div>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><div class="num">8 yrs</div><div class="lab">In Austin</div></div>
+    <div class="stat"><div class="num">1,840</div><div class="lab">Active members</div></div>
+    <div class="stat"><div class="num">22:1</div><div class="lab">Member to coach</div></div>
+    <div class="stat"><div class="num">14</div><div class="lab">Certified coaches</div></div>
+  </div>
+</section>
+
+<!-- TRANSFORMATIONS -->
+<section class="section transformations" id="results">
+  <div class="container">
+    <div class="eyebrow">Real members · real results</div>
+    <h2 class="section-title">RESULTS YOU CAN<br/><span class="neon-text">MEASURE</span> IN POUNDS<br/>AND IN MONTHS.</h2>
+    <p class="section-lead">Twelve-week assessment cycle. Body composition scan, strength baseline, conditioning testing. Numbers don't lie — and we don't airbrush them.</p>
+
+    <div class="trans-grid">
+      <div class="trans-card">
+        <div class="trans-pair">
+          <div class="img" data-label="WEEK 0" style="background-image: url('https://images.pexels.com/photos/3076509/pexels-photo-3076509.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+          <div class="img after" data-label="WEEK 24" style="background-image: url('https://images.pexels.com/photos/1547248/pexels-photo-1547248.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+        </div>
+        <div class="trans-info">
+          <h4 class="trans-name">DEREK · 38</h4>
+          <div class="trans-meta">HYBRID ATHLETE · 24 WEEKS</div>
+          <div class="trans-stats">
+            <div><div class="num">−42 lbs</div><div class="lab">Body weight</div></div>
+            <div><div class="num">+185</div><div class="lab">Total lbs lifted</div></div>
+            <div><div class="num">5K -8m</div><div class="lab">PR improvement</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="trans-card">
+        <div class="trans-pair">
+          <div class="img" data-label="WEEK 0" style="background-image: url('https://images.pexels.com/photos/3823039/pexels-photo-3823039.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+          <div class="img after" data-label="WEEK 16" style="background-image: url('https://images.pexels.com/photos/4498151/pexels-photo-4498151.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+        </div>
+        <div class="trans-info">
+          <h4 class="trans-name">MARISOL · 44</h4>
+          <div class="trans-meta">STRENGTH FOCUS · 16 WEEKS</div>
+          <div class="trans-stats">
+            <div><div class="num">+1.5x</div><div class="lab">Deadlift BW</div></div>
+            <div><div class="num">+12 lb</div><div class="lab">Lean mass</div></div>
+            <div><div class="num">−4.2%</div><div class="lab">Body fat</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="trans-card">
+        <div class="trans-pair">
+          <div class="img" data-label="WEEK 0" style="background-image: url('https://images.pexels.com/photos/1431282/pexels-photo-1431282.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+          <div class="img after" data-label="WEEK 36" style="background-image: url('https://images.pexels.com/photos/2261477/pexels-photo-2261477.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+        </div>
+        <div class="trans-info">
+          <h4 class="trans-name">JAMES · 51</h4>
+          <div class="trans-meta">CONDITIONING + STRENGTH · 36 WK</div>
+          <div class="trans-stats">
+            <div><div class="num">−28 lbs</div><div class="lab">Body weight</div></div>
+            <div><div class="num">+220</div><div class="lab">Squat 1RM (lb)</div></div>
+            <div><div class="num">A1c −1.8</div><div class="lab">HbA1c improve</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SCHEDULE -->
+<section class="section schedule" id="schedule">
+  <div class="container">
+    <div class="eyebrow">This week's class schedule</div>
+    <h2 class="section-title">PICK A TIME.<br/><span class="neon-text">SHOW UP.</span> WORK.</h2>
+    <p class="section-lead">Coached classes capped at 12 per session. Drop in, book ahead, or follow our 12-week structured cohort programming.</p>
+
+    <div class="sched-table">
+      <div class="sched-row head">
+        <div>TIME</div>
+        <div>MON</div>
+        <div>TUE</div>
+        <div>WED</div>
+        <div>THU</div>
+        <div>FRI</div>
+      </div>
+      <div class="sched-row">
+        <div class="time-col">5:30A</div>
+        <div class="sched-cell lift"><div class="class-name">Heavy Lift</div><div class="coach">Coach Reyna</div></div>
+        <div class="sched-cell metcon"><div class="class-name">Engine Work</div><div class="coach">Coach Kane</div></div>
+        <div class="sched-cell lift"><div class="class-name">Heavy Lift</div><div class="coach">Coach Reyna</div></div>
+        <div class="sched-cell hybrid"><div class="class-name">Hybrid</div><div class="coach">Coach Vega</div></div>
+        <div class="sched-cell lift"><div class="class-name">Heavy Lift</div><div class="coach">Coach Reyna</div></div>
+      </div>
+      <div class="sched-row">
+        <div class="time-col">6:30A</div>
+        <div class="sched-cell metcon"><div class="class-name">MetCon</div><div class="coach">Coach Kane</div></div>
+        <div class="sched-cell lift"><div class="class-name">Power Lift</div><div class="coach">Coach Hayes</div></div>
+        <div class="sched-cell metcon"><div class="class-name">MetCon</div><div class="coach">Coach Kane</div></div>
+        <div class="sched-cell lift"><div class="class-name">Power Lift</div><div class="coach">Coach Hayes</div></div>
+        <div class="sched-cell hybrid"><div class="class-name">Open Gym</div><div class="coach">Coach on floor</div></div>
+      </div>
+      <div class="sched-row">
+        <div class="time-col">9:00A</div>
+        <div class="sched-cell hybrid"><div class="class-name">Foundations</div><div class="coach">Coach Vega</div></div>
+        <div class="sched-cell empty"></div>
+        <div class="sched-cell hybrid"><div class="class-name">Foundations</div><div class="coach">Coach Vega</div></div>
+        <div class="sched-cell empty"></div>
+        <div class="sched-cell hybrid"><div class="class-name">Foundations</div><div class="coach">Coach Vega</div></div>
+      </div>
+      <div class="sched-row">
+        <div class="time-col">12:00P</div>
+        <div class="sched-cell metcon"><div class="class-name">Lunch Burn</div><div class="coach">Coach Pratt</div></div>
+        <div class="sched-cell metcon"><div class="class-name">Lunch Burn</div><div class="coach">Coach Pratt</div></div>
+        <div class="sched-cell metcon"><div class="class-name">Lunch Burn</div><div class="coach">Coach Pratt</div></div>
+        <div class="sched-cell metcon"><div class="class-name">Lunch Burn</div><div class="coach">Coach Pratt</div></div>
+        <div class="sched-cell metcon"><div class="class-name">Lunch Burn</div><div class="coach">Coach Pratt</div></div>
+      </div>
+      <div class="sched-row">
+        <div class="time-col">5:00P</div>
+        <div class="sched-cell lift"><div class="class-name">Heavy Lift</div><div class="coach">Coach Hayes</div></div>
+        <div class="sched-cell metcon"><div class="class-name">Engine Work</div><div class="coach">Coach Kane</div></div>
+        <div class="sched-cell lift"><div class="class-name">Heavy Lift</div><div class="coach">Coach Hayes</div></div>
+        <div class="sched-cell metcon"><div class="class-name">Engine Work</div><div class="coach">Coach Kane</div></div>
+        <div class="sched-cell hybrid"><div class="class-name">Open Gym</div><div class="coach">Coach on floor</div></div>
+      </div>
+      <div class="sched-row">
+        <div class="time-col">6:00P</div>
+        <div class="sched-cell metcon"><div class="class-name">MetCon</div><div class="coach">Coach Reyna</div></div>
+        <div class="sched-cell lift"><div class="class-name">Power Lift</div><div class="coach">Coach Hayes</div></div>
+        <div class="sched-cell metcon"><div class="class-name">MetCon</div><div class="coach">Coach Reyna</div></div>
+        <div class="sched-cell hybrid"><div class="class-name">Hybrid</div><div class="coach">Coach Vega</div></div>
+        <div class="sched-cell empty"></div>
+      </div>
+    </div>
+    <div class="sched-legend">
+      <span class="leg lift">STRENGTH / LIFT</span>
+      <span class="leg metcon">METCON / CONDITIONING</span>
+      <span class="leg hybrid">HYBRID / OPEN GYM</span>
+    </div>
+  </div>
+</section>
+
+<!-- COACHES -->
+<section class="section coaches" id="coaches">
+  <div class="container">
+    <div class="eyebrow">Meet the coaching team</div>
+    <h2 class="section-title">14 COACHES.<br/>ZERO <span class="neon-text">SHORTCUTS.</span></h2>
+    <p class="section-lead">Every coach holds at least two relevant certifications. Half are former or current competitive athletes. All of them are still showing up at 5am.</p>
+
+    <div class="coach-grid">
+      <div class="coach-card">
+        <div class="coach-img" style="background-image: url('https://images.pexels.com/photos/3768916/pexels-photo-3768916.jpeg?auto=compress&cs=tinysrgb&w=900')">
+          <div class="coach-num">COACH 01</div>
+        </div>
+        <div class="coach-info">
+          <h4 class="coach-name">REYNA M.</h4>
+          <div class="coach-spec">HEAD COACH · POWERLIFTING</div>
+          <p class="coach-bio">Former USAPL national qualifier. Specializes in raw strength progressions and post-injury return-to-lift programming.</p>
+          <div class="coach-creds">
+            <span class="cred">USAPL</span><span class="cred">CSCS</span><span class="cred">FRC</span>
+          </div>
+        </div>
+      </div>
+      <div class="coach-card">
+        <div class="coach-img" style="background-image: url('https://images.pexels.com/photos/1547248/pexels-photo-1547248.jpeg?auto=compress&cs=tinysrgb&w=900')">
+          <div class="coach-num">COACH 02</div>
+        </div>
+        <div class="coach-info">
+          <h4 class="coach-name">DEMARCUS K.</h4>
+          <div class="coach-spec">CONDITIONING · ENERGY SYSTEMS</div>
+          <p class="coach-bio">D1 track athlete turned engine specialist. Builds aerobic capacity for hybrid athletes and Hyrox competitors.</p>
+          <div class="coach-creds">
+            <span class="cred">NSCA</span><span class="cred">USATF-1</span><span class="cred">PN-1</span>
+          </div>
+        </div>
+      </div>
+      <div class="coach-card">
+        <div class="coach-img" style="background-image: url('https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=900')">
+          <div class="coach-num">COACH 03</div>
+        </div>
+        <div class="coach-info">
+          <h4 class="coach-name">ANA V.</h4>
+          <div class="coach-spec">FOUNDATIONS · MOVEMENT QUALITY</div>
+          <p class="coach-bio">Former PT. The coach we put new lifters and post-rehab members with. Movement first, load second, always.</p>
+          <div class="coach-creds">
+            <span class="cred">DPT</span><span class="cred">FRC</span><span class="cred">SFG-1</span>
+          </div>
+        </div>
+      </div>
+      <div class="coach-card">
+        <div class="coach-img" style="background-image: url('https://images.pexels.com/photos/2261477/pexels-photo-2261477.jpeg?auto=compress&cs=tinysrgb&w=900')">
+          <div class="coach-num">COACH 04</div>
+        </div>
+        <div class="coach-info">
+          <h4 class="coach-name">JORDAN H.</h4>
+          <div class="coach-spec">OLYMPIC LIFTING · POWER</div>
+          <p class="coach-bio">USAW Level 2. Former competitive Olympic lifter (94kg). Snatch and clean &amp; jerk technique specialist.</p>
+          <div class="coach-creds">
+            <span class="cred">USAW-2</span><span class="cred">CSCS</span><span class="cred">CF-L3</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROGRAMS / MEMBERSHIP -->
+<section class="section programs" id="programs">
+  <div class="container">
+    <div class="eyebrow">Programming · membership</div>
+    <h2 class="section-title">PICK YOUR<br/><span class="neon-text">LANE.</span></h2>
+    <p class="section-lead">Three tiers. Same gym, same coaches, same equipment — different levels of structure and support. Switch tiers anytime.</p>
+
+    <div class="prog-grid">
+      <div class="prog-card">
+        <div class="tier">TIER 01</div>
+        <h3>OPEN GYM</h3>
+        <div class="price"><span class="num">$89</span><span class="per">/ MO</span></div>
+        <ul>
+          <li>Full 24-hour gym access</li>
+          <li>All equipment + open floor space</li>
+          <li>Body composition scan (quarterly)</li>
+          <li>Members-only mobile app + tracking</li>
+          <li>10% off retail &amp; programming</li>
+        </ul>
+        <a href="#contact" class="prog-cta">Start Free Trial</a>
+      </div>
+      <div class="prog-card featured">
+        <div class="tier">TIER 02</div>
+        <h3>COACHED</h3>
+        <div class="price"><span class="num">$219</span><span class="per">/ MO</span></div>
+        <ul>
+          <li>Everything in Open Gym, plus —</li>
+          <li>Unlimited coached group classes</li>
+          <li>12-week cohort programming</li>
+          <li>Monthly check-in with head coach</li>
+          <li>InBody scan + strength assessment</li>
+          <li>Nutrition baseline consultation</li>
+        </ul>
+        <a href="#contact" class="prog-cta">Start Free Trial</a>
+      </div>
+      <div class="prog-card">
+        <div class="tier">TIER 03</div>
+        <h3>1-ON-1</h3>
+        <div class="price"><span class="num">$580</span><span class="per">/ MO</span></div>
+        <ul>
+          <li>Everything in Coached, plus —</li>
+          <li>4 private 60-min sessions / month</li>
+          <li>Custom written programming</li>
+          <li>Weekly check-ins with your coach</li>
+          <li>Nutrition coaching included</li>
+          <li>Direct text access to coach</li>
+        </ul>
+        <a href="#contact" class="prog-cta">Apply Now</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section testimonials">
+  <div class="container">
+    <div class="eyebrow">Member stories</div>
+    <h2 class="section-title">PEOPLE WHO<br/>SHOW UP <span class="neon-text">CHANGE.</span></h2>
+
+    <div class="test-grid">
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"I was the guy who'd done 'fitness' on and off for 20 years and never gotten stronger. Six months at BlackIron and I deadlifted bodyweight × 2 for the first time. The coaching is the difference. Coach Hayes wrote my program around my desk-job back, not around what looked cool on Instagram."</p>
+        <div class="test-foot">
+          <div class="test-author">
+            <div class="test-avatar"><span>DR</span></div>
+            <div>
+              <div class="test-name">Derek R.</div>
+              <div class="test-meta">MEMBER SINCE 2024</div>
+            </div>
+          </div>
+          <div class="test-stat">+185<div class="lab">TOTAL (LB)</div></div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"I joined at 44 thinking 'maybe I can lose a few pounds.' Sixteen weeks later I deadlifted my body weight 1.5×, lost 4% body fat, and added 12 pounds of muscle. The InBody scans don't lie. Neither does the way I sleep now."</p>
+        <div class="test-foot">
+          <div class="test-author">
+            <div class="test-avatar"><span>MV</span></div>
+            <div>
+              <div class="test-name">Marisol V.</div>
+              <div class="test-meta">MEMBER SINCE 2025</div>
+            </div>
+          </div>
+          <div class="test-stat">+12 LB<div class="lab">LEAN MASS</div></div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"Pre-diabetic at 51 and my doctor wanted me on metformin. Coach Vega built a strength + conditioning program around my joints, my schedule, and my goals. Nine months later A1c is back in normal range. The medical bill savings alone covered the membership."</p>
+        <div class="test-foot">
+          <div class="test-author">
+            <div class="test-avatar"><span>JT</span></div>
+            <div>
+              <div class="test-name">James T.</div>
+              <div class="test-meta">MEMBER SINCE 2024</div>
+            </div>
+          </div>
+          <div class="test-stat">A1c −1.8<div class="lab">HbA1c DROP</div></div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"I'd lifted for years but never *learned*. The Foundations cohort with Coach Ana fixed every bad habit I'd built since college. My back pain is gone, my squat is 90 pounds heavier, and I'm coaching my kid's lifts because I finally know what's right."</p>
+        <div class="test-foot">
+          <div class="test-author">
+            <div class="test-avatar"><span>KP</span></div>
+            <div>
+              <div class="test-name">Kelsey P.</div>
+              <div class="test-meta">MEMBER SINCE 2023</div>
+            </div>
+          </div>
+          <div class="test-stat">+90 LB<div class="lab">SQUAT 1RM</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta" id="contact">
+  <div class="container">
+    <div class="cta-grid">
+      <div>
+        <div class="eyebrow">Free 7-day trial · no card required</div>
+        <h2 class="section-title">START THIS<br/>WEEK.<br/><span style="-webkit-text-stroke: 2px var(--black); color: transparent;">EXCUSES</span><br/>EXPIRE.</h2>
+        <p style="font-size: 17px; color: rgba(0,0,0,0.75); max-width: 560px; line-height: 1.6; margin-top: 24px;">Drop in for 7 days of unlimited classes and open gym access. Meet the coaches. Try the programming. If it's not for you, walk away — no card on file, no follow-up calls.</p>
+      </div>
+
+      <form class="cta-form" onsubmit="event.preventDefault(); alert('Welcome — a coach will text you within an hour to set up your trial.');">
+        <h3>Claim Your 7-Day Trial</h3>
+        <p class="sub">A COACH WILL TEXT WITHIN 1 HOUR · NO CARD REQUIRED</p>
+        <div class="form-row-2">
+          <div class="form-row">
+            <label>First name</label>
+            <input type="text" required>
+          </div>
+          <div class="form-row">
+            <label>Last name</label>
+            <input type="text" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Mobile</label>
+          <input type="tel" placeholder="(512) 000-0000" required>
+        </div>
+        <div class="form-row">
+          <label>Email</label>
+          <input type="email" required>
+        </div>
+        <div class="form-row">
+          <label>What are you here for?</label>
+          <select>
+            <option value="">Select…</option>
+            <option>Get stronger</option>
+            <option>Lose body fat / change body comp</option>
+            <option>Compete (powerlifting / Hyrox / endurance)</option>
+            <option>Get back into shape after time off</option>
+            <option>Post-injury return-to-train</option>
+            <option>Just exploring</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Anything else?</label>
+          <textarea placeholder="Past injuries, training history, schedule constraints, etc."></textarea>
+        </div>
+        <button type="submit" class="form-submit">Claim Trial</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+          <div class="brand-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l9-9 9 9"/></svg></div>
+          <div>
+            <div style="color: var(--text); font-family: 'Oswald'; font-weight: 700; font-size: 19px; letter-spacing: 0.04em;">BLACKIRON</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 10px; letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase;">Performance · Austin TX</div>
+          </div>
+        </div>
+        <p style="font-size: 14px; line-height: 1.6; color: var(--muted-bright);">A strength &amp; conditioning gym for adults who want to get measurably better. East Austin since 2017. Open 5am — 11pm, seven days.</p>
+      </div>
+      <div>
+        <h4>Programs</h4>
+        <a href="#">Open gym</a>
+        <a href="#">Coached classes</a>
+        <a href="#">1-on-1 coaching</a>
+        <a href="#">Foundations</a>
+        <a href="#">Hybrid athlete</a>
+      </div>
+      <div>
+        <h4>Visit</h4>
+        <a href="#">Schedule</a>
+        <a href="#">Try a class</a>
+        <a href="#">Meet coaches</a>
+        <a href="#">FAQ</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a href="tel:5125550144" style="color: var(--neon); font-weight: 700;">(512) 555-0144</a>
+        <a href="#">train@blackiron.gym</a>
+        <a href="#">2218 E 7th St, Austin TX</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 BLACKIRON PERFORMANCE LLC</div>
+      <div>BUILT IN AUSTIN · OPEN AT 5AM</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Summit & Crown Roofing — Storm Damage Specialists · Dallas, TX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --storm: #0c1620;
+    --storm-deep: #060c12;
+    --slate: #1c2a38;
+    --sky: #4a6c8c;
+    --copper: #c8763e;
+    --copper-deep: #a25620;
+    --warning: #f6b72e;
+    --paper: #f3f0eb;
+    --paper-warm: #e9e3d8;
+    --line: #d2cabb;
+    --ink: #14181d;
+    --muted: #5e6772;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1300px; margin: 0 auto; padding: 0 32px; }
+  .display { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.01em; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  /* TOP STORM ALERT */
+  .storm-alert {
+    background: var(--storm);
+    color: var(--warning);
+    padding: 11px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    border-bottom: 1px solid rgba(246,183,46,0.25);
+  }
+  .storm-alert .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .storm-alert .alert-tag {
+    background: var(--warning); color: var(--storm);
+    padding: 3px 10px; border-radius: 3px; font-weight: 700;
+    margin-right: 12px;
+  }
+  .storm-alert a { color: #fff; text-decoration: none; font-weight: 600; }
+
+  /* NAV */
+  nav.main {
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 50;
+  }
+  nav.main .row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--ink); }
+  .brand-mark {
+    width: 48px; height: 48px;
+    background: var(--storm); border-radius: 4px;
+    display: grid; place-items: center;
+    border: 2px solid var(--copper);
+  }
+  .brand-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; line-height: 1; letter-spacing: 0.02em;
+  }
+  .brand-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: 14px; }
+  .nav-cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--copper); color: #fff;
+    padding: 12px 22px; border-radius: 4px;
+    font-weight: 700; text-decoration: none; font-size: 14px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .nav-cta:hover { background: var(--copper-deep); }
+
+  /* HERO */
+  .hero {
+    background:
+      linear-gradient(180deg, rgba(12,22,32,0.55) 0%, rgba(12,22,32,0.85) 100%),
+      url('https://images.pexels.com/photos/14641159/pexels-photo-14641159.jpeg?auto=compress&cs=tinysrgb&w=2000') center/cover;
+    color: #fff;
+    padding: 100px 0 120px;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at top, rgba(246,183,46,0.08), transparent 60%);
+    pointer-events: none;
+  }
+  .hero .container { position: relative; z-index: 2; }
+  .hero-meta {
+    display: flex; gap: 28px; align-items: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .hero-meta .item { display: inline-flex; align-items: center; gap: 8px; }
+  .hero-meta .item::before { content: ''; width: 4px; height: 4px; background: var(--copper); border-radius: 50%; }
+  h1.hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(58px, 9vw, 130px);
+    line-height: 0.92; letter-spacing: 0.005em;
+    margin: 0 0 28px;
+    max-width: 1100px;
+  }
+  h1.hero-title .copper { color: var(--copper); }
+  h1.hero-title .strike { display: block; font-size: 0.7em; color: rgba(255,255,255,0.6); font-weight: 400; margin-top: 8px; }
+  .hero-lead {
+    font-size: 19px; line-height: 1.6; color: rgba(255,255,255,0.85);
+    max-width: 620px; margin: 0 0 40px;
+  }
+  .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--copper); color: #fff;
+    padding: 18px 34px; border-radius: 4px;
+    font-weight: 700; text-decoration: none;
+    font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 10px;
+    border: 2px solid var(--copper);
+  }
+  .btn-primary:hover { background: var(--copper-deep); border-color: var(--copper-deep); }
+  .btn-outline {
+    color: #fff; padding: 18px 30px; border-radius: 4px;
+    font-weight: 700; text-decoration: none;
+    font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase;
+    border: 2px solid rgba(255,255,255,0.4);
+  }
+  .btn-outline:hover { border-color: #fff; }
+
+  /* HERO BOTTOM STAT BAR */
+  .hero-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    background: var(--storm-deep);
+    border-top: 1px solid rgba(246,183,46,0.2);
+  }
+  .hero-stats .stat {
+    padding: 36px 32px;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    color: #fff;
+  }
+  .hero-stats .stat:last-child { border-right: none; }
+  .hero-stats .num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 56px; line-height: 1;
+    color: var(--warning);
+  }
+  .hero-stats .lab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-top: 10px;
+  }
+
+  /* SECTION */
+  .section { padding: 110px 0; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--copper);
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-bottom: 18px;
+  }
+  .eyebrow::before { content: ''; width: 32px; height: 2px; background: var(--copper); }
+  h2.section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(42px, 6vw, 84px);
+    line-height: 0.96; letter-spacing: 0.005em;
+    margin: 0 0 22px;
+    max-width: 900px;
+  }
+  .section-lead { font-size: 17px; color: var(--muted); max-width: 640px; line-height: 1.6; }
+
+  /* INSURANCE HELP / TWO-COL */
+  .insurance {
+    background: var(--paper-warm);
+    position: relative;
+  }
+  .insurance-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+    align-items: center;
+  }
+  .insurance-img {
+    border-radius: 6px; overflow: hidden;
+    aspect-ratio: 5 / 6;
+    background-image: url('https://images.pexels.com/photos/8985456/pexels-photo-8985456.jpeg?auto=compress&cs=tinysrgb&w=1200');
+    background-size: cover; background-position: center;
+    position: relative;
+  }
+  .insurance-img::after {
+    content: 'CLAIM #4427-A'; position: absolute; bottom: 24px; left: 24px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    color: #fff; background: rgba(12,22,32,0.85);
+    padding: 8px 14px; letter-spacing: 0.12em; border-left: 3px solid var(--warning);
+  }
+  .insurance-steps {
+    list-style: none; padding: 0; margin: 36px 0 0;
+    counter-reset: step;
+  }
+  .insurance-steps li {
+    counter-increment: step;
+    padding: 24px 0;
+    border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: auto 1fr; gap: 24px;
+  }
+  .insurance-steps li:last-child { border-bottom: 1px solid var(--line); }
+  .insurance-steps li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px; line-height: 1;
+    color: var(--copper);
+  }
+  .insurance-steps h4 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 0.01em;
+    margin: 0 0 6px;
+  }
+  .insurance-steps p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+  /* DAMAGE GALLERY (BEFORE / AFTER) */
+  .damage {
+    background: var(--storm); color: #fff;
+    position: relative;
+  }
+  .damage-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    margin-top: 64px;
+  }
+  .damage-card {
+    background: var(--storm-deep);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px; overflow: hidden;
+  }
+  .damage-pair {
+    display: grid; grid-template-columns: 1fr 1fr;
+    position: relative;
+  }
+  .damage-pair .img {
+    aspect-ratio: 1 / 1;
+    background-size: cover; background-position: center;
+    position: relative;
+  }
+  .damage-pair .img::after {
+    content: attr(data-label);
+    position: absolute; top: 12px; left: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; letter-spacing: 0.16em;
+    background: rgba(12,22,32,0.85); color: #fff;
+    padding: 5px 9px; border-radius: 2px;
+  }
+  .damage-pair .img.after::after { background: var(--copper); }
+  .damage-info { padding: 20px 24px; }
+  .damage-info h4 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 0.01em;
+    margin: 0 0 6px;
+  }
+  .damage-info .meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: rgba(255,255,255,0.5);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .damage-info p { font-size: 13px; color: rgba(255,255,255,0.7); margin: 12px 0 0; line-height: 1.6; }
+
+  /* SERVICES / MATERIAL CHIPS */
+  .services-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px;
+    margin-top: 64px;
+  }
+  .service-card {
+    background: #fff; border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: transform 0.2s;
+  }
+  .service-card:hover { transform: translateY(-3px); }
+  .service-card .img {
+    height: 220px; background-size: cover; background-position: center;
+  }
+  .service-card .body {
+    padding: 28px; flex: 1;
+  }
+  .service-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px; letter-spacing: 0.01em; line-height: 1;
+    margin: 0 0 8px;
+  }
+  .service-card .price-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--copper);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .service-card p {
+    font-size: 14px; color: var(--muted); line-height: 1.6; margin: 0 0 18px;
+  }
+  .chips {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding-top: 20px; border-top: 1px solid var(--line);
+  }
+  .chip {
+    background: var(--paper-warm); color: var(--ink);
+    padding: 5px 11px; border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.04em;
+  }
+
+  /* MANUFACTURERS / CERTIFIED LOGOS */
+  .certs {
+    background: var(--paper-warm);
+    padding: 60px 0;
+  }
+  .certs-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 32px;
+    flex-wrap: wrap;
+  }
+  .certs-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .cert-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px; color: var(--storm);
+    opacity: 0.55;
+    letter-spacing: 0.04em;
+  }
+
+  /* TRUST / 4-STAT (storm theme) */
+  .trust {
+    background: var(--storm-deep); color: #fff;
+    padding: 90px 0;
+  }
+  .trust-grid {
+    display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px;
+    align-items: center;
+  }
+  .trust-grid h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 44px; line-height: 1; letter-spacing: 0.005em;
+    margin: 0;
+  }
+  .trust-stat .num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 64px; line-height: 1;
+    color: var(--copper);
+  }
+  .trust-stat .lab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,255,255,0.6); margin-top: 10px;
+  }
+
+  /* TESTIMONIALS */
+  .testimonials { background: var(--paper); }
+  .test-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px;
+    margin-top: 56px;
+  }
+  .test-card {
+    background: #fff; padding: 38px;
+    border: 1px solid var(--line); border-radius: 6px;
+    border-left: 4px solid var(--copper);
+  }
+  .test-stars {
+    color: var(--warning); font-size: 16px; letter-spacing: 3px;
+    margin-bottom: 18px;
+  }
+  .test-quote {
+    font-size: 17px; line-height: 1.7; color: var(--ink);
+    margin: 0 0 26px; font-weight: 500;
+  }
+  .test-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 20px; border-top: 1px solid var(--line);
+  }
+  .test-author { display: flex; align-items: center; gap: 12px; }
+  .test-name { font-weight: 700; font-size: 14px; }
+  .test-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+  .test-claim {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    color: var(--copper); letter-spacing: 0.1em; text-transform: uppercase;
+  }
+
+  /* CTA */
+  .cta {
+    background: var(--storm);
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      linear-gradient(135deg, rgba(200,118,62,0.2), transparent 50%),
+      url('https://images.pexels.com/photos/15538055/pexels-photo-15538055.jpeg?auto=compress&cs=tinysrgb&w=2000') center/cover;
+    opacity: 0.3;
+  }
+  .cta .container { position: relative; z-index: 2; }
+  .cta-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+    align-items: start;
+  }
+  .cta-form {
+    background: #fff; color: var(--ink);
+    border-radius: 6px; padding: 40px;
+    border-top: 6px solid var(--copper);
+  }
+  .cta-form h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 38px; line-height: 1;
+    margin: 0 0 8px;
+  }
+  .cta-form .sub {
+    font-size: 14px; color: var(--muted); margin: 0 0 28px;
+  }
+  .form-row { margin-bottom: 16px; }
+  .form-row label {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 6px;
+    color: var(--ink); font-weight: 600;
+  }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 14px;
+    border: 1px solid var(--line); border-radius: 4px;
+    font-size: 14px; font-family: inherit;
+    background: var(--paper);
+  }
+  .form-row textarea { min-height: 90px; resize: vertical; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-submit {
+    width: 100%; background: var(--copper); color: #fff;
+    padding: 18px; border: none; border-radius: 4px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 0.04em;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .form-submit:hover { background: var(--copper-deep); }
+
+  /* FOOTER */
+  footer {
+    background: var(--storm-deep); color: rgba(255,255,255,0.65);
+    padding: 64px 0 28px;
+  }
+  .footer-grid {
+    display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 40px;
+    padding-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .footer-grid h4 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px; color: #fff;
+    margin: 0 0 16px; letter-spacing: 0.06em;
+  }
+  .footer-grid a {
+    display: block; color: rgba(255,255,255,0.65);
+    text-decoration: none; font-size: 14px; padding: 4px 0;
+  }
+  .footer-grid a:hover { color: var(--copper); }
+  .footer-bottom {
+    padding-top: 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: 0.08em; color: rgba(255,255,255,0.4);
+  }
+
+  @media (max-width: 980px) {
+    .insurance-grid, .cta-grid, .trust-grid { grid-template-columns: 1fr; gap: 40px; }
+    .damage-grid, .services-grid { grid-template-columns: 1fr; }
+    .test-grid { grid-template-columns: 1fr; }
+    .hero-stats { grid-template-columns: repeat(2, 1fr); }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- STORM ALERT -->
+<div class="storm-alert">
+  <div class="container row">
+    <div><span class="alert-tag">ACTIVE</span> March 14 hailstorm DFW: free claims walkthrough · 387 inspections completed this week</div>
+    <div>CALL <a href="tel:2145550944">(214) 555-0944</a></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="main">
+  <div class="container row">
+    <a href="#" class="brand">
+      <div class="brand-mark">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c8763e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">SUMMIT &amp; CROWN</div>
+        <div class="brand-sub">ROOFING · TX RCAT-7741 · GAF MASTER ELITE</div>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="#services">Services</a>
+      <a href="#damage">Storm Work</a>
+      <a href="#insurance">Insurance Help</a>
+      <a href="#reviews">Reviews</a>
+      <a href="#contact">Free Inspection</a>
+    </div>
+    <a href="tel:2145550944" class="nav-cta">Free roof inspection</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-meta">
+      <span class="item">Storm-damage specialists</span>
+      <span class="item">DFW · Plano · Frisco · Arlington</span>
+      <span class="item">Insurance approved</span>
+    </div>
+    <h1 class="hero-title">
+      Storms break roofs.<br/>
+      <span class="copper">We rebuild them right.</span>
+      <span class="strike">— and your insurance pays for it.</span>
+    </h1>
+    <p class="hero-lead">Two-decade veterans of Texas storm season. Drone-mapped inspections, line-item Xactimate scopes, manufacturer-backed warranties up to 50 years.</p>
+    <div class="hero-actions">
+      <a href="#contact" class="btn-primary">Get Free Inspection</a>
+      <a href="tel:2145550944" class="btn-outline">Call (214) 555-0944</a>
+    </div>
+  </div>
+</section>
+<div class="hero-stats">
+  <div class="stat"><div class="num">14,200</div><div class="lab">Roofs replaced</div></div>
+  <div class="stat"><div class="num">98%</div><div class="lab">Claims approved</div></div>
+  <div class="stat"><div class="num">50<span style="font-size: 26px; color: rgba(255,255,255,0.5);"> YR</span></div><div class="lab">Material warranty</div></div>
+  <div class="stat"><div class="num">A+</div><div class="lab">BBB · 22 yrs</div></div>
+</div>
+
+<!-- DAMAGE GALLERY -->
+<section class="section damage" id="damage">
+  <div class="container">
+    <div class="eyebrow" style="color: var(--warning);">Recent storm work</div>
+    <h2 class="section-title">When the sky cracks open<br/>we're already in the trucks.</h2>
+    <p class="section-lead" style="color: rgba(255,255,255,0.65);">Real DFW homes. Real damage. Real photos from the day we showed up vs. the day we drove away. Every claim documented, every shingle GAF or Owens Corning.</p>
+
+    <div class="damage-grid">
+      <div class="damage-card">
+        <div class="damage-pair">
+          <div class="img" data-label="BEFORE" style="background-image: url('https://images.pexels.com/photos/4318848/pexels-photo-4318848.jpeg?auto=compress&cs=tinysrgb&w=800')"></div>
+          <div class="img after" data-label="AFTER" style="background-image: url('https://images.pexels.com/photos/259588/pexels-photo-259588.jpeg?auto=compress&cs=tinysrgb&w=800')"></div>
+        </div>
+        <div class="damage-info">
+          <h4>Heritage Hill · Hail (1.75")</h4>
+          <div class="meta">Claim approved · 4 days · Allstate</div>
+          <p>Class 4 impact-resistant shingles, full decking inspection, ridge vent upgrade. Homeowner deductible only.</p>
+        </div>
+      </div>
+      <div class="damage-card">
+        <div class="damage-pair">
+          <div class="img" data-label="BEFORE" style="background-image: url('https://images.pexels.com/photos/8815079/pexels-photo-8815079.jpeg?auto=compress&cs=tinysrgb&w=800')"></div>
+          <div class="img after" data-label="AFTER" style="background-image: url('https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg?auto=compress&cs=tinysrgb&w=800')"></div>
+        </div>
+        <div class="damage-info">
+          <h4>Frisco Estates · Wind (78mph)</h4>
+          <div class="meta">Claim approved · 7 days · State Farm</div>
+          <p>Full tear-off, synthetic underlayment, GAF Timberline HDZ, lifetime workmanship. 28 squares.</p>
+        </div>
+      </div>
+      <div class="damage-card">
+        <div class="damage-pair">
+          <div class="img" data-label="BEFORE" style="background-image: url('https://images.pexels.com/photos/2092078/pexels-photo-2092078.jpeg?auto=compress&cs=tinysrgb&w=800')"></div>
+          <div class="img after" data-label="AFTER" style="background-image: url('https://images.pexels.com/photos/280222/pexels-photo-280222.jpeg?auto=compress&cs=tinysrgb&w=800')"></div>
+        </div>
+        <div class="damage-info">
+          <h4>Plano Ridge · Tree Strike</h4>
+          <div class="meta">Claim approved · 11 days · USAA</div>
+          <p>Structural truss replacement, full re-deck, designer shingle upgrade. Insurance covered the entire scope.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSURANCE HELP -->
+<section class="section insurance" id="insurance">
+  <div class="container">
+    <div class="insurance-grid">
+      <div class="insurance-img"></div>
+      <div>
+        <div class="eyebrow">We handle the insurance fight</div>
+        <h2 class="section-title">Your only job?<br/>Pay your deductible.</h2>
+        <p class="section-lead">We've worked over 11,000 claims. We know the language. We know the loopholes. We know what gets denied and what gets approved.</p>
+
+        <ol class="insurance-steps">
+          <li>
+            <div>
+              <h4>Free 47-point drone inspection</h4>
+              <p>Aerial map of every shingle, vent, and flashing. Documented in a 12-page report. No fee, no obligation.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>We meet your adjuster on the roof</h4>
+              <p>Side-by-side. Point out every damage flag. Make sure nothing gets undervalued or skipped.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>Xactimate-matched scope</h4>
+              <p>Line-item supplements when the carrier underpays. Average claim recovery: $4,200 above first offer.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h4>You pay deductible · we do the rest</h4>
+              <p>From tear-off to final inspection. We invoice your carrier directly. Lifetime workmanship warranty.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="section" id="services">
+  <div class="container">
+    <div class="eyebrow">Roofing services</div>
+    <h2 class="section-title">Asphalt. Metal. Tile.<br/>Whatever your home wears.</h2>
+    <p class="section-lead">GAF Master Elite + Owens Corning Platinum + CertainTeed SELECT certified. Less than 2% of US roofers hold all three.</p>
+
+    <div class="services-grid">
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/259588/pexels-photo-259588.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+        <div class="body">
+          <h3>Architectural Shingle</h3>
+          <div class="price-tag">$8,400 – $14,800 · 22-30 sqs</div>
+          <p>GAF Timberline HDZ or Owens Corning Duration. 50-year material warranty. Class 3 impact rated standard.</p>
+          <div class="chips">
+            <span class="chip">GAF</span><span class="chip">OWENS CORNING</span><span class="chip">50-YR</span>
+          </div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/12911521/pexels-photo-12911521.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+        <div class="body">
+          <h3>Standing Seam Metal</h3>
+          <div class="price-tag">$22,000 – $38,000 · 22-30 sqs</div>
+          <p>Galvalume or Kynar 500. 24-gauge panels, hidden fasteners, 40-year finish warranty. Class 4 impact resistant.</p>
+          <div class="chips">
+            <span class="chip">GALVALUME</span><span class="chip">KYNAR</span><span class="chip">CLASS 4</span>
+          </div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/15538055/pexels-photo-15538055.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+        <div class="body">
+          <h3>Concrete &amp; Clay Tile</h3>
+          <div class="price-tag">$28,000 – $48,000 · 22-30 sqs</div>
+          <p>Eagle, Boral, and Ludowici tile. Synthetic high-temp underlayment, copper flashing details, 50+ year service life.</p>
+          <div class="chips">
+            <span class="chip">EAGLE</span><span class="chip">LUDOWICI</span><span class="chip">COPPER</span>
+          </div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/8815079/pexels-photo-8815079.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+        <div class="body">
+          <h3>Repair &amp; Patch</h3>
+          <div class="price-tag">From $480 · most done same day</div>
+          <p>Leak detection, missing-shingle replacement, flashing re-seal, ridge vent repair. Honest opinion: repair vs replace.</p>
+          <div class="chips">
+            <span class="chip">SAME DAY</span><span class="chip">LEAK SCAN</span><span class="chip">PHOTO REPORT</span>
+          </div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/186077/pexels-photo-186077.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+        <div class="body">
+          <h3>Gutter &amp; Fascia</h3>
+          <div class="price-tag">$9 – $14 / linear foot</div>
+          <p>Seamless 6" K-style aluminum, leaf guards, fascia and soffit replacement. Color-matched to trim.</p>
+          <div class="chips">
+            <span class="chip">SEAMLESS</span><span class="chip">LEAFGUARD</span><span class="chip">25 COLORS</span>
+          </div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/8985456/pexels-photo-8985456.jpeg?auto=compress&cs=tinysrgb&w=900')"></div>
+        <div class="body">
+          <h3>Storm Restoration</h3>
+          <div class="price-tag">Insurance-covered · deductible only</div>
+          <p>Full-property scope: roof, gutters, fascia, screens, fence, A/C fins, paint. We invoice your carrier.</p>
+          <div class="chips">
+            <span class="chip">XACTIMATE</span><span class="chip">SUPPLEMENTS</span><span class="chip">FULL SCOPE</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CERTIFICATION LOGOS -->
+<section class="certs">
+  <div class="container certs-row">
+    <div class="certs-label">Manufacturer certified &amp; backed</div>
+    <div class="cert-logo">GAF MASTER ELITE</div>
+    <div class="cert-logo">OWENS CORNING PLATINUM</div>
+    <div class="cert-logo">CERTAINTEED SELECT</div>
+    <div class="cert-logo">EAGLEVIEW</div>
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<section class="trust">
+  <div class="container">
+    <div class="trust-grid">
+      <h3>Two decades on Texas roofs. We've seen every storm.</h3>
+      <div class="trust-stat"><div class="num">14.2K</div><div class="lab">Roofs since 2003</div></div>
+      <div class="trust-stat"><div class="num">$48M</div><div class="lab">Claims recovered</div></div>
+      <div class="trust-stat"><div class="num">4.9★</div><div class="lab">2,830 reviews</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section testimonials" id="reviews">
+  <div class="container">
+    <div class="eyebrow">Verified homeowner reviews</div>
+    <h2 class="section-title">When the storm hits<br/>this is who DFW calls back.</h2>
+
+    <div class="test-grid">
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"Allstate offered $4,800 for what looked like total roof failure. Summit met the adjuster on the roof, supplemented twice, and we ended up with a $19,400 approved scope — Class 4 impact shingles, new ridge vents, the works. We paid our $1,500 deductible. That's it."</p>
+        <div class="test-foot">
+          <div class="test-author">
+            <div>
+              <div class="test-name">Mark &amp; Lisa H.</div>
+              <div class="test-meta">Plano, TX · Allstate</div>
+            </div>
+          </div>
+          <div class="test-claim">CLAIM #4427-A</div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"Tornado clipped the back of our house. Crew was on-site by noon the next day with tarps. Two weeks later we had a brand-new architectural shingle roof, gutters, fascia, and they painted the trim where the tarps had abraded it. Lifetime workmanship in writing."</p>
+        <div class="test-foot">
+          <div class="test-author">
+            <div>
+              <div class="test-name">Jorge S.</div>
+              <div class="test-meta">Frisco, TX · State Farm</div>
+            </div>
+          </div>
+          <div class="test-claim">CLAIM #4502-B</div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"Three other contractors said full replacement, $22K, no negotiation. Summit came out, did the drone scan, said 'You actually only need a 6-square repair, $1,800.' That kind of honesty in the storm-chaser industry is rare. Customer for life."</p>
+        <div class="test-foot">
+          <div class="test-author">
+            <div>
+              <div class="test-name">Patricia W.</div>
+              <div class="test-meta">Arlington, TX</div>
+            </div>
+          </div>
+          <div class="test-claim">REPAIR · NO CLAIM</div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"USAA was dragging their feet. Summit's claims advocate called them three times, sent supplement photos, and got us approved in 8 days. Then their crew finished a full tear-off and re-roof in 36 hours. Cleaned every nail off the lawn before they left."</p>
+        <div class="test-foot">
+          <div class="test-author">
+            <div>
+              <div class="test-name">Daniel C. (USMC ret.)</div>
+              <div class="test-meta">McKinney, TX · USAA</div>
+            </div>
+          </div>
+          <div class="test-claim">CLAIM #4611-C</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA / FORM -->
+<section class="section cta" id="contact">
+  <div class="container">
+    <div class="cta-grid">
+      <div>
+        <div class="eyebrow" style="color: var(--warning);">Free 47-point inspection</div>
+        <h2 class="section-title">Schedule your<br/>drone roof scan.</h2>
+        <p class="section-lead" style="color: rgba(255,255,255,0.78);">Most DFW homes book within 48 hours. We send a 12-page PDF report whether you hire us or not. Insurance-grade documentation, every shingle photographed.</p>
+        <div style="margin-top: 40px;">
+          <div style="display: flex; gap: 28px; flex-wrap: wrap;">
+            <div>
+              <div style="font-family: 'Bebas Neue'; font-size: 38px; line-height: 1; color: var(--copper);">$0</div>
+              <div style="font-family: 'IBM Plex Mono'; font-size: 11px; letter-spacing: 0.12em; color: rgba(255,255,255,0.6); text-transform: uppercase; margin-top: 6px;">Inspection cost</div>
+            </div>
+            <div>
+              <div style="font-family: 'Bebas Neue'; font-size: 38px; line-height: 1; color: var(--copper);">48 hr</div>
+              <div style="font-family: 'IBM Plex Mono'; font-size: 11px; letter-spacing: 0.12em; color: rgba(255,255,255,0.6); text-transform: uppercase; margin-top: 6px;">Avg booking time</div>
+            </div>
+            <div>
+              <div style="font-family: 'Bebas Neue'; font-size: 38px; line-height: 1; color: var(--copper);">12 pg</div>
+              <div style="font-family: 'IBM Plex Mono'; font-size: 11px; letter-spacing: 0.12em; color: rgba(255,255,255,0.6); text-transform: uppercase; margin-top: 6px;">PDF report</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form class="cta-form" onsubmit="event.preventDefault(); alert('Thanks — we will text within 60 minutes to schedule.');">
+        <h3>Free Roof Inspection</h3>
+        <p class="sub">Most homes booked within 48 hours. We text within 60 min during business hours.</p>
+        <div class="form-row-2">
+          <div class="form-row">
+            <label>First name</label>
+            <input type="text" required>
+          </div>
+          <div class="form-row">
+            <label>Last name</label>
+            <input type="text" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Mobile (we text first)</label>
+          <input type="tel" placeholder="(214) 000-0000" required>
+        </div>
+        <div class="form-row">
+          <label>Property address</label>
+          <input type="text" placeholder="Street, City, ZIP" required>
+        </div>
+        <div class="form-row">
+          <label>Roof age &amp; concern</label>
+          <select>
+            <option value="">Select…</option>
+            <option>Recent storm — possible damage</option>
+            <option>Active leak</option>
+            <option>Roof is 15+ years old</option>
+            <option>Selling soon — pre-listing inspection</option>
+            <option>Just buying — pre-purchase inspection</option>
+            <option>Routine check</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Anything else?</label>
+          <textarea placeholder="Insurance carrier, prior claims, missing shingles you noticed, etc."></textarea>
+        </div>
+        <button type="submit" class="form-submit">Schedule My Inspection</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+          <div class="brand-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c8763e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></div>
+          <div>
+            <div style="color: #fff; font-family: 'Bebas Neue'; font-size: 20px;">SUMMIT &amp; CROWN ROOFING</div>
+            <div style="font-family: 'IBM Plex Mono'; font-size: 10px; letter-spacing: 0.16em; color: rgba(255,255,255,0.5);">RCAT-7741 · GAF MASTER ELITE</div>
+          </div>
+        </div>
+        <p style="font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.55);">Veteran-owned and DFW-based since 2003. Specialists in storm restoration and insurance claim advocacy.</p>
+      </div>
+      <div>
+        <h4>Services</h4>
+        <a href="#">Architectural shingle</a>
+        <a href="#">Standing seam metal</a>
+        <a href="#">Tile roofing</a>
+        <a href="#">Repairs &amp; patches</a>
+        <a href="#">Gutter &amp; fascia</a>
+      </div>
+      <div>
+        <h4>Service Area</h4>
+        <a href="#">Dallas</a>
+        <a href="#">Plano</a>
+        <a href="#">Frisco</a>
+        <a href="#">McKinney</a>
+        <a href="#">Arlington</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a href="tel:2145550944" style="color: var(--copper); font-weight: 700;">(214) 555-0944</a>
+        <a href="#">claims@summitcrown.tx</a>
+        <a href="#">2218 Stemmons Fwy, Dallas</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 SUMMIT &amp; CROWN ROOFING LLC · TX RCAT-7741</div>
+      <div>BUILT IN DALLAS · WEATHERED 22 STORM SEASONS</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

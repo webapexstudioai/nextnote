@@ -1,7 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const WHITELABEL_HOST = "pitchsite.dev";
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const host = (req.headers.get("host") || "").toLowerCase();
+
+  // White-label hosting: requests to {slug}.pitchsite.dev are public landing
+  // pages. Rewrite them to the slug-resolver route — and short-circuit the
+  // auth checks below so prospects never get bounced to /auth/login.
+  if (host.endsWith(`.${WHITELABEL_HOST}`) && host !== WHITELABEL_HOST) {
+    const slug = host.slice(0, host.length - WHITELABEL_HOST.length - 1);
+    if (slug && slug !== "www") {
+      const url = req.nextUrl.clone();
+      url.pathname = `/api/websites/by-slug/${encodeURIComponent(slug)}`;
+      return NextResponse.rewrite(url);
+    }
+  }
+  // Apex pitchsite.dev: only serve the neutral landing page. Any other path
+  // (dashboard, auth, admin, …) must NOT leak the NextNote brand from this
+  // domain — rewrite everything to the apex landing.
+  if (host === WHITELABEL_HOST) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/api/websites/whitelabel-root";
+    return NextResponse.rewrite(url);
+  }
 
   // Admin routes: require a session cookie at the middleware layer. The route
   // handlers re-check is_admin on every request. This avoids leaking the admin

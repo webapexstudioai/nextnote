@@ -316,3 +316,151 @@ export async function sendWelcomeEmail(to: string, planKey: PlanKey) {
     text,
   });
 }
+
+// --- Signup reminder drip --------------------------------------------------
+// Sent to users who created an account but never started a subscription.
+// Three-touch sequence: getting-started help → social proof → discount + ask.
+
+const REMINDER_COPY: Record<
+  1 | 2 | 3,
+  { subject: string; preheader: string; heading: string; lede: string; body: string; ctaLabel: string }
+> = {
+  1: {
+    subject: "Getting started with NextNote — anything we can help with?",
+    preheader: "Two minutes to set up your pipeline — let us know if anything's blocking you.",
+    heading: "Welcome — how's it going so far?",
+    lede: "You signed up for NextNote a couple of days ago, and we wanted to check in. The first 10 minutes are where most agency owners get the biggest \"oh wow\" moment.",
+    body: `
+      <p style="margin:0 0 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#a1a1aa;">Here's what most owners do first:</p>
+      <ul style="margin:0 0 22px 18px;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#d4d4d8;">
+        <li style="margin:0 0 6px;">Drop your first 25 prospects into a folder</li>
+        <li style="margin:0 0 6px;">Run an AI pitch site on one of them</li>
+        <li style="margin:0 0 6px;">Connect a phone number so you can answer the callbacks</li>
+      </ul>
+      <p style="margin:0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#a1a1aa;">If something's not clicking, just reply to this email and a human (me) will help you sort it out.</p>
+    `,
+    ctaLabel: "Pick up where you left off",
+  },
+  2: {
+    subject: "What an extra hour a day looks like with NextNote",
+    preheader: "AI pitches, callback tracking, voicedrops — the agency owners using NextNote are doing more in less time.",
+    heading: "What if your prospecting ran while you slept?",
+    lede: "The agency owners getting the most out of NextNote stop thinking of it as \"another CRM\" and start thinking of it as a junior team member. Here's what that looks like.",
+    body: `
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 22px;">
+        <tr>
+          <td bgcolor="#1a0e0c" style="background-color:#1a0e0c;border:1px solid #3d1f18;border-radius:12px;padding:18px 20px;">
+            <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:#ff8a6a;">AI receptionist</p>
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#d4d4d8;">Answers prospect calls when you're on a job site. Books the appointment, sends the calendar invite, and texts you the recap.</p>
+          </td>
+        </tr>
+      </table>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 22px;">
+        <tr>
+          <td bgcolor="#1a0e0c" style="background-color:#1a0e0c;border:1px solid #3d1f18;border-radius:12px;padding:18px 20px;">
+            <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:#ff8a6a;">Voicedrop campaigns &amp; callback tracking</p>
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#d4d4d8;">Drop voicemails to dozens of prospects in minutes, then watch their callbacks come back into your dashboard with full attribution to the campaign.</p>
+          </td>
+        </tr>
+      </table>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 0;">
+        <tr>
+          <td bgcolor="#1a0e0c" style="background-color:#1a0e0c;border:1px solid #3d1f18;border-radius:12px;padding:18px 20px;">
+            <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:#ff8a6a;">AI pitch sites</p>
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#d4d4d8;">Generate a custom one-page pitch tailored to a specific prospect — and send the link instead of a generic deck. Conversion rates speak for themselves.</p>
+          </td>
+        </tr>
+      </table>
+    `,
+    ctaLabel: "See it in action",
+  },
+  3: {
+    subject: "20% off NextNote — and a quick question",
+    preheader: "Your last-call discount, plus we'd love to hear what's holding you back.",
+    heading: "Before you go — here's 20% off",
+    lede: "We noticed you haven't started your subscription yet. That's totally OK — but if pricing is the only thing in the way, we want to take that off the table.",
+    body: `
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+        <tr>
+          <td bgcolor="#1a0e0c" style="background-color:#1a0e0c;border:1px solid #3d1f18;border-radius:12px;padding:22px 20px;text-align:center;">
+            <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;color:#ff8a6a;letter-spacing:0.06em;text-transform:uppercase;">Use this code at checkout</p>
+            <p style="margin:0 0 4px;font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:28px;font-weight:700;color:#fafafa;letter-spacing:0.04em;">__DISCOUNT_CODE__</p>
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#a1a1aa;">20% off your first month · expires in 7 days</p>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:0 0 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#a1a1aa;">And if it's <em>not</em> the price — would you tell us what it is? Just hit reply and write one line. The whole team reads every reply, and your honest feedback shapes what we build next.</p>
+      <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.7;color:#a1a1aa;">Either way, this is the last reminder you'll get from me.</p>
+    `,
+    ctaLabel: "Claim 20% off",
+  },
+};
+
+export function renderSignupReminderEmail(opts: {
+  step: 1 | 2 | 3;
+  ctaUrl: string;
+  unsubscribeUrl: string;
+  discountCode?: string;
+}) {
+  const c = REMINDER_COPY[opts.step];
+  const code = opts.discountCode || "WELCOME20";
+  const bodyHtml = c.body.replace(/__DISCOUNT_CODE__/g, code);
+
+  const body = `
+    <h1 class="nn-heading" style="margin:0 0 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:24px;font-weight:600;color:#fafafa;letter-spacing:-0.02em;line-height:1.3;">
+      ${c.heading}
+    </h1>
+    <p style="margin:0 0 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#a1a1aa;">
+      ${c.lede}
+    </p>
+    ${bodyHtml}
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0;">
+      <tr>
+        <td bgcolor="#e8553d" style="background-color:#e8553d;border-radius:10px;">
+          <a href="${opts.ctaUrl}" style="display:inline-block;padding:14px 34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:-0.005em;">
+            ${c.ctaLabel}
+          </a>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:32px 0 0;">
+      <tr><td height="1" bgcolor="#2a1a18" style="background-color:#2a1a18;height:1px;line-height:1px;font-size:1px;">&nbsp;</td></tr>
+    </table>
+    <p style="margin:18px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#71717a;">
+      Don&rsquo;t want these check-ins? <a href="${opts.unsubscribeUrl}" style="color:#a1a1aa;text-decoration:underline;">Unsubscribe with one click</a>.
+    </p>
+  `;
+
+  const html = renderLayout({ preheader: c.preheader, bodyHtml: body });
+
+  const plainBody = c.body
+    .replace(/<[^>]+>/g, "")
+    .replace(/__DISCOUNT_CODE__/g, code)
+    .replace(/\s+/g, " ")
+    .trim();
+  const text = `${c.heading}
+
+${c.lede}
+
+${plainBody}
+
+${c.ctaLabel}: ${opts.ctaUrl}
+
+---
+Don't want these check-ins? Unsubscribe: ${opts.unsubscribeUrl}
+
+© ${new Date().getFullYear()} NextNote`;
+
+  return { html, text, subject: c.subject };
+}
+
+export async function sendSignupReminderEmail(opts: {
+  to: string;
+  step: 1 | 2 | 3;
+  ctaUrl: string;
+  unsubscribeUrl: string;
+  discountCode?: string;
+}) {
+  const { html, text, subject } = renderSignupReminderEmail(opts);
+  return sendEmail({ to: opts.to, subject, html, text });
+}

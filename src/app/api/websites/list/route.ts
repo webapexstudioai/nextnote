@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from("generated_websites")
-    .select("id, prospect_id, prospect_name, tier, created_at")
+    .select("id, prospect_id, prospect_name, tier, slug, created_at")
     .eq("user_id", session.userId)
     .order("created_at", { ascending: false });
 

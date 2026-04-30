@@ -26,7 +26,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
 
       <footer className="border-t border-[var(--border)] py-8 mt-10">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row gap-3 sm:gap-6 items-center justify-between text-xs text-[var(--muted)]">
-          <p>© {new Date().getFullYear()} NextNote by Apex Studio. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} NextNote. All rights reserved.</p>
           <div className="flex items-center gap-5">
             <Link href="/privacy" className="hover:text-[var(--foreground)] transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-[var(--foreground)] transition-colors">Terms</Link>

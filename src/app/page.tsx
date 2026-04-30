@@ -3,6 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+  useInView,
+  useReducedMotion,
+  animate,
+} from "motion/react";
+import {
   Users,
   Calendar,
   Zap,
@@ -22,9 +31,21 @@ import {
   FileSpreadsheet,
   MousePointerClick,
   Link2,
+  Phone,
+  Globe,
+  PhoneOff,
+  Sparkles,
+  CheckCheck,
 } from "lucide-react";
-import { OrbitGridLogo } from "@/components/OrbitGridLogo";
+import { OrbitGridLogo, OrbitGridIcon } from "@/components/OrbitGridLogo";
 import AnimatedDashboardPreview from "@/components/home/AnimatedDashboardPreview";
+import {
+  LeadIntelligenceMockup,
+  AIAgentMockup,
+  OutboundMockup,
+  WebsiteBuilderMockup,
+  VoicemailDropMockup,
+} from "@/components/home/FeatureMockups";
 
 /* ─── Intersection Observer hook for scroll reveal ─── */
 function useReveal<T extends HTMLElement>() {
@@ -116,6 +137,113 @@ function FloatingOrbs() {
   );
 }
 
+/* ─── Magnetic CTA: button tilts subtly toward cursor ─── */
+function MagneticCTA({
+  href,
+  className = "",
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  const reduced = useReducedMotion();
+
+  function onMove(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (reduced) return;
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    el.style.transform = `translate3d(${x * 0.18}px, ${y * 0.22}px, 0)`;
+  }
+  function onLeave() {
+    const el = ref.current;
+    if (el) el.style.transform = "translate3d(0, 0, 0)";
+  }
+
+  return (
+    <Link
+      ref={ref}
+      href={href}
+      className={`cta-magnetic ${className}`}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+    >
+      {children}
+    </Link>
+  );
+}
+
+/* ─── Animated counter ─── */
+function AnimatedCounter({
+  value,
+  suffix = "",
+  prefix = "",
+  decimals = 0,
+}: {
+  value: number;
+  suffix?: string;
+  prefix?: string;
+  decimals?: number;
+}) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-10% 0px" });
+  const [display, setDisplay] = useState(0);
+  const reduced = useReducedMotion();
+
+  useEffect(() => {
+    if (!inView) return;
+    if (reduced) {
+      setDisplay(value);
+      return;
+    }
+    const controls = animate(0, value, {
+      duration: 1.6,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (v) => setDisplay(v),
+    });
+    return () => controls.stop();
+  }, [inView, value, reduced]);
+
+  const formatted =
+    decimals > 0
+      ? display.toFixed(decimals)
+      : Math.round(display).toLocaleString();
+
+  return (
+    <span ref={ref}>
+      {prefix}
+      {formatted}
+      {suffix}
+    </span>
+  );
+}
+
+/* ─── Parallax wrapper: subtle Y-translate driven by scroll ─── */
+function ParallaxMockup({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const yRaw = useTransform(scrollYProgress, [0, 1], [40, -40]);
+  const y = useSpring(yRaw, { stiffness: 90, damping: 20, mass: 0.5 });
+
+  if (reduced) {
+    return <div ref={ref}>{children}</div>;
+  }
+
+  return (
+    <motion.div ref={ref} style={{ y }}>
+      {children}
+    </motion.div>
+  );
+}
+
 /* ─── Browser-chrome mockup — wraps a screenshot, video, or placeholder UI ─── */
 function BrowserMockup({
   children,
@@ -138,7 +266,7 @@ function BrowserMockup({
         </div>
         <div className="flex-1 text-center">
           <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-[rgba(255,255,255,0.04)] text-[10px] text-[var(--muted)] font-mono">
-            <Shield className="w-2.5 h-2.5" />
+            <OrbitGridIcon size={12} />
             {url}
           </span>
         </div>
@@ -146,58 +274,6 @@ function BrowserMockup({
       </div>
       <div className="relative aspect-[16/10] bg-gradient-to-br from-[#0a0a10] via-[#0f0f18] to-[#0a0a10]">
         {children}
-      </div>
-    </div>
-  );
-}
-
-/* Fallback dashboard illustration that renders inside BrowserMockup before
-   real screenshots are dropped in. Mimics the sidebar + kanban pipeline. */
-function DashboardPreviewFallback() {
-  return (
-    <div className="absolute inset-0 flex">
-      <div className="w-44 border-r border-[var(--border)] bg-[rgba(12,12,18,0.5)] p-3 space-y-2">
-        <div className="h-6 rounded bg-gradient-to-r from-[rgba(232,85,61,0.4)] to-transparent w-24" />
-        <div className="pt-4 space-y-1.5">
-          {["Dashboard", "Prospects", "Sources", "Appointments", "Analytics"].map((l, i) => (
-            <div
-              key={l}
-              className={`h-7 rounded-md flex items-center px-2.5 text-[11px] ${
-                i === 1
-                  ? "bg-[rgba(232,85,61,0.12)] text-[var(--accent)]"
-                  : "text-[var(--muted)]"
-              }`}
-            >
-              {l}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="flex-1 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="h-4 w-32 rounded bg-[rgba(255,255,255,0.1)]" />
-          <div className="h-6 w-20 rounded-md bg-gradient-to-r from-[#e8553d] to-[#d44429]" />
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {["New", "Contacted", "Booked", "Closed"].map((col, ci) => (
-            <div key={col} className="rounded-lg border border-[var(--border)] bg-[rgba(12,12,18,0.4)] p-2">
-              <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] mb-2">
-                {col}
-              </div>
-              <div className="space-y-1.5">
-                {Array.from({ length: 3 - (ci % 2) }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="rounded-md bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.05)] p-1.5 space-y-1"
-                  >
-                    <div className="h-1.5 w-4/5 rounded bg-[rgba(255,255,255,0.15)]" />
-                    <div className="h-1 w-1/2 rounded bg-[rgba(255,255,255,0.08)]" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -313,8 +389,10 @@ function Navbar() {
 function Hero() {
   return (
     <section className="relative pt-32 pb-20 sm:pt-44 sm:pb-32 overflow-hidden">
+      <div className="hero-mesh">
+        <span />
+      </div>
       <div className="absolute inset-0 glow-hero pointer-events-none" />
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[700px] h-[700px] rounded-full bg-[#e8553d]/[0.05] blur-[100px] pointer-events-none" />
 
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 text-center">
         {/* Badge */}
@@ -324,32 +402,33 @@ function Hero() {
         </div>
 
         <h1
-          className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-6 fade-in-up"
-          style={{ animationDelay: "0.1s" }}
+          className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-6 fade-in-blur"
+          style={{ animationDelay: "0.05s" }}
         >
-          Your agency&apos;s unfair
+          Never miss a job because
           <br />
-          <span className="text-shimmer">advantage to close.</span>
+          <span className="text-shimmer">you couldn&apos;t pick up.</span>
         </h1>
 
         <p
-          className="text-lg sm:text-xl text-[var(--muted)] max-w-2xl mx-auto mb-12 leading-relaxed fade-in-up"
-          style={{ animationDelay: "0.2s" }}
+          className="text-lg sm:text-xl text-[var(--muted)] max-w-2xl mx-auto mb-12 leading-relaxed fade-in-blur"
+          style={{ animationDelay: "0.25s" }}
         >
-          NextNote is the all-in-one operating system that helps agency owners and sales
-          teams organize leads, book appointments, automate follow-ups, and let AI do the
-          heavy lifting — so you can focus on closing.
+          NextNote builds AI phone agents for service businesses — contractors, plumbers,
+          electricians, HVAC, landscapers — whose owners are heads-down on a job site.
+          Your AI answers, qualifies the caller, books the appointment, and texts you the
+          details before you take off your gloves.
         </p>
 
         {/* CTAs */}
         <div
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 fade-in-up"
-          style={{ animationDelay: "0.3s" }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 fade-in-blur"
+          style={{ animationDelay: "0.45s" }}
         >
-          <Link href="/auth/signup" className="cta-primary">
+          <MagneticCTA href="/auth/signup" className="cta-primary">
             Get Started
             <ArrowRight className="w-4 h-4" />
-          </Link>
+          </MagneticCTA>
           <a href="#preview" className="cta-secondary inline-flex items-center gap-2">
             See the dashboard
             <ArrowRight className="w-3.5 h-3.5" />
@@ -380,7 +459,7 @@ function Hero() {
             </span>
           </div>
           <div className="flex items-center justify-center flex-wrap gap-x-10 gap-y-4 opacity-30">
-            {["Apex Studio", "SalesForge", "LeadWave", "CloserHQ", "GrowthOps"].map(
+            {["SalesForge", "LeadWave", "CloserHQ", "GrowthOps", "PipelineIQ"].map(
               (name) => (
                 <span
                   key={name}
@@ -407,14 +486,18 @@ function TrustBar() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
             {[
-              { value: "500+", label: "Agencies" },
-              { value: "2M+", label: "Prospects Managed" },
-              { value: "98%", label: "Uptime" },
-              { value: "4.9/5", label: "Customer Rating" },
+              { num: 500, suffix: "+", label: "Agencies" },
+              { num: 2, suffix: "M+", label: "Prospects Managed" },
+              { num: 98, suffix: "%", label: "Uptime" },
+              { num: 4.9, suffix: "/5", label: "Customer Rating", decimals: 1 },
             ].map((s) => (
               <div key={s.label}>
                 <p className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-[var(--foreground)] to-[var(--muted)] bg-clip-text text-transparent">
-                  {s.value}
+                  <AnimatedCounter
+                    value={s.num}
+                    suffix={s.suffix}
+                    decimals={s.decimals ?? 0}
+                  />
                 </p>
                 <p className="text-xs sm:text-sm text-[var(--muted)] mt-1.5">{s.label}</p>
               </div>
@@ -434,8 +517,7 @@ interface ShowcaseRow {
   desc: string;
   bullets: { icon: React.ComponentType<{ className?: string }>; label: string }[];
   mockupUrl: string;
-  /* Optional screenshot path under /public; falls back to DashboardPreviewFallback */
-  imageSrc?: string;
+  Mockup: React.ComponentType;
 }
 
 const showcaseRows: ShowcaseRow[] = [
@@ -449,17 +531,19 @@ const showcaseRows: ShowcaseRow[] = [
       { icon: Users, label: "Folder-based pipeline keeps every lead sorted" },
     ],
     mockupUrl: "app.nextnote.to/dashboard/prospects",
+    Mockup: LeadIntelligenceMockup,
   },
   {
-    eyebrow: "AI that actually closes",
-    title: "Your AI agent that never sleeps",
-    desc: "Drop voicemails to hundreds of prospects without ringing their phones. Let AI summarize your calls, surface hot leads, and draft follow-ups — so your team does the part machines can't.",
+    eyebrow: "Build an AI receptionist for every prospect",
+    title: "Spin up a custom AI receptionist for any client — in minutes, not weeks",
+    desc: "NextNote turns every prospect in your pipeline into a deployable AI receptionist. Plug in their business name, services, hours, and pricing — NextNote generates the voice, the script, and the booking flow. Hand the client a phone number that answers 24/7, qualifies callers, books appointments, and reports back. No code, no telephony stack, no engineers — just a recurring revenue line you own.",
     bullets: [
-      { icon: Mic, label: "Voicemail drops at scale — carrier-grade detection" },
-      { icon: Brain, label: "AI meeting summaries + next-step suggestions" },
-      { icon: Wand2, label: "Smart follow-ups drafted in your voice" },
+      { icon: Phone, label: "Per-client receptionists with their own voice, hours, and booking calendar" },
+      { icon: Calendar, label: "Calls auto-book to the client's calendar — you stay in the loop with summaries" },
+      { icon: Brain, label: "Charge monthly, white-label the dashboard, keep 100% of the markup" },
     ],
-    mockupUrl: "app.nextnote.to/dashboard/voicemail",
+    mockupUrl: "app.nextnote.to/dashboard/agents",
+    Mockup: AIAgentMockup,
   },
   {
     eyebrow: "Outbound at scale",
@@ -470,7 +554,32 @@ const showcaseRows: ShowcaseRow[] = [
       { icon: BarChart3, label: "Conversion + booking analytics in real time" },
       { icon: Target, label: "Stale-lead alerts so nothing falls through" },
     ],
-    mockupUrl: "app.nextnote.to/dashboard/analytics",
+    mockupUrl: "app.nextnote.to/dashboard/sms-sequences",
+    Mockup: OutboundMockup,
+  },
+  {
+    eyebrow: "Voicemail drops",
+    title: "Reach hundreds of leads without ringing a single phone",
+    desc: "Record a 20-second message in your own voice, then drop it straight to as many voicemails as you want. Carrier-grade detection waits for the beep, plays your audio, and never interrupts the customer mid-day. Agency owners use it to revive dormant clients, announce new services, or hit every missed call back before a competitor does — all in minutes, no staff needed.",
+    bullets: [
+      { icon: Mic, label: "Record once, drop to thousands of voicemails" },
+      { icon: PhoneOff, label: "Ringless — carrier-grade beep detection means zero interruption" },
+      { icon: BarChart3, label: "Live delivery + callback-rate stats so you know what's working" },
+    ],
+    mockupUrl: "app.nextnote.to/dashboard/voicedrops",
+    Mockup: VoicemailDropMockup,
+  },
+  {
+    eyebrow: "Pitch sites that close themselves",
+    title: "AI-built websites for every prospect, ready in 30 seconds",
+    desc: "Every lead in your pipeline can have a personalized pitch site — generated by AI from their business info, hosted on a clean subdomain, and ready to share in your next follow-up text. White-label tier puts it on your own branded domain. The best part for agency owners: send the link to a ghosted prospect, and they land on a page that looks like it was built specifically for them, because it was. It's a closer's secret weapon.",
+    bullets: [
+      { icon: Sparkles, label: "AI builds an entire pitch site in ~30 seconds" },
+      { icon: Globe, label: "Hosted on pitchsite.dev — or your own white-label domain" },
+      { icon: CheckCheck, label: "Send in any follow-up; track who visits and what they click" },
+    ],
+    mockupUrl: "acme.pitchsite.dev",
+    Mockup: WebsiteBuilderMockup,
   },
 ];
 
@@ -505,14 +614,15 @@ function FeatureShowcase() {
 
 function ShowcaseBlock({ row, reversed }: { row: ShowcaseRow; reversed: boolean }) {
   const ref = useReveal<HTMLDivElement>();
+  const Mockup = row.Mockup;
   return (
     <div
       ref={ref}
-      className={`reveal grid lg:grid-cols-2 gap-10 lg:gap-16 items-center ${
+      className={`reveal reveal-stagger grid lg:grid-cols-2 gap-10 lg:gap-16 items-center ${
         reversed ? "lg:[&>*:first-child]:order-2" : ""
       }`}
     >
-      <div>
+      <div className="reveal-child">
         <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)] mb-3">
           {row.eyebrow}
         </p>
@@ -532,15 +642,13 @@ function ShowcaseBlock({ row, reversed }: { row: ShowcaseRow; reversed: boolean 
           })}
         </ul>
       </div>
-      <BrowserMockup url={row.mockupUrl}>
-        {/* TODO: swap DashboardPreviewFallback for an <img src={row.imageSrc} ... /> once screenshots are saved to /public */}
-        {row.imageSrc ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={row.imageSrc} alt={row.title} className="absolute inset-0 w-full h-full object-cover" />
-        ) : (
-          <DashboardPreviewFallback />
-        )}
-      </BrowserMockup>
+      <div className="reveal-child">
+        <ParallaxMockup>
+          <BrowserMockup url={row.mockupUrl}>
+            <Mockup />
+          </BrowserMockup>
+        </ParallaxMockup>
+      </div>
     </div>
   );
 }
@@ -617,13 +725,12 @@ const plans = [
     name: "Starter",
     price: "$29",
     period: "/month",
-    desc: "For solo closers and freelancers getting started with outbound.",
+    desc: "For owner-operators trying NextNote on a real route.",
     features: [
-      "Up to 500 prospects",
-      "3 folders",
+      "Build AI receptionists for your clients — charge monthly, keep the markup",
+      "Generate pitch sites for any prospect to close them faster",
+      "Up to 100 prospects · 5 folders",
       "Appointment booking",
-      "Google Calendar sync",
-      "CSV / XLSX import",
       "150 AI credits included",
       "Email support",
     ],
@@ -635,16 +742,15 @@ const plans = [
     name: "Pro",
     price: "$79",
     period: "/month",
-    desc: "For growing teams that need AI, automation, and deeper insights.",
+    desc: "For service businesses running full ops.",
     features: [
-      "Unlimited prospects",
-      "Unlimited folders",
-      "AI meeting summaries",
-      "AI smart import",
-      "Voicemail drops",
-      "Pipeline analytics",
-      "Google Sheets import",
-      "250 AI credits included",
+      "Everything in Starter",
+      "Voicemail drops · ringless reach-out",
+      "Google Calendar + Meet booking sync",
+      "Spreadsheet import (CSV / XLSX)",
+      "AI insights + meeting note summaries",
+      "Up to 1,000 prospects · 25 folders",
+      "250 AI credits included · full customization",
       "Priority support",
     ],
     cta: "Get Started",
@@ -972,27 +1078,16 @@ function Footer() {
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-[var(--muted)]">
-            &copy; {new Date().getFullYear()} NextNote by Apex Studio. All rights
-            reserved.
+            &copy; {new Date().getFullYear()} NextNote. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <a
-              href="#"
+              href="https://instagram.com/nextnote.to"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
             >
-              Twitter
-            </a>
-            <a
-              href="#"
-              className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-            >
-              LinkedIn
-            </a>
-            <a
-              href="#"
-              className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-            >
-              GitHub
+              Instagram
             </a>
           </div>
         </div>

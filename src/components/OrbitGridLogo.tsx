@@ -61,13 +61,34 @@ export function OrbitGridIcon({ size = 32, className = "" }: { size?: number; cl
   );
 }
 
+export function NextNoteWordmark({
+  className = "",
+  accent = "#ff6a4d",
+}: {
+  className?: string;
+  accent?: string;
+}) {
+  return (
+    <span
+      className={`font-bold leading-none whitespace-nowrap ${className}`}
+      style={{
+        letterSpacing: "-0.01em",
+        fontFeatureSettings: '"kern" 1, "liga" 1',
+        fontKerning: "normal",
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+      }}
+    >
+      Next<span style={{ color: accent }}>Note</span>
+    </span>
+  );
+}
+
 export function OrbitGridLogo({ size = 32, className = "" }: { size?: number; className?: string }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <OrbitGridIcon size={size} />
-      <span className="font-bold text-lg tracking-tight">
-        Next<span className="text-[var(--accent)]">Note</span>
-      </span>
+      <NextNoteWordmark className="text-lg" />
     </div>
   );
 }

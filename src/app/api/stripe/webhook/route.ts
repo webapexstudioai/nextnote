@@ -4,6 +4,7 @@ import { stripe } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
 import { addCredits, deductCredits, getBalance, hasBeenProcessed } from "@/lib/credits";
 import { sendWelcomeEmail } from "@/lib/email-templates";
+import { purchaseAgencyNumber, refundCheckoutSession } from "@/lib/agencyPhone";
 
 const ALLOWED_PLANS = new Set(["starter", "pro"]);
 
@@ -43,6 +44,40 @@ export async function POST(req: NextRequest) {
               refId: session.id,
               metadata: { packId: session.metadata?.packId },
             });
+          }
+          break;
+        }
+
+        // Agency phone line purchase — buy on Twilio + wire webhooks. If
+        // anything fails after payment cleared, refund the customer.
+        if (userId && kind === "agency_phone_purchase") {
+          const phoneNumber = session.metadata?.phoneNumber;
+          const friendlyName = session.metadata?.friendlyName;
+          if (!phoneNumber) {
+            console.error(`[webhook] agency_phone_purchase missing phoneNumber on session ${session.id}`);
+            await refundCheckoutSession(session.id, "missing phoneNumber metadata");
+            break;
+          }
+          const result = await purchaseAgencyNumber({ userId, phoneNumber, friendlyName });
+          if (!result.success) {
+            console.error(`[webhook] agency phone purchase failed: ${result.error}`);
+            await refundCheckoutSession(session.id, result.error);
+          }
+          break;
+        }
+
+        // Trial → paid conversion. Just clear the trial timestamps so the
+        // cron stops counting it as expirable. No Twilio work needed since
+        // the number was already provisioned at trial claim.
+        if (userId && kind === "agency_phone_keep") {
+          const { error } = await supabaseAdmin
+            .from("user_phone_numbers")
+            .update({ trial_started_at: null, trial_ends_at: null })
+            .eq("user_id", userId)
+            .eq("purpose", "agency");
+          if (error) {
+            console.error(`[webhook] agency_phone_keep DB update failed:`, error);
+            await refundCheckoutSession(session.id, `DB error: ${error.message}`);
           }
           break;
         }

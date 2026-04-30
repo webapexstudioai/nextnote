@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Halverson Build Co. — Custom Home Builders · Aspen + Vail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1c1d20;
+    --ink-deep: #0d0e10;
+    --warm-bg: #f6f3ed;
+    --warm-bg-2: #ede7da;
+    --bone: #faf7f0;
+    --brass: #a07f3a;
+    --brass-light: #c69a4a;
+    --stone: #71706b;
+    --line: #d8d2c2;
+    --line-dark: #2a2b2f;
+    --muted: #6e6c66;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--warm-bg);
+    line-height: 1.6;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1320px; margin: 0 auto; padding: 0 36px; }
+  .narrow { max-width: 1100px; margin: 0 auto; padding: 0 36px; }
+  .serif { font-family: 'Playfair Display', serif; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  /* TOP BAR */
+  .top-bar {
+    background: var(--ink-deep); color: rgba(250,247,240,0.7);
+    padding: 11px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .top-bar .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .top-bar a { color: var(--brass-light); text-decoration: none; }
+
+  /* NAV */
+  nav.main {
+    background: var(--warm-bg);
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 50;
+  }
+  nav.main .row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 16px; text-decoration: none; color: var(--ink); }
+  .brand-mark {
+    width: 52px; height: 52px;
+    border: 1.5px solid var(--brass);
+    display: grid; place-items: center;
+    color: var(--brass);
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-style: italic;
+  }
+  .brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; line-height: 1;
+    color: var(--ink);
+  }
+  .brand-sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; color: var(--stone);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .nav-links { display: flex; gap: 32px; align-items: center; }
+  .nav-links a {
+    color: var(--ink); text-decoration: none;
+    font-size: 13px; font-weight: 500;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    position: relative;
+  }
+  .nav-links a:hover { color: var(--brass); }
+  .nav-cta {
+    color: var(--ink); text-decoration: none;
+    font-family: 'Playfair Display', serif;
+    font-size: 16px; font-style: italic;
+    border-bottom: 1px solid var(--brass);
+    padding-bottom: 4px;
+  }
+
+  /* HERO — magazine cover */
+  .hero {
+    background: var(--warm-bg);
+    padding: 72px 0 100px;
+    position: relative;
+  }
+  .hero-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 56px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--stone);
+    letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .hero-meta .left { display: flex; gap: 32px; align-items: center; }
+  .hero-meta .left span::before {
+    content: '— '; color: var(--brass);
+  }
+
+  .hero-grid {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 80px;
+    align-items: end;
+  }
+  h1.hero-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400;
+    font-size: clamp(60px, 8.5vw, 132px);
+    line-height: 0.95; letter-spacing: -0.02em;
+    margin: 0 0 36px;
+    color: var(--ink);
+  }
+  h1.hero-title em {
+    font-style: italic;
+    color: var(--brass);
+  }
+  .hero-lead {
+    font-size: 19px; line-height: 1.65; color: var(--muted);
+    max-width: 540px; margin: 0 0 44px;
+    font-weight: 300;
+  }
+  .hero-actions { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+  .btn-primary {
+    background: var(--ink); color: var(--bone);
+    padding: 18px 36px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 0;
+  }
+  .btn-primary:hover { background: var(--ink-deep); }
+  .btn-line {
+    color: var(--ink); padding: 18px 0;
+    font-family: 'Playfair Display', serif;
+    font-size: 17px; font-style: italic;
+    text-decoration: none;
+    border-bottom: 1px solid var(--brass);
+  }
+  .btn-line:hover { color: var(--brass); }
+
+  .hero-figure {
+    aspect-ratio: 4 / 5;
+    background-image: url('https://images.pexels.com/photos/1396122/pexels-photo-1396122.jpeg?auto=compress&cs=tinysrgb&w=1400');
+    background-size: cover; background-position: center;
+    position: relative;
+  }
+  .hero-figure-cap {
+    position: absolute;
+    bottom: -32px; left: 32px; right: 32px;
+    background: var(--bone);
+    padding: 22px 28px;
+    border-left: 2px solid var(--brass);
+    font-family: 'Playfair Display', serif;
+    font-size: 17px; font-style: italic;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .hero-figure-cap .src {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; color: var(--stone);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    margin-top: 10px; font-style: normal;
+    display: block;
+  }
+
+  /* SECTION */
+  .section { padding: 130px 0; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--brass);
+    display: inline-flex; align-items: center; gap: 14px;
+    margin-bottom: 20px;
+  }
+  .eyebrow::before { content: '—'; color: var(--brass); }
+  h2.section-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400;
+    font-size: clamp(40px, 5.5vw, 78px);
+    line-height: 1.0; letter-spacing: -0.015em;
+    margin: 0 0 24px;
+    color: var(--ink);
+  }
+  h2.section-title em { font-style: italic; color: var(--brass); }
+  .section-lead {
+    font-size: 18px; color: var(--muted);
+    max-width: 640px; line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* PORTFOLIO — full-bleed homes */
+  .portfolio { background: var(--warm-bg); }
+  .port-head {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 64px;
+    align-items: end;
+    margin-bottom: 80px;
+  }
+
+  .port-list { display: flex; flex-direction: column; gap: 120px; }
+  .port-home {
+    display: grid; grid-template-columns: 1.3fr 1fr; gap: 64px;
+    align-items: center;
+  }
+  .port-home.reverse { grid-template-columns: 1fr 1.3fr; direction: rtl; }
+  .port-home.reverse > * { direction: ltr; }
+  .port-img {
+    aspect-ratio: 5 / 4;
+    background-size: cover; background-position: center;
+    position: relative;
+  }
+  .port-img .num {
+    position: absolute; top: 24px; left: 24px;
+    background: var(--bone); color: var(--ink);
+    padding: 8px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.16em;
+  }
+  .port-detail .marker {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--brass);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .port-detail h3 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400; font-size: 42px;
+    line-height: 1.05; letter-spacing: -0.01em;
+    margin: 0 0 20px;
+  }
+  .port-detail h3 em { font-style: italic; color: var(--brass); }
+  .port-detail p {
+    font-size: 16px; color: var(--muted); line-height: 1.7;
+    margin: 0 0 32px; font-weight: 300;
+  }
+  .port-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 24px; padding: 28px 0; border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .port-stat .key {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; color: var(--stone);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .port-stat .val {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; color: var(--ink);
+  }
+  .port-stat .val em { font-style: italic; color: var(--brass); }
+
+  /* CRAFT — process */
+  .craft {
+    background: var(--ink);
+    color: var(--bone);
+  }
+  .craft .eyebrow { color: var(--brass-light); }
+  .craft h2.section-title { color: var(--bone); }
+  .craft h2.section-title em { color: var(--brass-light); }
+  .craft .section-lead { color: rgba(250,247,240,0.65); }
+
+  .craft-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 48px;
+    margin-top: 80px;
+  }
+  .craft-card {
+    border-top: 1px solid rgba(250,247,240,0.18);
+    padding: 36px 0;
+    display: grid; grid-template-columns: 100px 1fr; gap: 36px;
+  }
+  .craft-card .num {
+    font-family: 'Playfair Display', serif;
+    font-size: 56px; font-style: italic;
+    color: var(--brass-light);
+    line-height: 1;
+  }
+  .craft-card h4 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400; font-size: 26px;
+    margin: 0 0 14px;
+  }
+  .craft-card h4 em { font-style: italic; color: var(--brass-light); }
+  .craft-card p {
+    font-size: 15px; color: rgba(250,247,240,0.7);
+    line-height: 1.7; margin: 0;
+    font-weight: 300;
+  }
+
+  /* PHILOSOPHY / FOUNDER QUOTE */
+  .philosophy {
+    background: var(--warm-bg-2);
+    padding: 130px 0;
+  }
+  .phil-grid {
+    display: grid; grid-template-columns: 1fr 1.3fr; gap: 80px;
+    align-items: center;
+  }
+  .phil-img {
+    aspect-ratio: 3 / 4;
+    background-image: url('https://images.pexels.com/photos/3760529/pexels-photo-3760529.jpeg?auto=compress&cs=tinysrgb&w=1200');
+    background-size: cover; background-position: center;
+  }
+  .phil-quote {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400; font-size: 38px;
+    line-height: 1.3; letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 0 0 36px;
+  }
+  .phil-quote em { font-style: italic; color: var(--brass); }
+  .phil-quote::before {
+    content: '"'; display: block;
+    font-size: 80px; line-height: 0.5;
+    color: var(--brass);
+    margin-bottom: 24px;
+  }
+  .phil-attr {
+    padding-top: 32px; border-top: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .phil-attr-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; color: var(--ink);
+    margin: 0 0 4px;
+  }
+  .phil-attr-role {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--stone);
+  }
+  .phil-mono {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.16em;
+    color: var(--brass); text-transform: uppercase;
+  }
+
+  /* MATERIALS / DETAILS GRID */
+  .materials { background: var(--warm-bg); }
+  .mat-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    margin-top: 64px;
+  }
+  .mat-card {
+    aspect-ratio: 1 / 1;
+    background-size: cover; background-position: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .mat-card .ov {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(13,14,16,0.85) 100%);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 32px;
+    color: var(--bone);
+  }
+  .mat-card .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--brass-light);
+    letter-spacing: 0.16em; margin-bottom: 8px;
+  }
+  .mat-card h4 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400; font-size: 24px; margin: 0 0 6px;
+  }
+  .mat-card p {
+    font-size: 13px; color: rgba(250,247,240,0.75);
+    margin: 0; line-height: 1.5;
+  }
+
+  /* PRESS / RECOGNITION */
+  .press {
+    background: var(--bone);
+    padding: 70px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .press-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 32px; flex-wrap: wrap;
+  }
+  .press-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--stone);
+  }
+  .press-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-style: italic;
+    color: var(--ink);
+    opacity: 0.6;
+  }
+  .press-logo.bold {
+    font-style: normal; font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* TESTIMONIALS */
+  .testimonials { background: var(--warm-bg-2); }
+  .test-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 48px;
+    margin-top: 64px;
+  }
+  .test-card {
+    padding: 0;
+    background: transparent;
+  }
+  .test-mark {
+    font-family: 'Playfair Display', serif;
+    font-size: 80px; font-style: italic;
+    color: var(--brass);
+    line-height: 0.5;
+    margin-bottom: 32px;
+    height: 32px;
+    overflow: hidden;
+  }
+  .test-quote {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px; line-height: 1.45;
+    color: var(--ink);
+    margin: 0 0 32px;
+    font-weight: 400;
+    font-style: italic;
+  }
+  .test-attr {
+    padding-top: 24px; border-top: 1px solid var(--line);
+  }
+  .test-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px; color: var(--ink); margin: 0 0 4px;
+  }
+  .test-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--stone);
+  }
+
+  /* CTA — dark elegant */
+  .cta {
+    background: var(--ink-deep);
+    color: var(--bone);
+    position: relative; overflow: hidden;
+  }
+  .cta::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      linear-gradient(135deg, rgba(160,127,58,0.18) 0%, transparent 50%),
+      url('https://images.pexels.com/photos/2079249/pexels-photo-2079249.jpeg?auto=compress&cs=tinysrgb&w=2000') center/cover;
+    opacity: 0.22;
+  }
+  .cta .container { position: relative; z-index: 2; }
+  .cta-grid {
+    display: grid; grid-template-columns: 1.1fr 1fr; gap: 96px; align-items: center;
+  }
+  .cta .eyebrow { color: var(--brass-light); }
+  .cta h2.section-title { color: var(--bone); }
+  .cta h2.section-title em { color: var(--brass-light); }
+  .cta .section-lead { color: rgba(250,247,240,0.7); }
+
+  .cta-form {
+    background: var(--bone); color: var(--ink);
+    padding: 48px;
+    border-top: 2px solid var(--brass);
+  }
+  .cta-form h3 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400; font-size: 30px;
+    margin: 0 0 8px;
+    line-height: 1.1;
+  }
+  .cta-form h3 em { font-style: italic; color: var(--brass); }
+  .cta-form .sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--stone);
+    letter-spacing: 0.14em; margin: 0 0 32px;
+    text-transform: uppercase;
+  }
+  .form-row { margin-bottom: 18px; }
+  .form-row label {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--stone); margin-bottom: 8px;
+  }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 14px 0;
+    background: transparent; color: var(--ink);
+    border: none; border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    font-size: 15px; font-family: inherit;
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    outline: none; border-bottom-color: var(--brass);
+  }
+  .form-row textarea { min-height: 60px; resize: vertical; padding-top: 14px; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .form-submit {
+    background: var(--ink); color: var(--bone);
+    padding: 18px 36px;
+    border: none; border-radius: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+  .form-submit:hover { background: var(--ink-deep); }
+
+  /* FOOTER */
+  footer {
+    background: var(--warm-bg);
+    color: var(--muted);
+    padding: 70px 0 32px;
+  }
+  .footer-grid {
+    display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 40px;
+    padding-bottom: 40px; border-bottom: 1px solid var(--line);
+  }
+  .footer-grid h4 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400; font-size: 18px;
+    color: var(--ink); margin: 0 0 18px;
+    font-style: italic;
+  }
+  .footer-grid a {
+    display: block; color: var(--muted);
+    text-decoration: none; font-size: 14px; padding: 4px 0;
+  }
+  .footer-grid a:hover { color: var(--brass); }
+  .footer-bottom {
+    padding-top: 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+  }
+
+  @media (max-width: 980px) {
+    .hero-grid, .port-home, .port-home.reverse, .phil-grid, .cta-grid { grid-template-columns: 1fr; gap: 48px; direction: ltr; }
+    .craft-grid { grid-template-columns: 1fr; }
+    .port-stats { grid-template-columns: 1fr 1fr; }
+    .mat-grid { grid-template-columns: 1fr; }
+    .test-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .hero-meta { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .hero-figure-cap { left: 16px; right: 16px; bottom: -16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP -->
+<div class="top-bar">
+  <div class="container row">
+    <div>VOL. XXII · ISSUE 02 · SPRING 2026</div>
+    <div>BY APPOINTMENT · <a href="tel:9705550418">(970) 555-0418</a></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="main">
+  <div class="container row">
+    <a href="#" class="brand">
+      <div class="brand-mark">H</div>
+      <div>
+        <div class="brand-name">Halverson Build Co.</div>
+        <div class="brand-sub">Custom Homes · Aspen + Vail · Est. 2003</div>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="#portfolio">Homes</a>
+      <a href="#craft">Craft</a>
+      <a href="#materials">Materials</a>
+      <a href="#about">Studio</a>
+      <a href="#contact" class="nav-cta">Begin a Project</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-meta">
+      <div class="left">
+        <span>Custom residential builders</span>
+        <span>Estate &amp; legacy homes</span>
+        <span>Roaring Fork &amp; Eagle Valley</span>
+      </div>
+      <div>EST. MMIII</div>
+    </div>
+
+    <div class="hero-grid">
+      <div>
+        <h1 class="hero-title">Houses built<br/>to be <em>inherited.</em></h1>
+        <p class="hero-lead">A small studio of master builders, second-generation craftsmen, and the architects we've worked with for twenty years. Six homes a year, never more. Each one is the only one.</p>
+        <div class="hero-actions">
+          <a href="#contact" class="btn-primary">Begin a Project →</a>
+          <a href="#portfolio" class="btn-line">See selected homes</a>
+        </div>
+      </div>
+      <div class="hero-figure">
+        <div class="hero-figure-cap">
+          The Pine Ridge Residence — Aspen, CO. Reclaimed Douglas fir timber framing, hand-quarried Yule marble hearth, copper standing seam.
+          <span class="src">PHOTO · KENNERLY MATHIAS · ARCHITECTURAL DIGEST</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PORTFOLIO -->
+<section class="section portfolio" id="portfolio">
+  <div class="container">
+    <div class="port-head">
+      <div>
+        <div class="eyebrow">Selected works · 2018 — 2026</div>
+        <h2 class="section-title">A house has a <em>life</em> measured in centuries.</h2>
+      </div>
+      <p class="section-lead">We don't build to specifications. We build to the lifespan of the trees we mill the timber from. Every project is a forty-year commitment, on our part and yours.</p>
+    </div>
+
+    <div class="port-list">
+
+      <div class="port-home">
+        <div class="port-img" style="background-image: url('https://images.pexels.com/photos/2581922/pexels-photo-2581922.jpeg?auto=compress&cs=tinysrgb&w=1400');">
+          <div class="num">N° 042</div>
+        </div>
+        <div class="port-detail">
+          <div class="marker">N° 042 · ASPEN, CO · COMPLETED 2024</div>
+          <h3>The <em>Pine Ridge</em> Residence</h3>
+          <p>A 9,400 sq ft mountain estate set on twelve acres above the Roaring Fork. Reclaimed Douglas fir from a 1903 Telluride mill, hand-quarried Yule marble, and a 32-foot great room with a single-piece beam structure milled on-site.</p>
+          <div class="port-stats">
+            <div class="port-stat"><div class="key">Square footage</div><div class="val">9,400 <em>sf</em></div></div>
+            <div class="port-stat"><div class="key">Build duration</div><div class="val">22 <em>mo</em></div></div>
+            <div class="port-stat"><div class="key">Architect</div><div class="val">Studio B</div></div>
+            <div class="port-stat"><div class="key">Investment</div><div class="val">$14m+</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="port-home reverse">
+        <div class="port-img" style="background-image: url('https://images.pexels.com/photos/3935333/pexels-photo-3935333.jpeg?auto=compress&cs=tinysrgb&w=1400');">
+          <div class="num">N° 040</div>
+        </div>
+        <div class="port-detail">
+          <div class="marker">N° 040 · BEAVER CREEK · COMPLETED 2023</div>
+          <h3>A house at the <em>edge of</em> the aspen grove</h3>
+          <p>Quiet contemporary on three acres, sited to preserve a hundred-year-old aspen colony. Rumford fireplaces in three rooms, hand-pulled plaster walls in the Venetian tradition, and a wine cellar excavated 22 feet into living rock.</p>
+          <div class="port-stats">
+            <div class="port-stat"><div class="key">Square footage</div><div class="val">7,200 <em>sf</em></div></div>
+            <div class="port-stat"><div class="key">Build duration</div><div class="val">18 <em>mo</em></div></div>
+            <div class="port-stat"><div class="key">Architect</div><div class="val">Olson Kundig</div></div>
+            <div class="port-stat"><div class="key">Investment</div><div class="val">$11m+</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="port-home">
+        <div class="port-img" style="background-image: url('https://images.pexels.com/photos/2462015/pexels-photo-2462015.jpeg?auto=compress&cs=tinysrgb&w=1400');">
+          <div class="num">N° 037</div>
+        </div>
+        <div class="port-detail">
+          <div class="marker">N° 037 · VAIL, CO · COMPLETED 2022</div>
+          <h3>The <em>Lookout</em></h3>
+          <p>A study in restraint. 5,800 sq ft of glass, Cor-Ten steel, and white oak — every joinery handcrafted by our shop in Carbondale. Heated stone terrace, retractable glass on three elevations, and a roof framed in a single afternoon by a four-generation timber crew.</p>
+          <div class="port-stats">
+            <div class="port-stat"><div class="key">Square footage</div><div class="val">5,800 <em>sf</em></div></div>
+            <div class="port-stat"><div class="key">Build duration</div><div class="val">16 <em>mo</em></div></div>
+            <div class="port-stat"><div class="key">Architect</div><div class="val">CCY Architects</div></div>
+            <div class="port-stat"><div class="key">Investment</div><div class="val">$8.5m+</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CRAFT / PROCESS -->
+<section class="section craft" id="craft">
+  <div class="container">
+    <div class="eyebrow">The way we build</div>
+    <h2 class="section-title">A two-year <em>conversation</em> between owner, architect, and the people who hold the chisel.</h2>
+    <p class="section-lead">No general contractors. No managed subs. Every cabinet, every stone wall, every roof beam set by people who answer to us — and have for twenty years.</p>
+
+    <div class="craft-grid">
+      <div class="craft-card">
+        <div class="num">i.</div>
+        <div>
+          <h4>Survey &amp; <em>Site Study</em></h4>
+          <p>Six to twelve months observing the land before the first sketch. Solar arc, prevailing winds, watershed patterns, soil cores at every footing location. The house is found in the site, not imposed on it.</p>
+        </div>
+      </div>
+      <div class="craft-card">
+        <div class="num">ii.</div>
+        <div>
+          <h4>Architecture <em>Collaboration</em></h4>
+          <p>We work with a small roster of architects we've built alongside for twenty years — Studio B, Olson Kundig, CCY, Bohlin Cywinski Jackson — or whoever you choose. We don't design. We honor the design.</p>
+        </div>
+      </div>
+      <div class="craft-card">
+        <div class="num">iii.</div>
+        <div>
+          <h4>In-house <em>Millwork &amp; Stone</em></h4>
+          <p>Our 14,000 sq ft Carbondale shop mills timber, fabricates cabinetry, and shapes hand-quarried stone. Same craftsmen on every project. Same standards on every joint.</p>
+        </div>
+      </div>
+      <div class="craft-card">
+        <div class="num">iv.</div>
+        <div>
+          <h4>Forty-year <em>Stewardship</em></h4>
+          <p>Every home we build comes with a written forty-year structural warranty and a lifetime promise to return for any callback, however small. We've serviced houses we built in 2008.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PHILOSOPHY -->
+<section class="philosophy" id="about">
+  <div class="container">
+    <div class="phil-grid">
+      <div class="phil-img"></div>
+      <div>
+        <div class="eyebrow">From the studio</div>
+        <p class="phil-quote">A house is the longest letter you'll ever write to your <em>great-grandchildren.</em> We try to make sure it's worth their time to read.</p>
+        <div class="phil-attr">
+          <div>
+            <div class="phil-attr-name">Søren Halverson</div>
+            <div class="phil-attr-role">Founder &amp; Master Builder</div>
+          </div>
+          <div class="phil-mono">EST. 2003 · CARBONDALE, CO</div>
+        </div>
+        <p style="margin-top: 36px; font-size: 16px; color: var(--muted); line-height: 1.7; font-weight: 300;">Søren learned timber framing from his grandfather in Telemark and apprenticed under master masons in Northern Italy before founding Halverson Build Co. with his brother Peter in Carbondale in 2003. The studio has stayed deliberately small — six homes a year — because the alternative would mean handing the work to people they don't know.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MATERIALS -->
+<section class="section materials" id="materials">
+  <div class="container">
+    <div class="eyebrow">Materials &amp; sourcing</div>
+    <h2 class="section-title">Every board has<br/>a <em>provenance.</em></h2>
+    <p class="section-lead">We don't list "premium materials" in our quotes — we tell you the name of the mill, the quarry, the forge. Then we visit it together if you want to.</p>
+
+    <div class="mat-grid">
+      <div class="mat-card" style="background-image: url('https://images.pexels.com/photos/4480532/pexels-photo-4480532.jpeg?auto=compress&cs=tinysrgb&w=900');">
+        <div class="ov">
+          <div class="num">M / 01</div>
+          <h4>Reclaimed Timber</h4>
+          <p>Douglas fir from 1903 Telluride mill, oak from Pennsylvania tobacco barns, salvaged longleaf heart pine.</p>
+        </div>
+      </div>
+      <div class="mat-card" style="background-image: url('https://images.pexels.com/photos/3637739/pexels-photo-3637739.jpeg?auto=compress&cs=tinysrgb&w=900');">
+        <div class="ov">
+          <div class="num">M / 02</div>
+          <h4>Yule Marble</h4>
+          <p>Hand-quarried at 9,300 ft in Marble, CO — the same vein as the Lincoln Memorial.</p>
+        </div>
+      </div>
+      <div class="mat-card" style="background-image: url('https://images.pexels.com/photos/6444366/pexels-photo-6444366.jpeg?auto=compress&cs=tinysrgb&w=900');">
+        <div class="ov">
+          <div class="num">M / 03</div>
+          <h4>Hand-Forged Hardware</h4>
+          <p>Hinges, latches, and pulls forged at our partner blacksmith in Bozeman. Each piece signed.</p>
+        </div>
+      </div>
+      <div class="mat-card" style="background-image: url('https://images.pexels.com/photos/1571470/pexels-photo-1571470.jpeg?auto=compress&cs=tinysrgb&w=900');">
+        <div class="ov">
+          <div class="num">M / 04</div>
+          <h4>Standing Seam Copper</h4>
+          <p>20-oz copper from Revere Copper Products. Hand-soldered seams that will outlast the framing.</p>
+        </div>
+      </div>
+      <div class="mat-card" style="background-image: url('https://images.pexels.com/photos/2104882/pexels-photo-2104882.jpeg?auto=compress&cs=tinysrgb&w=900');">
+        <div class="ov">
+          <div class="num">M / 05</div>
+          <h4>Venetian Plaster</h4>
+          <p>Hand-pulled lime plaster in the Marmorino tradition. Walls that breathe and warm with age.</p>
+        </div>
+      </div>
+      <div class="mat-card" style="background-image: url('https://images.pexels.com/photos/3637769/pexels-photo-3637769.jpeg?auto=compress&cs=tinysrgb&w=900');">
+        <div class="ov">
+          <div class="num">M / 06</div>
+          <h4>Drystack Stonework</h4>
+          <p>Local Aspen sandstone &amp; granite, set without mortar by a third-generation Welsh stonemason.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRESS -->
+<section class="press">
+  <div class="container press-row">
+    <div class="press-label">As featured in</div>
+    <div class="press-logo">Architectural Digest</div>
+    <div class="press-logo">Dwell</div>
+    <div class="press-logo">Robb Report</div>
+    <div class="press-logo bold">WALL ST. JOURNAL · MANSION</div>
+    <div class="press-logo">Mountain Living</div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section testimonials">
+  <div class="container">
+    <div class="eyebrow">From homeowners</div>
+    <h2 class="section-title">Twenty years.<br/>Sixty-eight <em>finished homes.</em></h2>
+
+    <div class="test-grid">
+      <div class="test-card">
+        <div class="test-mark">"</div>
+        <p class="test-quote">We interviewed nine builders. Halverson was the only one who walked the land for half a day before saying anything. By the end of the meeting we'd canceled the others. Two years later we have a house that feels like it grew there.</p>
+        <div class="test-attr">
+          <div class="test-name">Margaret &amp; Henrik T.</div>
+          <div class="test-meta">Pine Ridge Residence · Aspen · 2024</div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-mark">"</div>
+        <p class="test-quote">Søren's crew had a single subcontractor on our entire 18-month build — and that was the elevator company. Everyone else was on the Halverson payroll. That's why every joint, every miter, every transition is exactly right.</p>
+        <div class="test-attr">
+          <div class="test-name">David &amp; Sun-Mi L.</div>
+          <div class="test-meta">A house at the edge of the aspen grove · Beaver Creek · 2023</div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-mark">"</div>
+        <p class="test-quote">It's been four years since we moved in. Søren still texts the first week of every season to ask how the house is performing. They've been back twice — once for a hairline plaster check, once because we wanted them to. That's the relationship.</p>
+        <div class="test-attr">
+          <div class="test-name">Eleanor &amp; Pierce R.</div>
+          <div class="test-meta">The Lookout · Vail · 2022</div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-mark">"</div>
+        <p class="test-quote">There are bigger builders. There are louder builders. There is no one else who treats a house like a piece of literature. Our home is the third Halverson project in our family — my brother's, my mother's, now ours.</p>
+        <div class="test-attr">
+          <div class="test-name">Charles W., M.D.</div>
+          <div class="test-meta">Snowmass Residence · Completed 2025</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta" id="contact">
+  <div class="container">
+    <div class="cta-grid">
+      <div>
+        <div class="eyebrow">Begin a conversation</div>
+        <h2 class="section-title">Six homes a year.<br/><em>Two open</em> for 2027.</h2>
+        <p class="section-lead">We accept inquiries year-round, but our calendar fills 18-24 months in advance. The 2027 cohort has two remaining slots. Initial conversations are unhurried — typically a half-day on-site, no presentation deck.</p>
+        <div style="margin-top: 48px; display: flex; flex-direction: column; gap: 22px;">
+          <div style="display: flex; align-items: baseline; gap: 24px; padding: 20px 0; border-top: 1px solid rgba(250,247,240,0.18);">
+            <div style="font-family: 'Playfair Display'; font-style: italic; font-size: 42px; line-height: 1; color: var(--brass-light);">2</div>
+            <div>
+              <div style="font-size: 16px; color: var(--bone); font-weight: 400;">Slots remaining · 2027 cohort</div>
+              <div style="font-family: 'IBM Plex Mono'; font-size: 11px; color: rgba(250,247,240,0.55); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 4px;">Closed thereafter until 2029</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 24px; padding: 20px 0; border-top: 1px solid rgba(250,247,240,0.18);">
+            <div style="font-family: 'Playfair Display'; font-style: italic; font-size: 42px; line-height: 1; color: var(--brass-light);">$5m</div>
+            <div>
+              <div style="font-size: 16px; color: var(--bone); font-weight: 400;">Typical project minimum</div>
+              <div style="font-family: 'IBM Plex Mono'; font-size: 11px; color: rgba(250,247,240,0.55); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 4px;">Ground-up custom · all-in</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 24px; padding: 20px 0; border-top: 1px solid rgba(250,247,240,0.18); border-bottom: 1px solid rgba(250,247,240,0.18);">
+            <div style="font-family: 'Playfair Display'; font-style: italic; font-size: 42px; line-height: 1; color: var(--brass-light);">40 yr</div>
+            <div>
+              <div style="font-size: 16px; color: var(--bone); font-weight: 400;">Written structural warranty</div>
+              <div style="font-family: 'IBM Plex Mono'; font-size: 11px; color: rgba(250,247,240,0.55); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 4px;">Plus lifetime callback promise</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form class="cta-form" onsubmit="event.preventDefault(); alert('Thank you. Søren will write to you personally within ten business days.');">
+        <h3>Begin a <em>conversation</em></h3>
+        <p class="sub">RESPONSE WITHIN 10 BUSINESS DAYS · NO SALES CALLS</p>
+        <div class="form-row-2">
+          <div class="form-row">
+            <label>First name</label>
+            <input type="text" required>
+          </div>
+          <div class="form-row">
+            <label>Last name</label>
+            <input type="text" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Email</label>
+          <input type="email" required>
+        </div>
+        <div class="form-row">
+          <label>Project location</label>
+          <input type="text" placeholder="Town &amp; state · or land already secured" required>
+        </div>
+        <div class="form-row">
+          <label>Anticipated timeline</label>
+          <select>
+            <option value="">Select…</option>
+            <option>Ground-break in 2026</option>
+            <option>Ground-break in 2027 (cohort open)</option>
+            <option>Ground-break 2028+ (planning ahead)</option>
+            <option>Land not yet secured</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Tell us about the project</label>
+          <textarea placeholder="What does the property look like? What architect, if chosen? What are you hoping the house becomes?"></textarea>
+        </div>
+        <button type="submit" class="form-submit">Send Inquiry</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 18px;">
+          <div class="brand-mark">H</div>
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-size: 20px; color: var(--ink);">Halverson Build Co.</div>
+            <div style="font-family: 'IBM Plex Mono'; font-size: 10px; letter-spacing: 0.18em; color: var(--stone); text-transform: uppercase; margin-top: 4px;">Custom Homes · Est. 2003</div>
+          </div>
+        </div>
+        <p style="font-size: 14px; line-height: 1.65; color: var(--muted); font-weight: 300; max-width: 360px;">A small studio of master builders, in-house craftsmen, and lifelong architectural collaborators. Six homes a year, ground-up, in Aspen and Vail valleys.</p>
+      </div>
+      <div>
+        <h4>Studio</h4>
+        <a href="#">Approach</a>
+        <a href="#">Master builders</a>
+        <a href="#">Press</a>
+        <a href="#">Journal</a>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a href="#">Selected works</a>
+        <a href="#">Architecture partners</a>
+        <a href="#">Materials</a>
+        <a href="#">Stewardship</a>
+      </div>
+      <div>
+        <h4>Visit</h4>
+        <a href="tel:9705550418" style="color: var(--brass); font-weight: 500;">(970) 555-0418</a>
+        <a href="#">studio@halverson.build</a>
+        <a href="#">418 Main St, Carbondale, CO</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© MMXXVI · HALVERSON BUILD CO.</div>
+      <div>BUILT IN CARBONDALE · BY APPOINTMENT</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

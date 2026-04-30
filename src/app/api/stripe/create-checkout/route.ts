@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
       customer: customerId,
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
+      allow_promotion_codes: plan === "pro",
       success_url: `${appUrl}/auth/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/pricing`,
       metadata: {

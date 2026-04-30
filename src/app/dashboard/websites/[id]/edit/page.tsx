@@ -9,6 +9,7 @@ import {
 import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
 
 const WEBSITE_AI_EDIT_CREDITS = 15;
+const WHITELABEL_HOST = "pitchsite.dev";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -41,6 +42,7 @@ export default function WebsiteEditPage() {
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
   const [visualDirty, setVisualDirty] = useState(false);
+  const [siteMeta, setSiteMeta] = useState<{ tier: "standard" | "whitelabel"; slug: string | null } | null>(null);
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [iframeVersion, setIframeVersion] = useState(0);
@@ -49,14 +51,25 @@ export default function WebsiteEditPage() {
   modeRef.current = mode;
 
   useEffect(() => {
-    // Prime: website exists and loads
+    // Prime: website exists and loads + fetch tier/slug for the Open button.
     const prime = async () => {
-      const res = await fetch(`/api/websites/${siteId}`, { cache: "no-store", method: "HEAD" });
-      if (!res.ok) setError("Failed to load website");
+      const [previewRes, metaRes] = await Promise.all([
+        fetch(`/api/websites/${siteId}`, { cache: "no-store", method: "HEAD" }),
+        fetch(`/api/websites/${siteId}/meta`, { cache: "no-store" }),
+      ]);
+      if (!previewRes.ok) setError("Failed to load website");
+      if (metaRes.ok) {
+        const m = await metaRes.json();
+        setSiteMeta({ tier: m.tier, slug: m.slug ?? null });
+      }
       setLoading(false);
     };
     prime();
   }, [siteId]);
+
+  const openHref = siteMeta?.tier === "whitelabel" && siteMeta.slug
+    ? `https://${siteMeta.slug}.${WHITELABEL_HOST}`
+    : `/api/websites/${siteId}`;
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -263,7 +276,7 @@ export default function WebsiteEditPage() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <a
-              href={`/api/websites/${siteId}`}
+              href={openHref}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"

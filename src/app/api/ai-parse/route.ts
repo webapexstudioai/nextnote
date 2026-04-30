@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
+import { requirePro } from "@/lib/tierGuard";
 import { getUserAIConfig, aiChat } from "@/lib/ai";
 import { getBalance, deductCredits, AI_PARSE_CREDITS } from "@/lib/credits";
 import { rateLimit, clientKey } from "@/lib/rateLimit";
@@ -10,6 +11,9 @@ export async function POST(req: NextRequest) {
     if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    const gate = await requirePro(session.userId, "Spreadsheet import");
+    if (!gate.ok) return gate.response;
 
     const userLimit = rateLimit(`ai-parse:${session.userId}`, 10, 60_000);
     if (!userLimit.ok) {

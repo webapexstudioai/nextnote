@@ -1,0 +1,1035 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Voltline Electric — Master Electricians · Denver, CO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f12;
+    --bg-deep: #08090b;
+    --panel: #16181d;
+    --panel-2: #1d2027;
+    --line: #2a2e37;
+    --line-soft: #232730;
+    --volt: #f0db4f;
+    --volt-bright: #fffd6b;
+    --hot: #ff5b3b;
+    --safe: #4ade80;
+    --text: #e7eaf0;
+    --muted: #8a93a3;
+    --paper: #f4f5f7;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+  .display { font-family: 'Space Grotesk', sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* TOP STATUS BAR — like a circuit panel */
+  .panel-bar {
+    background: var(--bg-deep);
+    border-bottom: 1px solid var(--line);
+    padding: 9px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .panel-bar .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .panel-bar .breakers {
+    display: flex; gap: 16px; align-items: center;
+  }
+  .panel-bar .breaker {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .panel-bar .led {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--safe);
+    box-shadow: 0 0 8px var(--safe);
+  }
+  .panel-bar .led.on {
+    background: var(--volt);
+    box-shadow: 0 0 8px var(--volt);
+    animation: blink 2s infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .panel-bar a { color: var(--volt); text-decoration: none; font-weight: 700; }
+
+  /* NAV */
+  nav.main {
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 50;
+  }
+  nav.main .row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--text); }
+  .brand-mark {
+    width: 44px; height: 44px;
+    background: var(--volt); border-radius: 4px;
+    display: grid; place-items: center;
+    position: relative;
+    box-shadow: 0 0 20px rgba(240,219,79,0.35);
+  }
+  .brand-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 19px;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .brand-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links a { color: var(--text); text-decoration: none; font-weight: 500; font-size: 14px; }
+  .nav-links a:hover { color: var(--volt); }
+  .nav-cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--volt); color: var(--bg-deep);
+    padding: 12px 22px; border-radius: 4px;
+    font-weight: 700; text-decoration: none; font-size: 13px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .nav-cta:hover { background: var(--volt-bright); }
+
+  /* HERO — circuit-board grid background */
+  .hero {
+    position: relative; overflow: hidden;
+    padding: 100px 0 80px;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(240,219,79,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(240,219,79,0.04) 0%, transparent 50%),
+      var(--bg);
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 56px 56px;
+    background-position: -1px -1px;
+    opacity: 0.5;
+    mask-image: radial-gradient(ellipse at center, black 50%, transparent 80%);
+  }
+  .hero .container { position: relative; z-index: 2; }
+  .hero-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 80px; align-items: center; }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: rgba(240,219,79,0.08);
+    border: 1px solid rgba(240,219,79,0.25);
+    padding: 8px 16px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--volt);
+    margin-bottom: 28px;
+  }
+  .hero-eyebrow .bolt {
+    width: 14px; height: 14px;
+    color: var(--volt);
+  }
+  h1.hero-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(48px, 7vw, 92px);
+    line-height: 1.0; letter-spacing: -0.02em;
+    margin: 0 0 26px;
+  }
+  h1.hero-title .volt-text {
+    color: var(--volt);
+    position: relative;
+  }
+  h1.hero-title .volt-text::after {
+    content: '';
+    position: absolute; bottom: 6px; left: 0; right: 0;
+    height: 6px; background: rgba(240,219,79,0.2);
+    z-index: -1;
+  }
+  .hero-lead {
+    font-size: 18px; line-height: 1.65; color: var(--muted);
+    max-width: 540px; margin: 0 0 40px;
+  }
+  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .btn-primary {
+    background: var(--volt); color: var(--bg-deep);
+    padding: 16px 30px; border-radius: 4px;
+    font-weight: 700; text-decoration: none;
+    font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .btn-primary:hover { background: var(--volt-bright); box-shadow: 0 0 24px rgba(240,219,79,0.4); }
+  .btn-outline {
+    color: var(--text); padding: 16px 28px; border-radius: 4px;
+    font-weight: 600; text-decoration: none;
+    font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em;
+    border: 1px solid var(--line);
+  }
+  .btn-outline:hover { border-color: var(--volt); color: var(--volt); }
+
+  /* HERO SIDE — schematic-style stat block */
+  .schematic {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+  .schematic-header {
+    background: var(--panel-2);
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .schematic-header .dots {
+    display: flex; gap: 6px;
+  }
+  .schematic-header .dots span {
+    width: 9px; height: 9px; border-radius: 50%; display: block;
+  }
+  .schematic-header .dots span:nth-child(1) { background: #ff5b3b; }
+  .schematic-header .dots span:nth-child(2) { background: var(--volt); }
+  .schematic-header .dots span:nth-child(3) { background: var(--safe); }
+  .schematic-body { padding: 28px; }
+  .schematic-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .schematic-row:last-child { border-bottom: none; }
+  .schematic-row .key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  .schematic-row .val {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 17px;
+    color: var(--text);
+  }
+  .schematic-row .val.volt { color: var(--volt); }
+  .schematic-row .val.safe { color: var(--safe); }
+  .schematic-foot {
+    padding: 18px 24px;
+    background: var(--panel-2); border-top: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .schematic-foot a { color: var(--volt); text-decoration: none; font-weight: 700; }
+
+  /* SECTION */
+  .section { padding: 110px 0; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--volt);
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-bottom: 18px;
+  }
+  .eyebrow::before { content: ''; width: 32px; height: 2px; background: var(--volt); }
+  h2.section-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: clamp(36px, 5vw, 64px);
+    line-height: 1.05; letter-spacing: -0.02em;
+    margin: 0 0 22px;
+    color: var(--text);
+  }
+  .section-lead { font-size: 17px; color: var(--muted); max-width: 640px; line-height: 1.65; }
+
+  /* PANEL UPGRADE — signature feature */
+  .panel-upgrade {
+    background: var(--bg-deep);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .pu-grid {
+    display: grid; grid-template-columns: 1.2fr 1fr; gap: 80px;
+    align-items: center;
+  }
+  .pu-img {
+    aspect-ratio: 4 / 5;
+    background-image:
+      linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.4) 100%),
+      url('https://images.pexels.com/photos/8005368/pexels-photo-8005368.jpeg?auto=compress&cs=tinysrgb&w=1400');
+    background-size: cover; background-position: center;
+    border-radius: 8px;
+    position: relative;
+    border: 1px solid var(--line);
+  }
+  .pu-tag {
+    position: absolute; bottom: 24px; left: 24px;
+    background: var(--volt); color: var(--bg-deep);
+    padding: 8px 16px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+
+  .pu-options {
+    list-style: none; padding: 0; margin: 36px 0 0;
+    counter-reset: opt;
+  }
+  .pu-options li {
+    counter-increment: opt;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line);
+    display: grid; grid-template-columns: auto 1fr auto; gap: 24px; align-items: center;
+  }
+  .pu-options li::before {
+    content: counter(opt, decimal-leading-zero);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--volt);
+    letter-spacing: 0.1em;
+  }
+  .pu-options h4 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600; font-size: 19px; margin: 0 0 4px;
+    color: var(--text);
+  }
+  .pu-options .meta { font-size: 13px; color: var(--muted); }
+  .pu-options .price {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 22px;
+    color: var(--volt);
+  }
+
+  /* SERVICES */
+  .services-bg { background: var(--bg); }
+  .services-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    margin-top: 56px;
+  }
+  .service-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 36px 32px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .service-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--volt);
+    opacity: 0.6;
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s;
+  }
+  .service-card:hover { border-color: rgba(240,219,79,0.4); transform: translateY(-3px); }
+  .service-card:hover::before { transform: scaleX(1); }
+  .service-card .code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--volt);
+    letter-spacing: 0.16em;
+    margin-bottom: 22px;
+  }
+  .service-card .icon {
+    width: 56px; height: 56px;
+    background: var(--bg-deep); border-radius: 8px;
+    border: 1px solid var(--line);
+    display: grid; place-items: center;
+    margin-bottom: 22px;
+  }
+  .service-card h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600; font-size: 22px; margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+  .service-card p {
+    font-size: 14px; color: var(--muted); line-height: 1.65; margin: 0 0 22px;
+  }
+  .specs {
+    display: flex; flex-direction: column; gap: 10px;
+    padding-top: 22px; border-top: 1px solid var(--line-soft);
+  }
+  .specs .spec {
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .specs .spec .k { color: var(--muted); letter-spacing: 0.06em; }
+  .specs .spec .v { color: var(--text); font-weight: 600; }
+
+  /* CODE COMPLIANCE STRIP */
+  .compliance {
+    background: var(--panel);
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 70px 0;
+  }
+  .compliance-grid {
+    display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px;
+    align-items: center;
+  }
+  .compliance-grid h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600; font-size: 28px; line-height: 1.2;
+    margin: 0; color: var(--text);
+  }
+  .compliance-grid h3 .accent { color: var(--volt); }
+  .comp-stat .num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 48px; line-height: 1;
+    color: var(--volt);
+  }
+  .comp-stat .lab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); margin-top: 10px;
+  }
+
+  /* PROCESS */
+  .process { background: var(--bg-deep); }
+  .proc-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    margin-top: 56px;
+    border: 1px solid var(--line); border-radius: 8px;
+    overflow: hidden;
+  }
+  .proc-step {
+    padding: 36px 32px;
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+    position: relative;
+  }
+  .proc-step:last-child { border-right: none; }
+  .proc-step .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--volt);
+    letter-spacing: 0.16em; margin-bottom: 18px;
+  }
+  .proc-step .step-icon {
+    width: 44px; height: 44px;
+    background: var(--bg-deep); border-radius: 6px;
+    display: grid; place-items: center;
+    margin-bottom: 18px;
+    border: 1px solid var(--line);
+  }
+  .proc-step h4 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600; font-size: 18px; margin: 0 0 10px;
+  }
+  .proc-step p { font-size: 13px; color: var(--muted); line-height: 1.6; margin: 0; }
+
+  /* TESTIMONIALS */
+  .testimonials { background: var(--bg); }
+  .test-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    margin-top: 56px;
+  }
+  .test-card {
+    background: var(--panel); padding: 32px;
+    border: 1px solid var(--line); border-radius: 8px;
+    border-left: 3px solid var(--volt);
+  }
+  .test-stars {
+    color: var(--volt); font-size: 14px; letter-spacing: 3px;
+    margin-bottom: 18px;
+  }
+  .test-quote {
+    font-size: 15px; line-height: 1.7; color: var(--text);
+    margin: 0 0 24px;
+  }
+  .test-foot {
+    padding-top: 18px; border-top: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .test-name { font-weight: 600; font-size: 14px; }
+  .test-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .test-job {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--volt);
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+
+  /* CTA */
+  .cta {
+    background: var(--bg-deep);
+    position: relative; overflow: hidden;
+  }
+  .cta::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 56px 56px;
+    opacity: 0.4;
+  }
+  .cta .container { position: relative; z-index: 2; }
+  .cta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+  .cta-form {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 40px;
+  }
+  .cta-form h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 28px; margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .cta-form .sub {
+    font-size: 14px; color: var(--muted); margin: 0 0 28px;
+  }
+  .form-row { margin-bottom: 16px; }
+  .form-row label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 14px;
+    background: var(--bg-deep); color: var(--text);
+    border: 1px solid var(--line); border-radius: 4px;
+    font-size: 14px; font-family: inherit;
+  }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    outline: none; border-color: var(--volt);
+  }
+  .form-row textarea { min-height: 90px; resize: vertical; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-submit {
+    width: 100%; background: var(--volt); color: var(--bg-deep);
+    padding: 16px; border: none; border-radius: 4px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 14px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    cursor: pointer; margin-top: 6px;
+  }
+  .form-submit:hover { background: var(--volt-bright); box-shadow: 0 0 24px rgba(240,219,79,0.3); }
+
+  /* FOOTER */
+  footer {
+    background: var(--bg-deep);
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    padding: 56px 0 24px;
+  }
+  .footer-grid {
+    display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 40px;
+    padding-bottom: 36px; border-bottom: 1px solid var(--line);
+  }
+  .footer-grid h4 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600; font-size: 13px; color: var(--text);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin: 0 0 16px;
+  }
+  .footer-grid a {
+    display: block; color: var(--muted);
+    text-decoration: none; font-size: 14px; padding: 4px 0;
+  }
+  .footer-grid a:hover { color: var(--volt); }
+  .footer-bottom {
+    padding-top: 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+
+  @media (max-width: 980px) {
+    .hero-grid, .pu-grid, .compliance-grid, .cta-grid { grid-template-columns: 1fr; gap: 40px; }
+    .services-grid, .test-grid { grid-template-columns: 1fr; }
+    .proc-grid { grid-template-columns: 1fr; }
+    .proc-step { border-right: none; border-bottom: 1px solid var(--line); }
+    .proc-step:last-child { border-bottom: none; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PANEL BAR -->
+<div class="panel-bar">
+  <div class="container row">
+    <div class="breakers">
+      <span class="breaker"><span class="led on"></span>DISPATCH ONLINE</span>
+      <span class="breaker"><span class="led"></span>4 MASTER ELECTRICIANS · ON CALL</span>
+      <span class="breaker"><span class="led"></span>NEC 2023 COMPLIANT</span>
+    </div>
+    <div>EMERGENCY · <a href="tel:7205550218">(720) 555-0218</a></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="main">
+  <div class="container row">
+    <a href="#" class="brand">
+      <div class="brand-mark">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0e0f12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">VOLTLINE ELECTRIC</div>
+        <div class="brand-sub">EST. 2011 · CO LIC #ME-7740</div>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="#services">Services</a>
+      <a href="#panel">Panel Upgrades</a>
+      <a href="#process">Process</a>
+      <a href="#reviews">Reviews</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <a href="tel:7205550218" class="nav-cta">Get Free Estimate</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-eyebrow">
+          <svg class="bolt" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          MASTER ELECTRICIANS · DENVER METRO
+        </div>
+        <h1 class="hero-title">
+          Power that
+          <span class="volt-text">just works.</span><br/>
+          Wired by people who give a damn.
+        </h1>
+        <p class="hero-lead">Master electricians for panel upgrades, EV chargers, whole-home rewires, and the kind of work code inspectors high-five us for. NEC 2023 certified, every single job permitted.</p>
+        <div class="hero-actions">
+          <a href="#contact" class="btn-primary">Get Free Estimate</a>
+          <a href="tel:7205550218" class="btn-outline">(720) 555-0218</a>
+        </div>
+      </div>
+
+      <!-- SCHEMATIC CARD -->
+      <div class="schematic">
+        <div class="schematic-header">
+          <span>SHOP STATUS · LIVE</span>
+          <span class="dots"><span></span><span></span><span></span></span>
+        </div>
+        <div class="schematic-body">
+          <div class="schematic-row">
+            <div class="key">CREWS DEPLOYED</div>
+            <div class="val">4 / 6</div>
+          </div>
+          <div class="schematic-row">
+            <div class="key">EMERGENCY ETA</div>
+            <div class="val volt">42 MIN</div>
+          </div>
+          <div class="schematic-row">
+            <div class="key">QUEUE THIS WEEK</div>
+            <div class="val">31 JOBS</div>
+          </div>
+          <div class="schematic-row">
+            <div class="key">PERMIT RATE</div>
+            <div class="val safe">100%</div>
+          </div>
+          <div class="schematic-row">
+            <div class="key">INSPECTION PASS</div>
+            <div class="val safe">99.6%</div>
+          </div>
+          <div class="schematic-row">
+            <div class="key">WARRANTY</div>
+            <div class="val">10 YR · LIFETIME LBR</div>
+          </div>
+        </div>
+        <div class="schematic-foot">
+          <span>NEED A CREW?</span>
+          <a href="tel:7205550218">(720) 555-0218 →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PANEL UPGRADE — SIGNATURE -->
+<section class="section panel-upgrade" id="panel">
+  <div class="container">
+    <div class="pu-grid">
+      <div class="pu-img">
+        <span class="pu-tag">200 AMP · NEC 2023</span>
+      </div>
+      <div>
+        <div class="eyebrow">Panel upgrades · main service</div>
+        <h2 class="section-title">Your 1970s panel<br/>can't power 2026.</h2>
+        <p class="section-lead">Half the homes we touch in Denver still run 100A panels with Federal Pacific or Zinsco breakers — both linked to thousands of fires nationally. We replace, upgrade, and inspect.</p>
+
+        <ol class="pu-options">
+          <li>
+            <div>
+              <h4>100A → 200A Service Upgrade</h4>
+              <div class="meta">Includes utility coordination, permit, inspection, full-day labor</div>
+            </div>
+            <div class="price">$3,400</div>
+          </li>
+          <li>
+            <div>
+              <h4>Panel Replacement (same amperage)</h4>
+              <div class="meta">Square D QO, Eaton CH, or Siemens · whole-home surge protection</div>
+            </div>
+            <div class="price">$2,200</div>
+          </li>
+          <li>
+            <div>
+              <h4>Federal Pacific / Zinsco Replacement</h4>
+              <div class="meta">Insurance discount eligible · prevents stab-lok breaker failure</div>
+            </div>
+            <div class="price">$2,800</div>
+          </li>
+          <li>
+            <div>
+              <h4>Sub-Panel Add (workshop / ADU)</h4>
+              <div class="meta">60-100A capacity · separate metering optional</div>
+            </div>
+            <div class="price">$1,650</div>
+          </li>
+          <li>
+            <div>
+              <h4>EV Charger Install (Tesla / J1772)</h4>
+              <div class="meta">240V 50A circuit · Tesla, ChargePoint, Wallbox certified</div>
+            </div>
+            <div class="price">$1,200</div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="section services-bg" id="services">
+  <div class="container">
+    <div class="eyebrow">Residential · commercial</div>
+    <h2 class="section-title">Wire it. Test it. Permit it.<br/>Stand behind it.</h2>
+    <p class="section-lead">Same-day diagnostic, transparent fixed pricing, and every job pulled, permitted, and inspected. No "we'll come back to that."</p>
+
+    <div class="services-grid">
+      <div class="service-card">
+        <div class="code">SVC // 01</div>
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f0db4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <h3>EV Charger Install</h3>
+        <p>Level 2 fast charging at home. Tesla Wall Connector, ChargePoint, Wallbox. 240V 40-50A circuit, dedicated breaker.</p>
+        <div class="specs">
+          <div class="spec"><span class="k">CIRCUIT</span><span class="v">240V · 50A</span></div>
+          <div class="spec"><span class="k">DURATION</span><span class="v">3-5 HRS</span></div>
+          <div class="spec"><span class="k">FROM</span><span class="v">$1,200</span></div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="code">SVC // 02</div>
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f0db4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="1"/><line x1="9" y1="9" x2="9" y2="15"/><line x1="15" y1="9" x2="15" y2="15"/>
+          </svg>
+        </div>
+        <h3>Panel Upgrade</h3>
+        <p>100A → 200A or 400A service. Square D, Eaton, Siemens. Whole-home surge protection included.</p>
+        <div class="specs">
+          <div class="spec"><span class="k">SERVICE</span><span class="v">100-400A</span></div>
+          <div class="spec"><span class="k">DURATION</span><span class="v">1 DAY</span></div>
+          <div class="spec"><span class="k">FROM</span><span class="v">$2,200</span></div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="code">SVC // 03</div>
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f0db4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h3>Diagnostic &amp; Repair</h3>
+        <p>Tripping breakers, dead outlets, hot switches, flickering lights. Thermal imaging + circuit tracing.</p>
+        <div class="specs">
+          <div class="spec"><span class="k">SAME DAY</span><span class="v">YES</span></div>
+          <div class="spec"><span class="k">DIAGNOSTIC</span><span class="v">$129</span></div>
+          <div class="spec"><span class="k">CREDIT TO REPAIR</span><span class="v">100%</span></div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="code">SVC // 04</div>
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f0db4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </div>
+        <h3>Recessed &amp; LED Lighting</h3>
+        <p>4" / 6" cans, dimmable, color-temp tunable. Living room, kitchen, basement. Smart switches included.</p>
+        <div class="specs">
+          <div class="spec"><span class="k">PER CAN</span><span class="v">$165</span></div>
+          <div class="spec"><span class="k">SMART DIMMER</span><span class="v">+ $115</span></div>
+          <div class="spec"><span class="k">WARRANTY</span><span class="v">10 YR</span></div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="code">SVC // 05</div>
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f0db4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="4"/>
+          </svg>
+        </div>
+        <h3>Whole-Home Generator</h3>
+        <p>Generac, Kohler, Briggs &amp; Stratton install. ATS switch, propane or natural gas. Full-load testing.</p>
+        <div class="specs">
+          <div class="spec"><span class="k">RANGE</span><span class="v">14-26 KW</span></div>
+          <div class="spec"><span class="k">DURATION</span><span class="v">2 DAYS</span></div>
+          <div class="spec"><span class="k">FROM</span><span class="v">$8,400</span></div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="code">SVC // 06</div>
+        <div class="icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f0db4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3h18v18H3z"/><path d="M3 9h18M9 21V9"/>
+          </svg>
+        </div>
+        <h3>Whole-Home Rewire</h3>
+        <p>1950s knob-and-tube to NEC 2023 copper. Drywall patch + paint touch-up included. Most homes 3-5 days.</p>
+        <div class="specs">
+          <div class="spec"><span class="k">SQFT</span><span class="v">1,500-3,500</span></div>
+          <div class="spec"><span class="k">DURATION</span><span class="v">3-5 DAYS</span></div>
+          <div class="spec"><span class="k">FROM</span><span class="v">$8,800</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPLIANCE STRIP -->
+<section class="compliance">
+  <div class="container">
+    <div class="compliance-grid">
+      <h3>Permits pulled. Inspections passed. <span class="accent">Code compliance is the floor — not the ceiling.</span></h3>
+      <div class="comp-stat"><div class="num">100%</div><div class="lab">Permitted</div></div>
+      <div class="comp-stat"><div class="num">99.6%</div><div class="lab">First-pass inspect</div></div>
+      <div class="comp-stat"><div class="num">NEC 2023</div><div class="lab">Standard</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section class="section process" id="process">
+  <div class="container">
+    <div class="eyebrow">How we work</div>
+    <h2 class="section-title">No surprises. No "while we're at it."<br/>Just a wire, a permit, a pass.</h2>
+
+    <div class="proc-grid">
+      <div class="proc-step">
+        <div class="step-num">PHASE 01</div>
+        <div class="step-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0db4f" stroke-width="2" stroke-linecap="round"><path d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg>
+        </div>
+        <h4>Diagnostic</h4>
+        <p>Master electrician on-site within 90 minutes. Thermal imaging, circuit tracing, written assessment.</p>
+      </div>
+      <div class="proc-step">
+        <div class="step-num">PHASE 02</div>
+        <div class="step-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0db4f" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <h4>Fixed Quote</h4>
+        <p>Line-item pricing in writing. Permit fees included. No "additional parts" mid-job ever.</p>
+      </div>
+      <div class="proc-step">
+        <div class="step-num">PHASE 03</div>
+        <div class="step-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0db4f" stroke-width="2" stroke-linecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </div>
+        <h4>Install</h4>
+        <p>Master electrician on every job. Daily walk-through. Drywall and paint touch-up included where we open walls.</p>
+      </div>
+      <div class="proc-step">
+        <div class="step-num">PHASE 04</div>
+        <div class="step-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0db4f" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h4>Inspect &amp; Sign Off</h4>
+        <p>City inspector on-site, you watch the pass. Final permit closed before invoice. Lifetime workmanship.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section testimonials" id="reviews">
+  <div class="container">
+    <div class="eyebrow">Verified Denver homeowners</div>
+    <h2 class="section-title">2,140 five-star reviews.<br/>Zero callbacks for re-inspection.</h2>
+
+    <div class="test-grid">
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"Three estimates told me my Federal Pacific panel was 'fine for now.' Voltline showed up, ran a thermal scan, found two breakers running 180°F, and replaced the whole panel in 6 hours. They saved my house."</p>
+        <div class="test-foot">
+          <div>
+            <div class="test-name">Carla R.</div>
+            <div class="test-meta">Highlands · Denver</div>
+          </div>
+          <div class="test-job">PANEL UPGRADE</div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"EV charger install was complicated — long run from the panel through a finished basement. They mapped it, fished it through the joists with zero drywall damage, permitted, and inspected. Quote was $1,200. Final invoice was $1,200."</p>
+        <div class="test-foot">
+          <div>
+            <div class="test-name">Aaron M.</div>
+            <div class="test-meta">Stapleton · Denver</div>
+          </div>
+          <div class="test-job">EV CHARGER</div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"Knob-and-tube whole-home rewire on a 1924 bungalow. They lived with us for four days, kept the kitchen working, and the inspector at final pass said 'best wiring job I've seen this year.' Already booking them for the detached studio."</p>
+        <div class="test-foot">
+          <div>
+            <div class="test-name">Rae &amp; Sam K.</div>
+            <div class="test-meta">Park Hill · Denver</div>
+          </div>
+          <div class="test-job">WHOLE-HOME REWIRE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta" id="contact">
+  <div class="container">
+    <div class="cta-grid">
+      <div>
+        <div class="eyebrow">Get a free written quote</div>
+        <h2 class="section-title">Ready to plug in?<br/>We're 90 minutes away.</h2>
+        <p class="section-lead">Same-day diagnostics, fixed quotes, NEC 2023 compliance, lifetime workmanship. The way it should've been the first time.</p>
+        <div style="margin-top: 36px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px;">
+          <div>
+            <div style="font-family: 'Space Grotesk'; font-weight: 700; font-size: 38px; line-height: 1; color: var(--volt);">90 min</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 11px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-top: 6px;">Avg arrival</div>
+          </div>
+          <div>
+            <div style="font-family: 'Space Grotesk'; font-weight: 700; font-size: 38px; line-height: 1; color: var(--volt);">$0</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 11px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-top: 6px;">Trip charge</div>
+          </div>
+          <div>
+            <div style="font-family: 'Space Grotesk'; font-weight: 700; font-size: 38px; line-height: 1; color: var(--volt);">10 yr</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 11px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-top: 6px;">Warranty</div>
+          </div>
+        </div>
+      </div>
+
+      <form class="cta-form" onsubmit="event.preventDefault(); alert('Thanks — a master electrician will call within 30 minutes.');">
+        <h3>Request Free Estimate</h3>
+        <p class="sub">Master electrician will call within 30 min during business hours. Quotes are written, fixed, and itemized.</p>
+        <div class="form-row-2">
+          <div class="form-row">
+            <label>First name</label>
+            <input type="text" required>
+          </div>
+          <div class="form-row">
+            <label>Last name</label>
+            <input type="text" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Mobile (we text first)</label>
+          <input type="tel" placeholder="(720) 000-0000" required>
+        </div>
+        <div class="form-row">
+          <label>Service address</label>
+          <input type="text" placeholder="Street, City, ZIP" required>
+        </div>
+        <div class="form-row">
+          <label>What do you need?</label>
+          <select>
+            <option value="">Select…</option>
+            <option>Panel upgrade (100A → 200A)</option>
+            <option>EV charger installation</option>
+            <option>Diagnostic — something's wrong</option>
+            <option>Recessed lighting / smart switches</option>
+            <option>Generator installation</option>
+            <option>Whole-home rewire</option>
+            <option>Commercial / multifamily</option>
+            <option>Something else</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Anything else?</label>
+          <textarea placeholder="Square footage, year built, anything you've already tried, etc."></textarea>
+        </div>
+        <button type="submit" class="form-submit">Request Estimate</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 18px;">
+          <div class="brand-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0e0f12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+          <div>
+            <div style="color: #fff; font-family: 'Space Grotesk'; font-weight: 700; font-size: 17px;">VOLTLINE ELECTRIC</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 10px; letter-spacing: 0.16em; color: var(--muted);">EST. 2011 · CO LIC #ME-7740</div>
+          </div>
+        </div>
+        <p style="font-size: 14px; line-height: 1.6; color: var(--muted);">Master electricians serving Denver and the metro. NEC 2023 certified. Lifetime workmanship warranty.</p>
+      </div>
+      <div>
+        <h4>Services</h4>
+        <a href="#">Panel upgrades</a>
+        <a href="#">EV chargers</a>
+        <a href="#">Diagnostics</a>
+        <a href="#">Generators</a>
+        <a href="#">Whole-home rewire</a>
+      </div>
+      <div>
+        <h4>Service Area</h4>
+        <a href="#">Denver</a>
+        <a href="#">Lakewood</a>
+        <a href="#">Aurora</a>
+        <a href="#">Boulder</a>
+        <a href="#">Castle Rock</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a href="tel:7205550218" style="color: var(--volt); font-weight: 700;">(720) 555-0218</a>
+        <a href="#">dispatch@voltline.co</a>
+        <a href="#">3414 Brighton Blvd, Denver</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 VOLTLINE ELECTRIC LLC · CO ME-7740 · NEC 2023</div>
+      <div>BUILT IN DENVER</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

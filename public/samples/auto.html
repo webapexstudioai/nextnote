@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>APEX MOTOR WORKS — Independent European Service · Austin, TX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0b0b0d;
+    --panel: #131318;
+    --panel-2: #1a1a21;
+    --line: #232329;
+    --line-soft: #1c1c22;
+    --ink: #f4f4f5;
+    --ink-dim: #a1a1aa;
+    --ink-mute: #71717a;
+    --accent: #ef4444;
+    --accent-deep: #b91c1c;
+    --accent-glow: rgba(239,68,68,0.35);
+    --signal: #84cc16;
+    --signal-glow: rgba(132,204,22,0.5);
+    --warning: #f59e0b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at top, rgba(239,68,68,0.06), transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(30,64,175,0.04), transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+    opacity: 0.025; mix-blend-mode: overlay;
+    pointer-events: none; z-index: 1;
+  }
+  main, nav, footer, section { position: relative; z-index: 2; }
+
+  h1, h2, h3, h4 { font-family: 'Anton', sans-serif; letter-spacing: 0.005em; line-height: 0.95; text-transform: uppercase; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* ---------- TOP BAR ---------- */
+  .top-bar {
+    background: #050507;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    padding: 0.65rem 2rem;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .top-bar .live { display: inline-flex; align-items: center; gap: 0.55rem; color: var(--ink); }
+  .top-bar .live::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--signal); box-shadow: 0 0 8px var(--signal-glow);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .top-bar-right { display: flex; gap: 2rem; }
+  .top-bar a { color: var(--ink-dim); text-decoration: none; transition: color 0.2s; }
+  .top-bar a:hover { color: var(--accent); }
+
+  /* ---------- NAV ---------- */
+  nav {
+    background: rgba(11,11,13,0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+    padding: 1.1rem 2rem;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { display: flex; align-items: center; gap: 0.85rem; text-decoration: none; color: var(--ink); }
+  .nav-logo svg { width: 44px; height: 44px; }
+  .nav-logo .lockup { display: flex; flex-direction: column; line-height: 1; }
+  .nav-logo .name { font-family: 'Anton', sans-serif; font-size: 1.15rem; letter-spacing: 0.04em; }
+  .nav-logo .tag { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 0.2em; color: var(--ink-mute); margin-top: 4px; }
+  .nav-links { display: flex; gap: 2.4rem; list-style: none; font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.16em; }
+  .nav-links a { color: var(--ink-dim); text-decoration: none; transition: color 0.2s; position: relative; padding: 0.4rem 0; }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links a::after {
+    content: ''; position: absolute; left: 0; bottom: 0; width: 0; height: 1px;
+    background: var(--accent); transition: width 0.25s ease;
+  }
+  .nav-links a:hover::after { width: 100%; }
+  .nav-cta {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--accent); color: #fff;
+    padding: 0.85rem 1.4rem;
+    font-family: 'Anton', sans-serif; font-size: 0.85rem;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    text-decoration: none;
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 0 1px transparent, 0 4px 24px var(--accent-glow);
+    transition: all 0.2s ease;
+  }
+  .nav-cta:hover { background: var(--accent-deep); transform: translateY(-1px); box-shadow: 0 8px 32px var(--accent-glow); }
+  .nav-cta .arrow { font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    padding: 4.5rem 2rem 5rem;
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+  .hero-grid {
+    display: grid; grid-template-columns: 1.15fr 1fr;
+    gap: 3rem; max-width: 1500px; margin: 0 auto;
+    align-items: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-dim);
+    margin-bottom: 1.5rem;
+  }
+  .hero-eyebrow .bar { display: inline-block; width: 28px; height: 1px; background: var(--accent); }
+  .hero h1 {
+    font-size: clamp(3.5rem, 8.5vw, 7.5rem);
+    margin-bottom: 1.8rem;
+  }
+  .hero h1 .red { color: var(--accent); }
+  .hero h1 .stroke { -webkit-text-stroke: 1.5px var(--ink); color: transparent; }
+  .hero-lead {
+    font-size: 1.1rem; line-height: 1.6; color: var(--ink-dim);
+    max-width: 540px; margin-bottom: 2.5rem;
+  }
+  .hero-actions { display: flex; gap: 1rem; margin-bottom: 3.5rem; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.55rem;
+    padding: 1.05rem 1.6rem;
+    font-family: 'Anton', sans-serif; font-size: 0.92rem;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 6px 24px var(--accent-glow);
+  }
+  .btn-primary:hover { background: var(--accent-deep); transform: translateY(-2px); box-shadow: 0 10px 36px var(--accent-glow); }
+  .btn-ghost {
+    background: transparent; color: var(--ink);
+    border-color: var(--line);
+  }
+  .btn-ghost:hover { border-color: var(--ink); background: rgba(255,255,255,0.03); }
+  .btn .arrow { font-family: 'JetBrains Mono', monospace; }
+
+  .spec-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1.4rem; padding-top: 2rem;
+    border-top: 1px solid var(--line);
+  }
+  .spec {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .spec .lbl { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-mute); margin-bottom: 0.35rem; }
+  .spec .val { font-family: 'Anton', sans-serif; font-size: 1.65rem; color: var(--ink); letter-spacing: 0.02em; }
+  .spec .val .unit { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--ink-dim); margin-left: 0.25rem; }
+
+  .hero-visual {
+    position: relative;
+    aspect-ratio: 4/5;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .hero-visual img { width: 100%; height: 100%; object-fit: cover; filter: contrast(1.05) saturate(1.05); }
+  .hero-visual::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(11,11,13,0.85) 100%);
+  }
+  .hero-tags {
+    position: absolute; left: 1.2rem; bottom: 1.2rem; right: 1.2rem;
+    z-index: 2;
+    display: flex; flex-direction: column; gap: 0.55rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.18em;
+  }
+  .hero-tags .row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; color: var(--ink-dim); }
+  .hero-tags .row strong { color: var(--ink); font-weight: 500; }
+  .hero-corner {
+    position: absolute; top: 1rem; right: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.22em;
+    color: var(--ink); padding: 0.4rem 0.7rem;
+    background: rgba(11,11,13,0.7); backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+    z-index: 2;
+  }
+
+  /* ---------- TICKER ---------- */
+  .ticker {
+    background: #050507;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+    padding: 1rem 0;
+    font-family: 'Anton', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 1.4rem;
+    color: var(--ink);
+  }
+  .ticker-track {
+    display: flex; gap: 3rem;
+    animation: scroll 40s linear infinite;
+    width: max-content;
+  }
+  .ticker-track span { display: flex; align-items: center; gap: 3rem; }
+  .ticker-track .dot { color: var(--accent); }
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* ---------- BAY STATUS (signature section) ---------- */
+  .bay-status {
+    padding: 6rem 2rem 5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .bay-inner { max-width: 1500px; margin: 0 auto; }
+  .section-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 2rem; margin-bottom: 3rem; flex-wrap: wrap;
+  }
+  .section-eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.22em;
+    color: var(--ink-mute); margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .section-eyebrow .num { color: var(--accent); }
+  .section-head h2 { font-size: clamp(2.4rem, 4.5vw, 4rem); max-width: 740px; }
+  .section-head h2 .red { color: var(--accent); }
+  .section-head .head-meta {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-dim);
+    text-align: right;
+  }
+  .section-head .head-meta strong { color: var(--ink); display: block; font-family: 'Anton', sans-serif; font-size: 1.4rem; letter-spacing: 0.04em; margin-top: 0.3rem; }
+
+  .bay-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
+  .bay {
+    background: var(--panel); border: 1px solid var(--line);
+    padding: 1.5rem 1.4rem; position: relative; overflow: hidden;
+    transition: all 0.25s ease;
+  }
+  .bay:hover { border-color: var(--ink-mute); transform: translateY(-2px); }
+  .bay::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--ink-mute);
+  }
+  .bay.in-service::before { background: var(--accent); }
+  .bay.available::before { background: var(--signal); box-shadow: 0 0 10px var(--signal-glow); }
+  .bay.queued::before { background: var(--warning); }
+  .bay-num {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+    text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-mute);
+    margin-bottom: 0.6rem;
+  }
+  .bay-state {
+    font-family: 'Anton', sans-serif; font-size: 0.95rem;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 1.4rem;
+  }
+  .bay.in-service .bay-state { color: var(--accent); }
+  .bay.available .bay-state { color: var(--signal); }
+  .bay.queued .bay-state { color: var(--warning); }
+  .bay h4 { font-family: 'Anton', sans-serif; font-size: 1.55rem; line-height: 1.05; margin-bottom: 0.6rem; }
+  .bay-meta {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+    color: var(--ink-dim); display: flex; flex-direction: column; gap: 0.35rem;
+  }
+  .bay-meta .row { display: flex; justify-content: space-between; }
+  .bay-meta .row span:first-child { color: var(--ink-mute); }
+  .bay-meta .row strong { color: var(--ink); font-weight: 500; }
+
+  /* ---------- SERVICES ---------- */
+  .services { padding: 6rem 2rem; border-bottom: 1px solid var(--line); }
+  .services-inner { max-width: 1500px; margin: 0 auto; }
+  .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+  .service {
+    background: var(--panel); border: 1px solid var(--line);
+    padding: 0; position: relative; overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex; flex-direction: column;
+  }
+  .service:hover { border-color: var(--accent); box-shadow: 0 12px 40px rgba(239,68,68,0.12); }
+  .service-img {
+    position: relative; aspect-ratio: 16/10;
+    background: var(--panel-2); overflow: hidden;
+  }
+  .service-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+  .service:hover .service-img img { transform: scale(1.04); }
+  .service-img::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(11,11,13,0.85) 100%);
+  }
+  .service-code {
+    position: absolute; top: 0.9rem; left: 0.9rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+    text-transform: uppercase; letter-spacing: 0.22em;
+    color: var(--ink); background: rgba(11,11,13,0.75);
+    backdrop-filter: blur(6px); padding: 0.35rem 0.6rem;
+    border: 1px solid var(--line); z-index: 2;
+  }
+  .service-time {
+    position: absolute; bottom: 0.9rem; right: 0.9rem;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    color: var(--ink); z-index: 2;
+    display: flex; align-items: center; gap: 0.35rem;
+  }
+  .service-time::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--signal); box-shadow: 0 0 6px var(--signal-glow); }
+  .service-body { padding: 1.5rem 1.4rem 1.4rem; flex: 1; display: flex; flex-direction: column; }
+  .service h3 { font-family: 'Anton', sans-serif; font-size: 1.6rem; line-height: 1.05; margin-bottom: 0.7rem; }
+  .service p { color: var(--ink-dim); font-size: 0.92rem; line-height: 1.55; flex: 1; margin-bottom: 1.2rem; }
+  .service-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 1rem; border-top: 1px solid var(--line-soft);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+  }
+  .service-foot .price { color: var(--ink); font-family: 'Anton', sans-serif; font-size: 1.2rem; letter-spacing: 0.04em; }
+  .service-foot .price .from { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--ink-mute); margin-right: 0.3rem; text-transform: uppercase; letter-spacing: 0.18em; }
+  .service-foot .arrow { color: var(--accent); font-size: 1rem; transition: transform 0.2s ease; }
+  .service:hover .service-foot .arrow { transform: translateX(4px); }
+
+  /* ---------- TRUST BAR ---------- */
+  .trust {
+    background: #050507; padding: 3rem 2rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .trust-inner { max-width: 1500px; margin: 0 auto; }
+  .trust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; }
+  .trust-cell {
+    text-align: center; padding: 0 1rem;
+    border-right: 1px solid var(--line);
+  }
+  .trust-cell:last-child { border-right: none; }
+  .trust-cell .num { font-family: 'Anton', sans-serif; font-size: 3rem; color: var(--ink); letter-spacing: 0.02em; line-height: 1; }
+  .trust-cell .num .accent { color: var(--accent); }
+  .trust-cell .lbl { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-dim); margin-top: 0.6rem; }
+
+  /* ---------- PROCESS ---------- */
+  .process { padding: 6rem 2rem; border-bottom: 1px solid var(--line); }
+  .process-inner { max-width: 1500px; margin: 0 auto; }
+  .process-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem;
+    position: relative;
+  }
+  .process-grid::before {
+    content: ''; position: absolute; top: 28px; left: 5%; right: 5%; height: 1px;
+    background: linear-gradient(90deg, var(--line) 0%, var(--accent) 50%, var(--line) 100%);
+  }
+  .process-step { position: relative; }
+  .process-num {
+    width: 56px; height: 56px;
+    background: var(--bg); border: 1px solid var(--accent);
+    color: var(--accent); font-family: 'Anton', sans-serif;
+    font-size: 1.3rem; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.2rem; position: relative; z-index: 2;
+    box-shadow: 0 0 0 4px var(--bg);
+  }
+  .process-step h4 { font-family: 'Anton', sans-serif; font-size: 1.2rem; margin-bottom: 0.5rem; line-height: 1.1; }
+  .process-step p { font-size: 0.88rem; color: var(--ink-dim); line-height: 1.55; margin-bottom: 0.7rem; }
+  .process-step .duration {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+    text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-mute);
+  }
+
+  /* ---------- TESTIMONIAL ---------- */
+  .testimonials { padding: 6rem 2rem; border-bottom: 1px solid var(--line); }
+  .test-inner { max-width: 1500px; margin: 0 auto; }
+  .test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+  .t-card {
+    background: var(--panel); border: 1px solid var(--line);
+    padding: 2rem 1.7rem; position: relative;
+    transition: border-color 0.2s ease;
+  }
+  .t-card:hover { border-color: var(--ink-mute); }
+  .t-stars {
+    color: var(--accent); font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.15em; margin-bottom: 1.2rem; font-size: 1rem;
+  }
+  .t-quote { font-size: 1rem; line-height: 1.6; color: var(--ink); margin-bottom: 1.5rem; font-weight: 400; }
+  .t-author { display: flex; align-items: center; gap: 0.85rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+  .t-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    color: #fff; font-family: 'Anton', sans-serif; font-size: 0.95rem;
+    display: flex; align-items: center; justify-content: center;
+    letter-spacing: 0.05em;
+  }
+  .t-name { font-family: 'Anton', sans-serif; font-size: 1rem; letter-spacing: 0.04em; }
+  .t-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--ink-mute); margin-top: 0.25rem; }
+
+  /* ---------- LOCATION + CTA ---------- */
+  .contact-section { padding: 6rem 2rem; border-bottom: 1px solid var(--line); }
+  .contact-inner { max-width: 1500px; margin: 0 auto; }
+  .contact-card {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    background: var(--panel); border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .contact-left { padding: 3rem 2.6rem; }
+  .contact-left h2 { font-size: clamp(2rem, 3.6vw, 3rem); margin-bottom: 1.4rem; }
+  .contact-left h2 .red { color: var(--accent); }
+  .contact-left .lead { color: var(--ink-dim); font-size: 1rem; line-height: 1.65; margin-bottom: 2.5rem; max-width: 480px; }
+  .contact-rows { display: flex; flex-direction: column; gap: 1.2rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+  .contact-row { display: flex; gap: 1.1rem; align-items: flex-start; }
+  .contact-icon {
+    width: 42px; height: 42px;
+    background: var(--bg); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); flex-shrink: 0;
+  }
+  .contact-icon svg { width: 18px; height: 18px; }
+  .contact-row .lbl { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-mute); margin-bottom: 0.25rem; }
+  .contact-row .val { font-family: 'Anton', sans-serif; font-size: 1.05rem; letter-spacing: 0.04em; color: var(--ink); }
+  .contact-row a.val { text-decoration: none; transition: color 0.2s; }
+  .contact-row a.val:hover { color: var(--accent); }
+
+  .quote-form {
+    background: #050507; padding: 3rem 2.6rem;
+    border-left: 1px solid var(--line);
+  }
+  .quote-form h3 { font-family: 'Anton', sans-serif; font-size: 1.6rem; margin-bottom: 0.4rem; }
+  .form-eyebrow {
+    display: block; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.22em;
+    color: var(--ink-mute); margin-bottom: 1.8rem;
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; margin-bottom: 0.9rem; }
+  .form-group { display: flex; flex-direction: column; margin-bottom: 0.9rem; }
+  .form-group label {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+    text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-mute);
+    margin-bottom: 0.5rem;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    background: var(--bg); border: 1px solid var(--line);
+    padding: 0.85rem 0.95rem; color: var(--ink);
+    font-family: 'Inter', sans-serif; font-size: 0.92rem;
+    transition: border-color 0.2s ease;
+    width: 100%;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
+  .form-group textarea { resize: vertical; min-height: 90px; }
+  .form-submit {
+    width: 100%;
+    background: var(--accent); color: #fff;
+    border: 1px solid var(--accent);
+    padding: 1.1rem 1.4rem;
+    font-family: 'Anton', sans-serif; font-size: 0.95rem;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    cursor: pointer; transition: all 0.2s ease;
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.55rem;
+    box-shadow: 0 6px 24px var(--accent-glow);
+  }
+  .form-submit:hover { background: var(--accent-deep); box-shadow: 0 10px 36px var(--accent-glow); }
+
+  /* ---------- FOOTER ---------- */
+  footer {
+    background: #050507; padding: 3rem 2rem 2rem;
+    border-top: 1px solid var(--line);
+  }
+  .footer-inner {
+    max-width: 1500px; margin: 0 auto;
+    display: flex; justify-content: space-between; gap: 2rem; flex-wrap: wrap;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+    color: var(--ink-mute); text-transform: uppercase; letter-spacing: 0.18em;
+  }
+  .footer-inner strong { color: var(--ink); font-weight: 500; }
+  .footer-inner .accent { color: var(--accent); }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 1100px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-visual { aspect-ratio: 16/10; }
+    .bay-grid { grid-template-columns: repeat(2, 1fr); }
+    .services-grid { grid-template-columns: repeat(2, 1fr); }
+    .process-grid { grid-template-columns: repeat(2, 1fr); }
+    .process-grid::before { display: none; }
+    .test-grid { grid-template-columns: 1fr; }
+    .trust-grid { grid-template-columns: repeat(2, 1fr); }
+    .trust-cell:nth-child(2) { border-right: none; }
+    .contact-card { grid-template-columns: 1fr; }
+    .quote-form { border-left: none; border-top: 1px solid var(--line); }
+  }
+  @media (max-width: 700px) {
+    .nav-links { display: none; }
+    .top-bar { flex-direction: column; gap: 0.4rem; }
+    .top-bar-right { gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .spec-strip { grid-template-columns: repeat(2, 1fr); }
+    .bay-grid, .services-grid { grid-template-columns: 1fr; }
+    .trust-grid { grid-template-columns: 1fr; }
+    .trust-cell { border-right: none; border-bottom: 1px solid var(--line); padding-bottom: 1.4rem; }
+    .trust-cell:last-child { border-bottom: none; }
+    .process-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .section-head { flex-direction: column; align-items: flex-start; }
+    .section-head .head-meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="brand-mark" viewBox="0 0 48 48">
+      <circle cx="24" cy="24" r="20" fill="none" stroke="#ef4444" stroke-width="2.5"/>
+      <circle cx="24" cy="24" r="6" fill="none" stroke="#ef4444" stroke-width="2.5"/>
+      <line x1="24" y1="4" x2="24" y2="12" stroke="#ef4444" stroke-width="2.5"/>
+      <line x1="24" y1="36" x2="24" y2="44" stroke="#ef4444" stroke-width="2.5"/>
+      <line x1="4" y1="24" x2="12" y2="24" stroke="#ef4444" stroke-width="2.5"/>
+      <line x1="36" y1="24" x2="44" y2="24" stroke="#ef4444" stroke-width="2.5"/>
+      <line x1="9.86" y1="9.86" x2="15.51" y2="15.51" stroke="#ef4444" stroke-width="2.5"/>
+      <line x1="32.49" y1="32.49" x2="38.14" y2="38.14" stroke="#ef4444" stroke-width="2.5"/>
+      <line x1="9.86" y1="38.14" x2="15.51" y2="32.49" stroke="#ef4444" stroke-width="2.5"/>
+      <line x1="32.49" y1="15.51" x2="38.14" y2="9.86" stroke="#ef4444" stroke-width="2.5"/>
+    </symbol>
+    <symbol id="ico-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="ico-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="ico-pin" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9" r="2.5" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<div class="top-bar">
+  <span class="live">BAY 02 · LIVE · NOW SERVICING — '21 PORSCHE 911 · BRAKES + ROTORS</span>
+  <div class="top-bar-right">
+    <a href="tel:5125550199">+1 (512) 555-0199</a>
+    <a href="mailto:service@apexmotorworks.com">SERVICE@APEXMOTORWORKS.COM</a>
+    <span>MON–FRI 7A–6P · SAT 8A–2P</span>
+  </div>
+</div>
+
+<nav>
+  <a class="nav-logo" href="#">
+    <svg><use href="#brand-mark"/></svg>
+    <div class="lockup">
+      <span class="name">APEX MOTOR WORKS</span>
+      <span class="tag">EST. 2009 · AUSTIN, TX</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#bays">Live Bays</a></li>
+    <li><a href="#process">How It Works</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a class="nav-cta" href="#contact">Schedule Service <span class="arrow">→</span></a>
+</nav>
+
+<section class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="hero-eyebrow"><span class="bar"></span>INDEPENDENT EUROPEAN SERVICE · DEALER-LEVEL DIAGNOSTICS</div>
+      <h1>
+        FACTORY <span class="red">PRECISION.</span><br />
+        WITHOUT THE <span class="stroke">DEALER</span><br />
+        MARKUP.
+      </h1>
+      <p class="hero-lead">ASE Master Technicians servicing BMW, Audi, Porsche, Mercedes-Benz &amp; Volkswagen since 2009. OEM and OE-equivalent parts only. Every job photographed, documented, and warrantied for 36 months / 36k miles.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#contact">Book Diagnostic <span class="arrow">→</span></a>
+        <a class="btn btn-ghost" href="tel:5125550199">Call Service Bay</a>
+      </div>
+      <div class="spec-strip">
+        <div class="spec">
+          <div class="lbl">Avg. Turnaround</div>
+          <div class="val">36<span class="unit">HRS</span></div>
+        </div>
+        <div class="spec">
+          <div class="lbl">Warranty</div>
+          <div class="val">36<span class="unit">MO/36K</span></div>
+        </div>
+        <div class="spec">
+          <div class="lbl">ASE Masters</div>
+          <div class="val">04</div>
+        </div>
+        <div class="spec">
+          <div class="lbl">Vehicles / yr</div>
+          <div class="val">1.4<span class="unit">K+</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <span class="hero-corner">BAY 02 · 14:32</span>
+      <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1200&q=80" alt="Mechanic working under a sports car on a lift" />
+      <div class="hero-tags">
+        <div class="row"><span>VEHICLE</span><strong>PORSCHE 911 GT3 · 992</strong></div>
+        <div class="row"><span>SERVICE</span><strong>BRAKE PAD + ROTOR REPLACEMENT</strong></div>
+        <div class="row"><span>TECH</span><strong>M. RIVERA · ASE MASTER</strong></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="ticker">
+  <div class="ticker-track">
+    <span>BMW <span class="dot">·</span> AUDI <span class="dot">·</span> PORSCHE <span class="dot">·</span> MERCEDES-BENZ <span class="dot">·</span> VOLKSWAGEN <span class="dot">·</span> MINI <span class="dot">·</span> JAGUAR <span class="dot">·</span> LAND ROVER <span class="dot">·</span> </span>
+    <span>BMW <span class="dot">·</span> AUDI <span class="dot">·</span> PORSCHE <span class="dot">·</span> MERCEDES-BENZ <span class="dot">·</span> VOLKSWAGEN <span class="dot">·</span> MINI <span class="dot">·</span> JAGUAR <span class="dot">·</span> LAND ROVER <span class="dot">·</span> </span>
+  </div>
+</div>
+
+<section class="bay-status" id="bays">
+  <div class="bay-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow"><span class="num">01</span> LIVE FROM THE FLOOR</div>
+        <h2>FOUR BAYS. <span class="red">ZERO</span> WAITING ROOMS.</h2>
+      </div>
+      <div class="head-meta">
+        UPDATED · 14:32 CST
+        <strong>3 OF 4 OCCUPIED</strong>
+      </div>
+    </div>
+    <div class="bay-grid">
+      <div class="bay in-service">
+        <div class="bay-num">BAY 01</div>
+        <div class="bay-state">IN SERVICE</div>
+        <h4>'19 BMW M3 COMPETITION</h4>
+        <div class="bay-meta">
+          <div class="row"><span>SERVICE</span><strong>OIL + INSPECTION I</strong></div>
+          <div class="row"><span>TECH</span><strong>M. RIVERA</strong></div>
+          <div class="row"><span>ETA</span><strong>~45 MIN</strong></div>
+        </div>
+      </div>
+      <div class="bay in-service">
+        <div class="bay-num">BAY 02</div>
+        <div class="bay-state">IN SERVICE</div>
+        <h4>'21 PORSCHE 911 GT3</h4>
+        <div class="bay-meta">
+          <div class="row"><span>SERVICE</span><strong>BRAKES + ROTORS</strong></div>
+          <div class="row"><span>TECH</span><strong>D. NGUYEN</strong></div>
+          <div class="row"><span>ETA</span><strong>~2 HRS</strong></div>
+        </div>
+      </div>
+      <div class="bay queued">
+        <div class="bay-num">BAY 03</div>
+        <div class="bay-state">DIAGNOSTIC</div>
+        <h4>'17 AUDI S4</h4>
+        <div class="bay-meta">
+          <div class="row"><span>SERVICE</span><strong>CHECK ENGINE — DTC SCAN</strong></div>
+          <div class="row"><span>TECH</span><strong>S. PATEL</strong></div>
+          <div class="row"><span>ETA</span><strong>~30 MIN</strong></div>
+        </div>
+      </div>
+      <div class="bay available">
+        <div class="bay-num">BAY 04</div>
+        <div class="bay-state">AVAILABLE</div>
+        <h4>NEXT SLOT OPEN</h4>
+        <div class="bay-meta">
+          <div class="row"><span>NEXT</span><strong>SAME-DAY DROP-OFF</strong></div>
+          <div class="row"><span>HOLD</span><strong>30 MIN</strong></div>
+          <div class="row"><span>BOOK</span><strong>(512) 555-0199</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="services" id="services">
+  <div class="services-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow"><span class="num">02</span> SERVICE MENU</div>
+        <h2>SIX SERVICES. <span class="red">FACTORY-SPEC.</span> ALL-INCLUSIVE.</h2>
+      </div>
+      <div class="head-meta">
+        FLAT-RATE PRICING
+        <strong>NO HOURLY SURPRISES</strong>
+      </div>
+    </div>
+    <div class="services-grid">
+      <div class="service">
+        <div class="service-img">
+          <span class="service-code">SVC · 001</span>
+          <img src="https://images.unsplash.com/photo-1632823471565-1ecdf5c6da77?auto=format&fit=crop&w=800&q=80" alt="Oil change in progress on a luxury vehicle" />
+          <span class="service-time">~45 MIN</span>
+        </div>
+        <div class="service-body">
+          <h3>Oil + Inspection I</h3>
+          <p>Full-synthetic OEM oil, OEM filter, and a 27-point European-spec inspection. Reset of service intervals via OEM diagnostic scan tool.</p>
+          <div class="service-foot">
+            <div class="price"><span class="from">FROM</span>$149</div>
+            <div class="arrow">→</div>
+          </div>
+        </div>
+      </div>
+      <div class="service">
+        <div class="service-img">
+          <span class="service-code">SVC · 002</span>
+          <img src="https://images.unsplash.com/photo-1486496146582-9ffcd0b2b2b7?auto=format&fit=crop&w=800&q=80" alt="Brake pads and rotors on workshop bench" />
+          <span class="service-time">~2 HRS</span>
+        </div>
+        <div class="service-body">
+          <h3>Brakes + Rotors</h3>
+          <p>OE-supplier pads (Pagid, Brembo, Akebono) and rotors with hardware kits. Brake fluid flush, rotor torque, and bedding-in road test included.</p>
+          <div class="service-foot">
+            <div class="price"><span class="from">FROM</span>$489</div>
+            <div class="arrow">→</div>
+          </div>
+        </div>
+      </div>
+      <div class="service">
+        <div class="service-img">
+          <span class="service-code">SVC · 003</span>
+          <img src="https://images.unsplash.com/photo-1635770310050-d97e9bbed9ee?auto=format&fit=crop&w=800&q=80" alt="Mechanic running engine diagnostic on laptop" />
+          <span class="service-time">~1 HR</span>
+        </div>
+        <div class="service-body">
+          <h3>OEM Diagnostic Scan</h3>
+          <p>Dealer-level diagnostic via OEM tooling — ISTA, ODIS, PIWIS, Star/XENTRY. Module-level fault read, root-cause report, photo-documented quote.</p>
+          <div class="service-foot">
+            <div class="price"><span class="from">FROM</span>$129</div>
+            <div class="arrow">→</div>
+          </div>
+        </div>
+      </div>
+      <div class="service">
+        <div class="service-img">
+          <span class="service-code">SVC · 004</span>
+          <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=800&q=80" alt="High-performance tire on alignment rack" />
+          <span class="service-time">~90 MIN</span>
+        </div>
+        <div class="service-body">
+          <h3>Tires + Alignment</h3>
+          <p>4-wheel Hunter alignment to OEM spec. Mount &amp; balance with road-force matching for vehicles with ≥18&quot; wheels. TPMS reset included.</p>
+          <div class="service-foot">
+            <div class="price"><span class="from">FROM</span>$199</div>
+            <div class="arrow">→</div>
+          </div>
+        </div>
+      </div>
+      <div class="service">
+        <div class="service-img">
+          <span class="service-code">SVC · 005</span>
+          <img src="https://images.unsplash.com/photo-1626668893632-6f3a4466d22f?auto=format&fit=crop&w=800&q=80" alt="Engine bay during major service" />
+          <span class="service-time">DAY 1–2</span>
+        </div>
+        <div class="service-body">
+          <h3>Major Service / 60K</h3>
+          <p>Spark plugs, fuel filter, coolant, transmission service per OEM interval, plus diagnostic scan and full-vehicle review. Complimentary loaner available.</p>
+          <div class="service-foot">
+            <div class="price"><span class="from">FROM</span>$1,189</div>
+            <div class="arrow">→</div>
+          </div>
+        </div>
+      </div>
+      <div class="service">
+        <div class="service-img">
+          <span class="service-code">SVC · 006</span>
+          <img src="https://images.unsplash.com/photo-1605152276897-4f618f831968?auto=format&fit=crop&w=800&q=80" alt="Pre-purchase inspection underbody check" />
+          <span class="service-time">~3 HRS</span>
+        </div>
+        <div class="service-body">
+          <h3>Pre-Purchase Inspection</h3>
+          <p>110-point European-spec PPI for buyers and dealers. Lift inspection, OBD scan, road test, and photo-and-video report delivered same-day.</p>
+          <div class="service-foot">
+            <div class="price"><span class="from">FROM</span>$249</div>
+            <div class="arrow">→</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="trust">
+  <div class="trust-inner">
+    <div class="trust-grid">
+      <div class="trust-cell">
+        <div class="num">14<span class="accent">+</span></div>
+        <div class="lbl">YEARS · INDEPENDENT</div>
+      </div>
+      <div class="trust-cell">
+        <div class="num">12,400<span class="accent">+</span></div>
+        <div class="lbl">VEHICLES SERVICED</div>
+      </div>
+      <div class="trust-cell">
+        <div class="num">4.9<span class="accent">★</span></div>
+        <div class="lbl">670 GOOGLE REVIEWS</div>
+      </div>
+      <div class="trust-cell">
+        <div class="num">36<span class="accent">/36K</span></div>
+        <div class="lbl">MO · MILE WARRANTY</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="process" id="process">
+  <div class="process-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow"><span class="num">03</span> HOW IT WORKS</div>
+        <h2>FROM <span class="red">DROP-OFF</span> TO PICKUP, IN FIVE STEPS.</h2>
+      </div>
+    </div>
+    <div class="process-grid">
+      <div class="process-step">
+        <div class="process-num">01</div>
+        <h4>Schedule Online</h4>
+        <p>Book a diagnostic, oil service, or repair slot in under 60 seconds. Same-week openings, every week.</p>
+        <span class="duration">~ 60 SEC</span>
+      </div>
+      <div class="process-step">
+        <div class="process-num">02</div>
+        <h4>Drop-Off + Scan</h4>
+        <p>Hand off the keys (or use the after-hours drop box). We run an OEM diagnostic scan and walk-around before any work begins.</p>
+        <span class="duration">~ 30 MIN</span>
+      </div>
+      <div class="process-step">
+        <div class="process-num">03</div>
+        <h4>Documented Quote</h4>
+        <p>Photo-and-video report sent to your phone with a flat-rate quote — no hourly surprises. Approve from your couch.</p>
+        <span class="duration">SAME DAY</span>
+      </div>
+      <div class="process-step">
+        <div class="process-num">04</div>
+        <h4>Service + QC</h4>
+        <p>OEM-spec parts, factory torque, every job double-checked by a second tech. Test drive on every vehicle.</p>
+        <span class="duration">~ 1–2 DAYS</span>
+      </div>
+      <div class="process-step">
+        <div class="process-num">05</div>
+        <h4>Pickup + Warranty</h4>
+        <p>Vehicle washed, photo-documented, and warrantied for 36 months / 36,000 miles. Drive home in confidence.</p>
+        <span class="duration">36 MO / 36K</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="testimonials">
+  <div class="test-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow"><span class="num">04</span> THE VERDICT</div>
+        <h2>4.9 STARS. <span class="red">670</span> GOOGLE REVIEWS.</h2>
+      </div>
+      <div class="head-meta">
+        VERIFIED CUSTOMERS
+        <strong>2024 — 2026</strong>
+      </div>
+    </div>
+    <div class="test-grid">
+      <div class="t-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">"Took my 911 in for brakes after the dealer quoted me $2,400. Apex did it for $980 with the same Pagid pads + new rotors and a full brake fluid flush. Photo report on my phone before lunch. Took my keys back the next morning."</p>
+        <div class="t-author">
+          <div class="t-avatar">JR</div>
+          <div>
+            <div class="t-name">JAMES R.</div>
+            <div class="t-meta">PORSCHE 911 · WESTLAKE</div>
+          </div>
+        </div>
+      </div>
+      <div class="t-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">"Honestly the only shop in Austin I trust with my M3. Mark walks you through the diagnostic on a tablet, shows you the codes, and tells you what's actually wrong vs. what can wait. No upselling. Three years and counting."</p>
+        <div class="t-author">
+          <div class="t-avatar">SP</div>
+          <div>
+            <div class="t-name">SARAH P.</div>
+            <div class="t-meta">BMW M3 · CIRCLE C</div>
+          </div>
+        </div>
+      </div>
+      <div class="t-card">
+        <div class="t-stars">★★★★★</div>
+        <p class="t-quote">"Bought a used S4 sight-unseen out of Dallas. Apex did the PPI same-day, found a leaking rear differential, and sent me a video of it before I wired the deposit. Saved me $4k. They're worth the drive from anywhere in Texas."</p>
+        <div class="t-author">
+          <div class="t-avatar">DT</div>
+          <div>
+            <div class="t-name">DEREK T.</div>
+            <div class="t-meta">AUDI S4 · ROUND ROCK</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="contact-section" id="contact">
+  <div class="contact-inner">
+    <div class="contact-card">
+      <div class="contact-left">
+        <div class="section-eyebrow"><span class="num">05</span> SCHEDULE SERVICE</div>
+        <h2>BOOK A BAY. <span class="red">SAME WEEK.</span></h2>
+        <p class="lead">Tell us what your car is doing — we'll respond within an hour with a diagnostic slot, a flat-rate quote range, and a loaner availability check. Same-day drop-offs welcome.</p>
+        <div class="contact-rows">
+          <div class="contact-row">
+            <div class="contact-icon"><svg><use href="#ico-phone"/></svg></div>
+            <div>
+              <div class="lbl">SERVICE BAY</div>
+              <a class="val" href="tel:5125550199">(512) 555-0199</a>
+            </div>
+          </div>
+          <div class="contact-row">
+            <div class="contact-icon"><svg><use href="#ico-mail"/></svg></div>
+            <div>
+              <div class="lbl">EMAIL</div>
+              <a class="val" href="mailto:service@apexmotorworks.com">service@apexmotorworks.com</a>
+            </div>
+          </div>
+          <div class="contact-row">
+            <div class="contact-icon"><svg><use href="#ico-pin"/></svg></div>
+            <div>
+              <div class="lbl">SHOP</div>
+              <span class="val">2418 INDUSTRIAL OAKS · AUSTIN, TX 78735</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <form class="quote-form" data-nn-form>
+        <h3>REQUEST A QUOTE</h3>
+        <span class="form-eyebrow">AVERAGE RESPONSE · 47 MIN · MON–FRI</span>
+        <div aria-hidden="true" style="position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);border:0;">
+          <label>Website<input type="text" name="company_website" tabindex="-1" autocomplete="off" /></label>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">NAME</label>
+            <input type="text" id="name" name="name" required />
+          </div>
+          <div class="form-group">
+            <label for="phone">PHONE</label>
+            <input type="tel" id="phone" name="phone" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vehicle">VEHICLE</label>
+            <input type="text" id="vehicle" name="vehicle" placeholder="2019 BMW M3" />
+          </div>
+          <div class="form-group">
+            <label for="service-type">SERVICE</label>
+            <select id="service-type" name="service">
+              <option>Oil + Inspection I</option>
+              <option>Brakes + Rotors</option>
+              <option>OEM Diagnostic Scan</option>
+              <option>Tires + Alignment</option>
+              <option>Major Service / 60K</option>
+              <option>Pre-Purchase Inspection</option>
+              <option>Other / Not Sure</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="message">DESCRIBE THE ISSUE</label>
+          <textarea id="message" name="message" rows="3" placeholder="Grinding when braking, check engine light on, etc."></textarea>
+        </div>
+        <button type="submit" class="form-submit">REQUEST QUOTE <span>→</span></button>
+        <p data-nn-form-status style="margin-top:0.7rem;font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--ink-mute);text-align:center;min-height:18px;"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <span><strong>APEX MOTOR WORKS</strong> · <span class="accent">ASE-CERTIFIED</span> · BAR LIC #ARD00284913</span>
+    <span>(512) 555-0199 · SERVICE@APEXMOTORWORKS.COM</span>
+    <span>2418 INDUSTRIAL OAKS · AUSTIN, TX 78735</span>
+  </div>
+</footer>
+
+</body>
+</html>

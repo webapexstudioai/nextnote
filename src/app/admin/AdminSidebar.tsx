@@ -10,6 +10,7 @@ import {
   ArrowUpRight,
   Shield,
   Receipt,
+  Wallet,
 } from "lucide-react";
 
 const NAV = [
@@ -17,6 +18,7 @@ const NAV = [
   { href: "/admin/users", label: "Users", icon: Users, match: "prefix" as const },
   { href: "/admin/support", label: "Support", icon: MessageSquare, match: "prefix" as const },
   { href: "/admin/pricing", label: "Pricing", icon: Receipt, match: "prefix" as const },
+  { href: "/admin/infrastructure", label: "Infrastructure", icon: Wallet, match: "prefix" as const },
   { href: "/admin/audit", label: "Audit log", icon: ScrollText, match: "prefix" as const },
 ];
 

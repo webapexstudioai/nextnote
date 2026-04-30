@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase";
+import { requirePro } from "@/lib/tierGuard";
 
 const MAX_SIZE = 10 * 1024 * 1024;
 const ALLOWED = new Set(["audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/mp4", "audio/m4a", "audio/x-m4a"]);
@@ -11,6 +12,9 @@ export async function POST(req: NextRequest) {
     if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    const gate = await requirePro(session.userId, "Voicemail drops");
+    if (!gate.ok) return gate.response;
 
     const form = await req.formData();
     const file = form.get("audio");

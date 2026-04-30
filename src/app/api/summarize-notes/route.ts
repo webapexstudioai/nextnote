@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
+import { requirePro } from "@/lib/tierGuard";
 import { getUserAIConfig, aiChat } from "@/lib/ai";
 import { getBalance, deductCredits, NOTE_SUMMARIZE_CREDITS } from "@/lib/credits";
 
@@ -9,6 +10,9 @@ export async function POST(req: NextRequest) {
     if (!session.isLoggedIn || !session.userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    const gate = await requirePro(session.userId, "AI meeting summaries");
+    if (!gate.ok) return gate.response;
 
     const { notes, prospectName, service } = await req.json();
     if (!notes) {

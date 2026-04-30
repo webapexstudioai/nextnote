@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Globe, Plus, ExternalLink, Copy, Loader2, Search,
-  Crown, Check, X, ChevronDown, Trash2, Wand2,
+  Crown, Check, X, ChevronDown, Trash2, Wand2, Sparkles,
 } from "lucide-react";
 import { Folder as FolderIcon, FileText, ChevronRight, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -17,7 +17,17 @@ interface GeneratedSite {
   prospect_id: string | null;
   prospect_name: string;
   tier: "standard" | "whitelabel";
+  slug: string | null;
   created_at: string;
+}
+
+const WHITELABEL_HOST = "pitchsite.dev";
+
+function publicSiteUrl(site: GeneratedSite, origin: string): string {
+  if (site.tier === "whitelabel" && site.slug) {
+    return `https://${site.slug}.${WHITELABEL_HOST}`;
+  }
+  return `${origin}/api/websites/${site.id}`;
 }
 
 type Tier = "standard" | "whitelabel";
@@ -48,6 +58,10 @@ export default function WebsitesPage() {
   const [pickerFolderId, setPickerFolderId] = useState<string | null>(null);
   const [pickerFileId, setPickerFileId] = useState<string | null>(null);
   const [prospectSearch, setProspectSearch] = useState("");
+  const [promptMode, setPromptMode] = useState<"auto" | "custom">("auto");
+  const [extraInstructions, setExtraInstructions] = useState("");
+  const [draftingPrompt, setDraftingPrompt] = useState(false);
+  const [promptError, setPromptError] = useState("");
 
   const loadSites = useCallback(async () => {
     try {
@@ -81,13 +95,26 @@ export default function WebsitesPage() {
     setProspectSearch("");
   };
 
+  const ALL_IN_FOLDER = "__all__";
   const pickerFolder = pickerFolderId ? folders.find((f) => f.id === pickerFolderId) : null;
-  const pickerFile = pickerFolder && pickerFileId ? pickerFolder.files.find((f) => f.id === pickerFileId) : null;
-  const pickerProspects = pickerFileId
+  const pickerFile = pickerFolder && pickerFileId && pickerFileId !== ALL_IN_FOLDER
+    ? pickerFolder.files.find((f) => f.id === pickerFileId)
+    : null;
+  const isPickingAllInFolder = pickerFileId === ALL_IN_FOLDER;
+  const pickerProspects = isPickingAllInFolder && pickerFolderId
+    ? prospects.filter((p) => p.folderId === pickerFolderId)
+    : pickerFileId
     ? prospects.filter((p) => p.fileId === pickerFileId)
     : pickerFolderId
     ? prospects.filter((p) => p.folderId === pickerFolderId)
     : [];
+
+  const enterFolder = (folderId: string) => {
+    const f = folders.find((fl) => fl.id === folderId);
+    setPickerFolderId(folderId);
+    if (f && f.files.length === 0) setPickerFileId(ALL_IN_FOLDER);
+    else setPickerFileId(null);
+  };
 
   const resetForm = () => {
     setSelectedProspectId("");
@@ -103,6 +130,40 @@ export default function WebsitesPage() {
     setPickerFolderId(null);
     setPickerFileId(null);
     setProspectSearch("");
+    setPromptMode("auto");
+    setExtraInstructions("");
+    setPromptError("");
+  };
+
+  const draftPrompt = async () => {
+    if (!customName.trim()) {
+      setPromptError("Add a business name first so the AI has something to work with.");
+      return;
+    }
+    setPromptError("");
+    setDraftingPrompt(true);
+    try {
+      const res = await fetch("/api/websites/suggest-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: customName.trim(),
+          service: customService.trim(),
+          address: customAddress.trim(),
+          contactName: customContact.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPromptError(data.error || "Couldn't draft a prompt.");
+        return;
+      }
+      setExtraInstructions(data.prompt || "");
+    } catch {
+      setPromptError("Network error. Try again.");
+    } finally {
+      setDraftingPrompt(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -123,6 +184,7 @@ export default function WebsitesPage() {
           address: customAddress.trim(),
           contactName: customContact.trim(),
           tier: selectedTier,
+          extraInstructions: promptMode === "custom" ? extraInstructions.trim() : "",
         }),
       });
       const data = await res.json();
@@ -164,10 +226,10 @@ export default function WebsitesPage() {
     return () => clearInterval(id);
   }, [generating]);
 
-  const copyUrl = (siteId: string) => {
-    const url = `${window.location.origin}/api/websites/${siteId}`;
+  const copyUrl = (site: GeneratedSite) => {
+    const url = publicSiteUrl(site, window.location.origin);
     navigator.clipboard.writeText(url);
-    setCopied(siteId);
+    setCopied(site.id);
     setTimeout(() => setCopied(null), 2000);
   };
 
@@ -297,7 +359,7 @@ export default function WebsitesPage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <a
-                    href={`/api/websites/${site.id}`}
+                    href={publicSiteUrl(site, typeof window !== "undefined" ? window.location.origin : "")}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -316,6 +378,11 @@ export default function WebsitesPage() {
                       <p className="text-[10px] text-[var(--muted)] mt-0.5">
                         {new Date(site.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </p>
+                      {site.tier === "whitelabel" && site.slug ? (
+                        <p className="text-[10px] text-amber-400/90 mt-1 font-mono truncate" title={`${site.slug}.${WHITELABEL_HOST}`}>
+                          {site.slug}.{WHITELABEL_HOST}
+                        </p>
+                      ) : null}
                     </div>
                     <span className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ${
                       site.tier === "whitelabel"
@@ -335,7 +402,7 @@ export default function WebsitesPage() {
                       <Wand2 className="w-3.5 h-3.5" /> Customize
                     </Link>
                     <a
-                      href={`/api/websites/${site.id}`}
+                      href={publicSiteUrl(site, typeof window !== "undefined" ? window.location.origin : "")}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
@@ -344,7 +411,7 @@ export default function WebsitesPage() {
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                     <button
-                      onClick={() => copyUrl(site.id)}
+                      onClick={() => copyUrl(site)}
                       className="flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
                       title="Copy URL"
                     >
@@ -432,8 +499,15 @@ export default function WebsitesPage() {
                           <>
                             <ChevronRight className="w-3 h-3 text-[var(--muted)]" />
                             <button
-                              onClick={() => { setPickerFileId(null); setProspectSearch(""); }}
-                              className={`hover:text-[var(--accent)] transition-colors truncate max-w-[100px] ${!pickerFileId ? "text-[var(--foreground)] font-medium" : "text-[var(--muted)]"}`}
+                              onClick={() => {
+                                setPickerFileId(pickerFolder.files.length === 0 ? ALL_IN_FOLDER : null);
+                                setProspectSearch("");
+                              }}
+                              className={`hover:text-[var(--accent)] transition-colors truncate max-w-[100px] ${
+                                !pickerFileId || (isPickingAllInFolder && pickerFolder.files.length === 0)
+                                  ? "text-[var(--foreground)] font-medium"
+                                  : "text-[var(--muted)]"
+                              }`}
                             >
                               {pickerFolder.name}
                             </button>
@@ -443,6 +517,12 @@ export default function WebsitesPage() {
                           <>
                             <ChevronRight className="w-3 h-3 text-[var(--muted)]" />
                             <span className="text-[var(--foreground)] font-medium truncate max-w-[100px]">{pickerFile.name}</span>
+                          </>
+                        )}
+                        {isPickingAllInFolder && pickerFolder && pickerFolder.files.length > 0 && (
+                          <>
+                            <ChevronRight className="w-3 h-3 text-[var(--muted)]" />
+                            <span className="text-[var(--foreground)] font-medium truncate max-w-[140px]">All prospects</span>
                           </>
                         )}
                         <button
@@ -462,7 +542,7 @@ export default function WebsitesPage() {
                               return (
                                 <button
                                   key={folder.id}
-                                  onClick={() => setPickerFolderId(folder.id)}
+                                  onClick={() => enterFolder(folder.id)}
                                   className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors text-left"
                                 >
                                   <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${folder.color}15` }}>
@@ -482,36 +562,48 @@ export default function WebsitesPage() {
                           </div>
                         )}
 
-                        {/* Level 2: Files in folder */}
-                        {pickerFolderId && !pickerFileId && pickerFolder && (
+                        {/* Level 2: Files in folder (only when files exist) */}
+                        {pickerFolderId && !pickerFileId && pickerFolder && pickerFolder.files.length > 0 && (
                           <div>
-                            {pickerFolder.files.length > 0 ? (
-                              pickerFolder.files.map((file) => {
-                                const count = prospects.filter((p) => p.fileId === file.id).length;
-                                return (
-                                  <button
-                                    key={file.id}
-                                    onClick={() => setPickerFileId(file.id)}
-                                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors text-left"
-                                  >
-                                    <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                                      <FileText className="w-3.5 h-3.5 text-[var(--muted)]" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium truncate">{file.name}</p>
-                                      <p className="text-[10px] text-[var(--muted)]">{count} prospects · {file.source}</p>
-                                    </div>
-                                    <ChevronRight className="w-4 h-4 text-[var(--muted)] shrink-0" />
-                                  </button>
-                                );
-                              })
-                            ) : (
-                              <p className="px-3 py-6 text-xs text-[var(--muted)] text-center">No files in this folder</p>
-                            )}
+                            {/* Quick "all prospects in folder" entry — handles unfiled prospects too */}
+                            <button
+                              onClick={() => setPickerFileId(ALL_IN_FOLDER)}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors text-left border-b border-[var(--border)]"
+                            >
+                              <div className="w-7 h-7 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+                                <FolderIcon className="w-3.5 h-3.5 text-[var(--accent)]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">All prospects in this folder</p>
+                                <p className="text-[10px] text-[var(--muted)]">
+                                  {prospects.filter((p) => p.folderId === pickerFolderId).length} prospects
+                                </p>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-[var(--muted)] shrink-0" />
+                            </button>
+                            {pickerFolder.files.map((file) => {
+                              const count = prospects.filter((p) => p.fileId === file.id).length;
+                              return (
+                                <button
+                                  key={file.id}
+                                  onClick={() => setPickerFileId(file.id)}
+                                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors text-left"
+                                >
+                                  <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                    <FileText className="w-3.5 h-3.5 text-[var(--muted)]" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{file.name}</p>
+                                    <p className="text-[10px] text-[var(--muted)]">{count} prospects · {file.source}</p>
+                                  </div>
+                                  <ChevronRight className="w-4 h-4 text-[var(--muted)] shrink-0" />
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
 
-                        {/* Level 3: Prospects in file */}
+                        {/* Level 3: Prospects in file or all-in-folder */}
                         {pickerFileId && (
                           <div>
                             <div className="sticky top-0 p-2 bg-[var(--background)] border-b border-[var(--border)]">
@@ -519,7 +611,7 @@ export default function WebsitesPage() {
                                 autoFocus
                                 value={prospectSearch}
                                 onChange={(e) => setProspectSearch(e.target.value)}
-                                placeholder="Search prospects in this file..."
+                                placeholder={isPickingAllInFolder ? "Search prospects in this folder..." : "Search prospects in this file..."}
                                 className="w-full px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs focus:outline-none focus:border-[var(--accent)] placeholder:text-zinc-600"
                               />
                             </div>
@@ -550,7 +642,11 @@ export default function WebsitesPage() {
                               ))
                             ) : (
                               <p className="px-3 py-6 text-xs text-[var(--muted)] text-center">
-                                {prospectSearch ? "No matching prospects" : "No prospects in this file"}
+                                {prospectSearch
+                                  ? "No matching prospects"
+                                  : isPickingAllInFolder
+                                    ? "No prospects in this folder yet"
+                                    : "No prospects in this file"}
                               </p>
                             )}
                           </div>
@@ -587,6 +683,66 @@ export default function WebsitesPage() {
                   <label className="block text-xs font-medium text-[var(--muted)] mb-1.5">Address</label>
                   <input value={customAddress} onChange={(e) => setCustomAddress(e.target.value)} placeholder="Street, City, State" className="w-full px-3 py-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] placeholder:text-zinc-600" />
                 </div>
+              </div>
+
+              {/* Design direction (optional) */}
+              <div>
+                <label className="block text-xs font-medium text-[var(--muted)] mb-2">Design direction</label>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setPromptMode("auto")}
+                    className={`rounded-lg border px-3 py-2 text-left transition-all ${
+                      promptMode === "auto"
+                        ? "border-[var(--accent)]/60 bg-[var(--accent)]/[0.06]"
+                        : "border-[var(--border)] hover:border-[var(--border)]"
+                    }`}
+                  >
+                    <p className="text-xs font-semibold">Auto from details</p>
+                    <p className="text-[10px] text-[var(--muted)] mt-0.5">Let NextNote pick the look</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPromptMode("custom")}
+                    className={`rounded-lg border px-3 py-2 text-left transition-all ${
+                      promptMode === "custom"
+                        ? "border-[var(--accent)]/60 bg-[var(--accent)]/[0.06]"
+                        : "border-[var(--border)] hover:border-[var(--border)]"
+                    }`}
+                  >
+                    <p className="text-xs font-semibold">Custom prompt</p>
+                    <p className="text-[10px] text-[var(--muted)] mt-0.5">Describe the vibe yourself</p>
+                  </button>
+                </div>
+                {promptMode === "custom" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-[11px] text-[var(--muted)]">
+                        Add a few notes on the vibe, palette, or hero imagery you want.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={draftPrompt}
+                        disabled={draftingPrompt}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--accent)]/10 hover:bg-[var(--accent)]/15 text-[var(--accent)] text-[11px] font-medium transition-colors disabled:opacity-50"
+                      >
+                        {draftingPrompt ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> Drafting...</>
+                        ) : (
+                          <><Sparkles className="w-3 h-3" /> AI-suggest</>
+                        )}
+                      </button>
+                    </div>
+                    <textarea
+                      value={extraInstructions}
+                      onChange={(e) => setExtraInstructions(e.target.value)}
+                      placeholder="e.g. warm sandstone palette with deep navy accents, sun-washed exterior hero shot, headline angle around craftsmanship, copy tone confident and unhurried"
+                      rows={5}
+                      className="w-full px-3 py-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] placeholder:text-zinc-600 resize-y"
+                    />
+                    {promptError && <p className="text-[11px] text-rose-400 mt-1">{promptError}</p>}
+                  </div>
+                )}
               </div>
 
               {/* Tier Selection */}

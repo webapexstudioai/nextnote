@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { getOAuth2Client, SCOPES } from "@/lib/google";
+import { getAuthSession } from "@/lib/session";
+import { requirePro } from "@/lib/tierGuard";
 
 const OAUTH_STATE_COOKIE = "nextnote_oauth_state";
 
@@ -13,6 +15,15 @@ interface OAuthStateData {
 }
 
 export async function GET(req: NextRequest) {
+  const session = await getAuthSession();
+  if (!session.isLoggedIn || !session.userId) {
+    return NextResponse.redirect(new URL("/auth/login", req.url));
+  }
+  const gate = await requirePro(session.userId, "Google Calendar sync");
+  if (!gate.ok) {
+    return NextResponse.redirect(new URL("/pricing?upgrade=google", req.url));
+  }
+
   const oauth2Client = getOAuth2Client();
   const rawReturnTo = req.nextUrl.searchParams.get("returnTo") || "/dashboard/appointments?connected=true";
 

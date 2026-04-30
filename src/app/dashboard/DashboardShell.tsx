@@ -9,6 +9,7 @@ import GuidedTour from "@/components/dashboard/GuidedTour";
 import TourFinaleSplash from "@/components/dashboard/TourFinaleSplash";
 import CreditGiftCelebration from "@/components/dashboard/CreditGiftCelebration";
 import ImpersonationBanner from "@/components/dashboard/ImpersonationBanner";
+import TrialBanner from "@/components/dashboard/TrialBanner";
 import { ProspectsProvider } from "@/context/ProspectsContext";
 
 function applyAccent(hex: string) {
@@ -88,6 +89,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             </button>
           </div>
 
+          <TrialBanner />
           {children}
         </main>
 

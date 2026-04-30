@@ -1,8 +1,8 @@
 "use client";
 
 import { Prospect, ProspectStatus, AppointmentDuration, CancelReason } from "@/types";
-import { X, Phone, Mail, Briefcase, FileText, Calendar, ArrowRight, Video, Wand2, Loader2, Save, Check, XCircle, RefreshCw, UserX, Voicemail, Upload, Music, Trash2, Play, Bot, DollarSign, ExternalLink, User as UserIcon, Building2, MapPin, Globe, Pencil, Plus } from "lucide-react";
-import { useState, useRef, useCallback } from "react";
+import { X, Phone, Mail, Briefcase, FileText, Calendar, ArrowRight, Video, Wand2, Loader2, Save, Check, XCircle, RefreshCw, UserX, Voicemail, Upload, Music, Trash2, Play, Bot, DollarSign, ExternalLink, User as UserIcon, Building2, MapPin, Globe, Pencil, Plus, MessageSquare, Send } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useProspects } from "@/context/ProspectsContext";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -147,6 +147,50 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // SMS follow-up
+  type SmsTemplate = { id: string; name: string; body: string };
+  type FromNumber = { phone_number: string; label: string; source: "caller_id" | "purchased" };
+  type SmsMessage = {
+    id: string;
+    direction: "inbound" | "outbound";
+    body: string;
+    status: string;
+    error_message: string | null;
+    created_at: string;
+    sent_at: string | null;
+    delivered_at: string | null;
+    from_number: string;
+    to_number: string;
+  };
+  type CallLog = { id: string; outcome: string; notes: string | null; created_at: string };
+
+  const [showSmsModal, setShowSmsModal] = useState(false);
+  const [smsTemplates, setSmsTemplates] = useState<SmsTemplate[]>([]);
+  const [smsTemplateId, setSmsTemplateId] = useState<string>("");
+  const [smsBody, setSmsBody] = useState("");
+  const [smsFromNumbers, setSmsFromNumbers] = useState<FromNumber[]>([]);
+  const [smsFromNumber, setSmsFromNumber] = useState("");
+  const [smsSending, setSmsSending] = useState(false);
+  const [smsResult, setSmsResult] = useState<{ success: boolean; text: string } | null>(null);
+  const [smsPaywall, setSmsPaywall] = useState<{ required: number; balance: number } | null>(null);
+  const [smsHistory, setSmsHistory] = useState<SmsMessage[]>([]);
+  const [callLogs, setCallLogs] = useState<CallLog[]>([]);
+  type Enrollment = {
+    id: string;
+    sequence_id: string;
+    status: string;
+    current_step_order: number;
+    next_send_at: string | null;
+    enrolled_at: string;
+    completed_at: string | null;
+    last_error: string | null;
+    sms_sequences: { name: string } | { name: string }[] | null;
+  };
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [haltingEnrollmentId, setHaltingEnrollmentId] = useState<string | null>(null);
+  const [loggingOutcome, setLoggingOutcome] = useState<string | null>(null);
+  const [senderProfile, setSenderProfile] = useState<{ name: string; agencyName: string }>({ name: "", agencyName: "" });
 
   // Build Receptionist
   const [showReceptionistBuilder, setShowReceptionistBuilder] = useState(false);
@@ -407,6 +451,154 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
       setVmResult({ success: false, text: "Network error — please try again." });
     } finally {
       setVmSending(false);
+    }
+  };
+
+  // ---- SMS / call-log helpers ----
+  const loadSmsHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/sms/messages?prospect_id=${prospect.id}`);
+      const data = await res.json();
+      if (res.ok) setSmsHistory(data.messages || []);
+    } catch {}
+  }, [prospect.id]);
+
+  const loadCallLogs = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/prospects/call-logs?prospect_id=${prospect.id}`);
+      const data = await res.json();
+      if (res.ok) setCallLogs(data.call_logs || []);
+    } catch {}
+  }, [prospect.id]);
+
+  const loadEnrollments = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/sms/enrollments?prospect_id=${prospect.id}`);
+      const data = await res.json();
+      if (res.ok) setEnrollments(data.enrollments || []);
+    } catch {}
+  }, [prospect.id]);
+
+  useEffect(() => {
+    loadSmsHistory();
+    loadCallLogs();
+    loadEnrollments();
+  }, [loadSmsHistory, loadCallLogs, loadEnrollments]);
+
+  const handleHaltEnrollment = async (id: string) => {
+    setHaltingEnrollmentId(id);
+    try {
+      const res = await fetch(`/api/sms/enrollments/${id}/halt`, { method: "POST" });
+      if (res.ok) loadEnrollments();
+    } catch {}
+    finally {
+      setHaltingEnrollmentId(null);
+    }
+  };
+
+  const renderSmsBody = (raw: string): string => {
+    const contact = (prospect.contactName || prospect.name || "").trim();
+    const firstName = contact ? contact.split(/\s+/)[0] : "";
+    const map: Record<string, string> = {
+      first_name: firstName,
+      name: contact,
+      business: (prospect.name || "").trim(),
+      my_name: senderProfile.name || "",
+      my_agency: senderProfile.agencyName || "",
+    };
+    return raw.replace(/\{(\w+)\}/g, (full, key: string) =>
+      Object.prototype.hasOwnProperty.call(map, key) ? map[key] : full
+    );
+  };
+
+  const openSmsModal = async () => {
+    setShowSmsModal(true);
+    setSmsResult(null);
+    setSmsTemplateId("");
+    setSmsBody("");
+    try {
+      const [tplRes, numRes, meRes] = await Promise.all([
+        fetch("/api/sms/templates"),
+        fetch("/api/sms/from-numbers"),
+        fetch("/api/auth/me"),
+      ]);
+      const tplData = await tplRes.json();
+      const numData = await numRes.json();
+      const meData = await meRes.json();
+      if (tplRes.ok) setSmsTemplates(tplData.templates || []);
+      if (numRes.ok) {
+        const nums: FromNumber[] = numData.numbers || [];
+        setSmsFromNumbers(nums);
+        if (nums.length > 0 && !smsFromNumber) setSmsFromNumber(nums[0].phone_number);
+      }
+      if (meRes.ok && meData.user) {
+        setSenderProfile({ name: meData.user.name || "", agencyName: meData.user.agencyName || "" });
+      }
+    } catch {}
+  };
+
+  const handleSendSms = async () => {
+    if (!prospect.phone) {
+      setSmsResult({ success: false, text: "Prospect has no phone number." });
+      return;
+    }
+    if (!smsFromNumber) {
+      setSmsResult({ success: false, text: "Pick a from-number." });
+      return;
+    }
+    const sourceBody = smsTemplateId
+      ? smsTemplates.find((t) => t.id === smsTemplateId)?.body ?? ""
+      : smsBody;
+    if (!sourceBody.trim()) {
+      setSmsResult({ success: false, text: "Body is empty." });
+      return;
+    }
+    setSmsSending(true);
+    setSmsResult(null);
+    try {
+      const res = await fetch("/api/sms/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prospect_id: prospect.id,
+          template_id: smsTemplateId || undefined,
+          body: smsTemplateId ? undefined : sourceBody,
+          from_number: smsFromNumber,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 402 && typeof data?.required === "number" && typeof data?.balance === "number") {
+        setSmsPaywall({ required: data.required, balance: data.balance });
+        return;
+      }
+      if (res.ok) {
+        setSmsResult({ success: true, text: "Message sent." });
+        loadSmsHistory();
+      } else {
+        setSmsResult({ success: false, text: data.error || "Failed to send" });
+      }
+    } catch {
+      setSmsResult({ success: false, text: "Network error — please try again." });
+    } finally {
+      setSmsSending(false);
+    }
+  };
+
+  const handleLogCall = async (outcome: string) => {
+    setLoggingOutcome(outcome);
+    try {
+      const res = await fetch("/api/prospects/call-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prospect_id: prospect.id, outcome }),
+      });
+      if (res.ok) {
+        loadCallLogs();
+        loadEnrollments();
+      }
+    } catch {}
+    finally {
+      setLoggingOutcome(null);
     }
   };
 
@@ -1192,8 +1384,145 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
                 Send Voicemail Drop
               </button>
             )}
+            {prospect.phone && (
+              <button
+                onClick={openSmsModal}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border)] text-sm font-medium hover:bg-[var(--card-hover)] transition-colors"
+              >
+                <MessageSquare className="w-4 h-4 text-sky-400" />
+                Send SMS
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Log call outcome */}
+        {prospect.phone && (
+          <div>
+            <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2">Log Call Outcome</h3>
+            <div className="grid grid-cols-2 gap-1.5">
+              {([
+                { key: "answered", label: "Answered", cls: "text-emerald-400 hover:bg-emerald-500/10" },
+                { key: "no_answer", label: "No answer", cls: "text-amber-400 hover:bg-amber-500/10" },
+                { key: "voicemail", label: "Voicemail", cls: "text-blue-400 hover:bg-blue-500/10" },
+                { key: "busy", label: "Busy", cls: "text-zinc-400 hover:bg-zinc-500/10" },
+                { key: "wrong_number", label: "Wrong #", cls: "text-rose-400 hover:bg-rose-500/10" },
+              ] as const).map((o) => (
+                <button
+                  key={o.key}
+                  onClick={() => handleLogCall(o.key)}
+                  disabled={loggingOutcome === o.key}
+                  className={`px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-[11px] font-medium transition-colors disabled:opacity-50 ${o.cls}`}
+                >
+                  {loggingOutcome === o.key ? "..." : o.label}
+                </button>
+              ))}
+            </div>
+            {callLogs.length > 0 && (
+              <div className="mt-2 text-[10px] text-[var(--muted)]">
+                Last call: <span className="text-[var(--foreground)]">{callLogs[0].outcome.replace("_", " ")}</span> · {new Date(callLogs[0].created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Sequence enrollments */}
+        {enrollments.length > 0 && (() => {
+          const active = enrollments.filter((e) => e.status === "active");
+          const recent = enrollments.filter((e) => e.status !== "active").slice(0, 2);
+          const seqName = (e: Enrollment): string => {
+            const s = e.sms_sequences;
+            if (!s) return "Sequence";
+            return Array.isArray(s) ? (s[0]?.name ?? "Sequence") : s.name;
+          };
+          const statusCls = (st: string) =>
+            st === "active" ? "bg-blue-500/15 text-blue-400 border-blue-500/20" :
+            st === "completed" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" :
+            st === "halted_reply" ? "bg-purple-500/15 text-purple-400 border-purple-500/20" :
+            st === "halted_stop" ? "bg-rose-500/15 text-rose-400 border-rose-500/20" :
+            st === "halted_failed" ? "bg-amber-500/15 text-amber-400 border-amber-500/20" :
+            "bg-zinc-500/15 text-zinc-400 border-zinc-500/20";
+          const statusLabel = (st: string) =>
+            st === "active" ? "Active" :
+            st === "completed" ? "Completed" :
+            st === "halted_reply" ? "Halted (reply)" :
+            st === "halted_stop" ? "Opted out" :
+            st === "halted_failed" ? "Failed" :
+            st === "halted_manual" ? "Halted" : st;
+          const formatNext = (iso: string | null) => {
+            if (!iso) return "—";
+            const ms = new Date(iso).getTime() - Date.now();
+            if (ms <= 0) return "due now";
+            const hrs = ms / 3_600_000;
+            if (hrs < 1) return `in ${Math.max(1, Math.round(ms / 60_000))}m`;
+            if (hrs < 24) return `in ${Math.round(hrs)}h`;
+            return `in ${Math.round(hrs / 24)}d`;
+          };
+          return (
+            <div>
+              <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2">SMS Sequences</h3>
+              <div className="space-y-1.5">
+                {active.map((e) => (
+                  <div key={e.id} className={`rounded-lg border px-3 py-2 ${statusCls(e.status)}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">{seqName(e)}</p>
+                        <p className="text-[10px] opacity-80">
+                          Next msg {formatNext(e.next_send_at)} · step {e.current_step_order + 1}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleHaltEnrollment(e.id)}
+                        disabled={haltingEnrollmentId === e.id}
+                        className="px-2 py-1 rounded-md border border-current text-[10px] font-medium hover:bg-current/10 disabled:opacity-50 transition-colors"
+                      >
+                        {haltingEnrollmentId === e.id ? "..." : "Halt"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {recent.map((e) => (
+                  <div key={e.id} className={`rounded-lg border px-3 py-1.5 ${statusCls(e.status)} opacity-70`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] truncate">{seqName(e)}</span>
+                      <span className="text-[9px] font-medium uppercase tracking-wider">{statusLabel(e.status)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* SMS History */}
+        {smsHistory.length > 0 && (
+          <div>
+            <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2">SMS History</h3>
+            <div className="rounded-lg border border-[var(--border)] divide-y divide-[var(--border)] max-h-64 overflow-y-auto">
+              {smsHistory.map((m) => {
+                const statusCls =
+                  m.status === "delivered" ? "bg-emerald-500/15 text-emerald-400" :
+                  m.status === "sent" || m.status === "queued" ? "bg-blue-500/15 text-blue-400" :
+                  m.status === "failed" || m.status === "undelivered" ? "bg-rose-500/15 text-rose-400" :
+                  "bg-zinc-500/15 text-zinc-400";
+                return (
+                  <div key={m.id} className="px-3 py-2 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] text-[var(--muted)]">
+                        {m.direction === "outbound" ? "→ Sent" : "← Received"} · {new Date(m.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                      </span>
+                      <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-medium ${statusCls}`}>{m.status}</span>
+                    </div>
+                    <div className="text-xs text-[var(--foreground)] whitespace-pre-wrap break-words">{m.body}</div>
+                    {m.error_message && (
+                      <div className="text-[10px] text-rose-400">{m.error_message}</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Voicemail Drop Modal */}
         {showVoicemailModal && (
@@ -1398,6 +1727,123 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
             </div>
           </div>
         )}
+
+        {/* SMS Modal */}
+        {showSmsModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 w-full max-w-md mx-4 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-sky-400" /> Send SMS
+                </h3>
+                <button onClick={() => setShowSmsModal(false)} className="p-1 rounded-lg hover:bg-[var(--background)]">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <p className="text-xs text-[var(--muted)]">
+                To <span className="text-[var(--foreground)] font-medium">{prospect.name}</span> at {prospect.phone}
+              </p>
+
+              {/* From number */}
+              <div>
+                <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1 block">From</label>
+                {smsFromNumbers.length === 0 ? (
+                  <div className="px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs text-[var(--muted)]">
+                    No verified caller IDs or purchased numbers. Add one in Settings.
+                  </div>
+                ) : (
+                  <select
+                    value={smsFromNumber}
+                    onChange={(e) => setSmsFromNumber(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)]"
+                  >
+                    {smsFromNumbers.map((n) => (
+                      <option key={n.phone_number} value={n.phone_number}>
+                        {n.label} {n.source === "caller_id" ? "(verified caller ID)" : "(purchased)"}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* Template picker */}
+              <div>
+                <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1 block">Template</label>
+                <select
+                  value={smsTemplateId}
+                  onChange={(e) => {
+                    setSmsTemplateId(e.target.value);
+                    if (!e.target.value) setSmsBody("");
+                  }}
+                  className="w-full px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)]"
+                >
+                  <option value="">— Custom message —</option>
+                  {smsTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Body */}
+              {!smsTemplateId && (
+                <div>
+                  <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1 block">Message</label>
+                  <textarea
+                    value={smsBody}
+                    onChange={(e) => setSmsBody(e.target.value)}
+                    rows={4}
+                    placeholder="Hey {first_name}, just following up..."
+                    className="w-full px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] resize-none"
+                  />
+                  <p className="text-[10px] text-[var(--muted)] mt-1">
+                    Placeholders: {"{first_name}"}, {"{name}"}, {"{business}"}, {"{my_name}"}, {"{my_agency}"}
+                  </p>
+                </div>
+              )}
+
+              {/* Preview */}
+              {(() => {
+                const sourceBody = smsTemplateId
+                  ? smsTemplates.find((t) => t.id === smsTemplateId)?.body ?? ""
+                  : smsBody;
+                if (!sourceBody.trim()) return null;
+                return (
+                  <div>
+                    <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1 block">Preview</label>
+                    <div className="px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs whitespace-pre-wrap">
+                      {renderSmsBody(sourceBody)}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {smsResult && (
+                <div className={`p-3 rounded-lg text-xs font-medium ${
+                  smsResult.success ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                }`}>
+                  {smsResult.text}
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowSmsModal(false)}
+                  className="px-4 py-2 rounded-lg border border-[var(--border)] text-sm hover:bg-[var(--card-hover)] transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleSendSms}
+                  disabled={smsSending || smsFromNumbers.length === 0}
+                  className="px-4 py-2 rounded-lg bg-sky-500/20 text-sky-400 text-sm font-medium hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
+                >
+                  {smsSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {smsSending ? "Sending..." : "Send"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       </div>
 
@@ -1559,6 +2005,16 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
           required={voicemailPaywall.required}
           balance={voicemailPaywall.balance}
           action="Sending a voicemail drop"
+        />
+      )}
+
+      {smsPaywall && (
+        <InsufficientCreditsModal
+          open
+          onClose={() => setSmsPaywall(null)}
+          required={smsPaywall.required}
+          balance={smsPaywall.balance}
+          action="Sending an SMS"
         />
       )}
     </div>

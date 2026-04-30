@@ -3,7 +3,7 @@ import { getAuthSession } from "@/lib/session";
 import { getUserAIConfig, aiChat } from "@/lib/ai";
 import { getBalance, deductCredits, WEBSITE_AI_EDIT_CREDITS } from "@/lib/credits";
 import { supabaseAdmin } from "@/lib/supabase";
-import { ensureFormHandler } from "@/lib/websiteForms";
+import { ensureFormHandler, stripPoweredByBadge } from "@/lib/websiteForms";
 
 export async function POST(
   req: Request,
@@ -32,7 +32,7 @@ export async function POST(
 
     const { data: site, error: siteErr } = await supabaseAdmin
       .from("generated_websites")
-      .select("id, user_id, html_content")
+      .select("id, user_id, html_content, tier")
       .eq("id", id)
       .maybeSingle();
 
@@ -60,7 +60,11 @@ EDIT RULES:
 - When the user asks to change the color palette, update EVERY Tailwind color utility class (bg-*, text-*, from-*, to-*, via-*, border-*, ring-*, hover:bg-*, etc.) AND every inline style color/background/gradient to the new palette across the ENTIRE document — hero, sections, buttons, CTAs, footer, links. Do not leave remnants of the old palette.
 - Preserve non-color structure: Tailwind CDN script, Google Fonts link, hero <img> URL, contact links (tel:, mailto:), overall section layout.
 - Keep responsive design and accessibility intact.
-- Do NOT remove the "Powered by NextNote" badge if it is present in the footer.
+${
+  site.tier === "whitelabel"
+    ? `- This is a WHITE-LABEL site. Do NOT add a "Powered by NextNote" badge or any third-party credit. If one is somehow present, remove it.`
+    : `- Do NOT remove the "Powered by NextNote" badge if it is present in the footer.`
+}
 - PRESERVE EXACTLY (these wire the form to our lead-capture backend — removing them breaks lead capture):
   • Every <form data-nn-form> element and its data-nn-form attribute
   • The hidden honeypot field: <input type="text" name="company_website" ...>
@@ -118,6 +122,11 @@ ${site.html_content}
     // Re-assert the form-submit handler — if the edit stripped the script,
     // we re-inject it so lead capture never silently breaks after an AI edit.
     updatedHtml = ensureFormHandler(updatedHtml, id);
+
+    // White-label: strip any badge the AI may have re-added during the edit.
+    if (site.tier === "whitelabel") {
+      updatedHtml = stripPoweredByBadge(updatedHtml);
+    }
 
     const { error: updateErr } = await supabaseAdmin
       .from("generated_websites")

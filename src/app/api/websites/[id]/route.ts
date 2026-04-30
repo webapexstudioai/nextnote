@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { stripPoweredByBadge } from "@/lib/websiteForms";
 
 // Site IDs are 128-bit crypto-random tokens — unguessable — so this endpoint is
 // intentionally public (users share the URL with their prospects). Short IDs
@@ -17,7 +18,7 @@ export async function GET(
 
   const { data, error } = await supabaseAdmin
     .from("generated_websites")
-    .select("html_content")
+    .select("html_content, tier")
     .eq("id", id)
     .maybeSingle();
 
@@ -29,7 +30,13 @@ export async function GET(
     return new NextResponse("Site not found", { status: 404 });
   }
 
-  return new NextResponse(data.html_content, {
+  // Backstop for older white-label sites that were saved before strict badge
+  // stripping was added on the write path — scrub the badge on read.
+  const html = data.tier === "whitelabel"
+    ? stripPoweredByBadge(data.html_content)
+    : data.html_content;
+
+  return new NextResponse(html, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       // Don't let search engines index prospect pages by default.

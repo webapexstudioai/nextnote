@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { OrbitGridIcon } from "@/components/OrbitGridLogo";
+import { OrbitGridIcon, NextNoteWordmark } from "@/components/OrbitGridLogo";
 
 const FINALE_KEY = "nextnote_tour_finale_shown";
 export const FINALE_EVENT = "nextnote:tour-finale";
@@ -32,7 +32,7 @@ export default function TourFinaleSplash() {
           <OrbitGridIcon size={140} />
         </div>
         <h2 className="tour-finale-title">
-          Welcome to Next<span className="text-[var(--accent)]">Note</span>,
+          Welcome to <NextNoteWordmark />,
         </h2>
         <p className="tour-finale-sub">the best unfair advantage to close.</p>
       </div>

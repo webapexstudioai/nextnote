@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
   Plus, FolderPlus, Folder as FolderIcon, DollarSign, TrendingUp,
-  Users, Calendar, ArrowRight, Trophy, Zap,
+  Users, Calendar, ArrowRight, Trophy, Zap, Phone,
 } from "lucide-react";
 import { ProspectStatus, FOLDER_COLORS } from "@/types";
 import { useProspects } from "@/context/ProspectsContext";
@@ -77,6 +77,27 @@ export default function DashboardPage() {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderColor, setNewFolderColor] = useState(FOLDER_COLORS[0].value);
+
+  // Agency phone migration nudge — show once per user until dismissed.
+  const [showAgencyNudge, setShowAgencyNudge] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem("nn_agency_nudge_dismissed") === "1") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/agency/phone");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && !data.agency_phone) setShowAgencyNudge(true);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  function dismissAgencyNudge() {
+    localStorage.setItem("nn_agency_nudge_dismissed", "1");
+    setShowAgencyNudge(false);
+  }
 
   const pipelineCounts = useMemo(() => {
     const counts: Record<ProspectStatus, number> = { New: 0, Contacted: 0, Qualified: 0, Booked: 0, Closed: 0 };
@@ -182,6 +203,36 @@ export default function DashboardPage() {
 
       <div className="relative z-10 p-4 sm:p-6 space-y-6">
         <AppointmentReminder />
+
+        {showAgencyNudge && (
+          <div className="rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/[0.06] p-4 flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-[var(--accent)]/15 flex items-center justify-center shrink-0">
+              <Phone className="w-4 h-4 text-[var(--accent)]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-[var(--foreground)]">
+                Set up your agency phone line
+              </p>
+              <p className="text-xs text-[var(--muted)] mt-0.5">
+                Send SMS follow-ups, take inbound replies, and forward calls to your cell — all from one Twilio number tied to your agency.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href="/dashboard/agency-phone"
+                className="text-xs font-medium px-3 py-1.5 rounded-md bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+              >
+                Set up
+              </Link>
+              <button
+                onClick={dismissAgencyNudge}
+                className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors px-2"
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Revenue KPI row */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">

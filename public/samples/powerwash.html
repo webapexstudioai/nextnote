@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TIDEWATER PRO WASH — Restored. Refreshed. Right at Home.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --paper: #f7f3ec;
+  --paper-warm: #ede5d6;
+  --ink: #0a1f33;
+  --ink-soft: #2a4055;
+  --ink-dim: #5a6e82;
+  --mist: #e6eef5;
+  --tide: #0d6e7d;
+  --tide-deep: #084752;
+  --foam: #cfeae3;
+  --sun: #efb24a;
+  --coral: #e35a4f;
+  --line: rgba(10,31,51,0.10);
+  --line-strong: rgba(10,31,51,0.85);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, .display { font-family: 'Fraunces', serif; font-variation-settings: 'opsz' 144; font-weight: 700; letter-spacing: -0.02em; }
+
+.mono { font-family: 'IBM Plex Mono', monospace; }
+
+/* ============ TOP BAR ============ */
+.top-bar {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.55rem 2rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.top-bar .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.08);
+  padding: 0.2rem 0.7rem;
+  border-radius: 99px;
+}
+
+.top-bar .pill .dot {
+  width: 7px; height: 7px;
+  background: #5deba0;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #5deba0;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+.top-bar-right { display: flex; gap: 1.8rem; }
+.top-bar a { color: var(--paper); text-decoration: none; transition: color .2s; }
+.top-bar a:hover { color: var(--sun); }
+
+/* ============ NAV ============ */
+nav {
+  background: var(--paper);
+  padding: 1.25rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.nav-logo svg { width: 44px; height: 44px; }
+
+.nav-logo .lockup { display: flex; flex-direction: column; line-height: 1; }
+
+.nav-logo .lockup .name {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+
+.nav-logo .lockup .tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-top: 4px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2.5rem;
+  list-style: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.nav-links a {
+  color: var(--ink);
+  text-decoration: none;
+  position: relative;
+  padding: 0.3rem 0;
+  transition: color .2s;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 0;
+  width: 100%; height: 2px;
+  background: var(--tide);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.nav-links a:hover { color: var(--tide); }
+.nav-links a:hover::after { transform: scaleX(1); }
+
+.nav-cta {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.85rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.nav-cta:hover { background: var(--tide); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(13,110,125,0.3); }
+
+/* ============ HERO ============ */
+.hero {
+  padding: 4rem 2rem 6rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -400px;
+  right: -300px;
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(13,110,125,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 4rem;
+  max-width: 1500px;
+  margin: 0 auto;
+  align-items: center;
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--foam);
+  color: var(--tide-deep);
+  padding: 0.45rem 0.9rem;
+  border-radius: 99px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 1.8rem;
+  opacity: 0;
+  animation: rise 0.7s ease 0.1s forwards;
+}
+
+.hero-tag .dot { width: 7px; height: 7px; background: var(--tide); border-radius: 50%; }
+
+.hero h1 {
+  font-size: clamp(3rem, 7.5vw, 6.8rem);
+  line-height: 0.95;
+  margin-bottom: 1.8rem;
+  opacity: 0;
+  animation: rise 0.9s ease 0.25s forwards;
+}
+
+.hero h1 .ital { font-style: italic; color: var(--tide); }
+.hero h1 .underline {
+  position: relative;
+  display: inline-block;
+}
+.hero h1 .underline::after {
+  content: '';
+  position: absolute;
+  bottom: 0.05em;
+  left: 0;
+  width: 100%;
+  height: 0.16em;
+  background: var(--sun);
+  z-index: -1;
+  border-radius: 4px;
+}
+
+.hero-lead {
+  font-size: 1.2rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 540px;
+  margin-bottom: 2.5rem;
+  opacity: 0;
+  animation: rise 0.9s ease 0.4s forwards;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 3rem;
+  opacity: 0;
+  animation: rise 0.9s ease 0.55s forwards;
+}
+
+.btn {
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 1.1rem 1.7rem;
+  text-decoration: none;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  transition: all 0.25s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary { background: var(--tide); color: var(--paper); box-shadow: 0 6px 18px rgba(13,110,125,0.32); }
+.btn-primary:hover { background: var(--tide-deep); transform: translateY(-2px); box-shadow: 0 12px 28px rgba(13,110,125,0.42); }
+
+.btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+.btn-ghost:hover { background: var(--ink); color: var(--paper); }
+
+.btn-arrow { transition: transform 0.25s ease; }
+.btn:hover .btn-arrow { transform: translateX(5px); }
+
+.hero-trust {
+  display: flex;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+  opacity: 0;
+  animation: rise 0.9s ease 0.7s forwards;
+}
+
+.hero-trust-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.hero-trust-item .num {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 1.8rem;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.hero-trust-item .lbl {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.hero-stars { color: var(--sun); font-size: 1rem; letter-spacing: 0.05em; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+
+/* HERO before/after slider */
+.hero-visual {
+  position: relative;
+  aspect-ratio: 4/5;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px -25px rgba(10,31,51,0.4);
+  opacity: 0;
+  animation: rise 1.2s ease 0.5s forwards;
+}
+
+.compare {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  user-select: none;
+  cursor: ew-resize;
+}
+
+.compare-img {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+
+.compare-before {
+  background-image:
+    linear-gradient(180deg, rgba(60,55,45,0.4) 0%, rgba(40,35,28,0.7) 100%),
+    url("https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1200&q=80&auto=format&fit=crop");
+  filter: saturate(0.55) contrast(0.85) brightness(0.75) sepia(0.2);
+}
+
+.compare-after {
+  background-image:
+    linear-gradient(180deg, rgba(231,238,245,0.05) 0%, rgba(13,110,125,0.15) 100%),
+    url("https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1200&q=80&auto=format&fit=crop");
+  filter: saturate(1.15) contrast(1.05) brightness(1.05);
+  clip-path: inset(0 0 0 50%);
+}
+
+.compare-handle {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  width: 3px;
+  background: var(--paper);
+  transform: translateX(-50%);
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(10,31,51,0.15), 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.compare-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 52px; height: 52px;
+  background: var(--paper);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgba(10,31,51,0.12), 0 8px 24px rgba(0,0,0,0.25);
+}
+
+.compare-handle::before {
+  content: '⇆';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  font-size: 1.4rem;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.compare-label {
+  position: absolute;
+  top: 1.2rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.85rem;
+  border-radius: 99px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.compare-label.before { left: 1.2rem; background: rgba(10,31,51,0.7); color: var(--paper); backdrop-filter: blur(6px); }
+.compare-label.after { right: 1.2rem; background: var(--foam); color: var(--tide-deep); }
+
+.compare-caption {
+  position: absolute;
+  bottom: 1.2rem;
+  left: 1.2rem;
+  right: 1.2rem;
+  background: rgba(10,31,51,0.85);
+  color: var(--paper);
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.compare-caption .left {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  border-right: 1px solid rgba(255,255,255,0.2);
+  padding-right: 1rem;
+}
+
+.compare-caption .mid { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1rem; flex: 1; }
+.compare-caption .right {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--sun);
+  font-weight: 600;
+}
+
+/* ============ MARQUEE ============ */
+.marquee {
+  background: var(--ink);
+  color: var(--paper);
+  overflow: hidden;
+  padding: 1.4rem 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.marquee-track {
+  display: flex;
+  gap: 3rem;
+  animation: scroll 40s linear infinite;
+  white-space: nowrap;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+}
+
+.marquee-track span { display: inline-flex; align-items: center; gap: 3rem; }
+.marquee-track .dot { width: 8px; height: 8px; background: var(--sun); border-radius: 50%; flex-shrink: 0; }
+
+@keyframes scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ============ SERVICES ============ */
+.services {
+  padding: 7rem 2rem;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.section-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3rem;
+  align-items: end;
+  margin-bottom: 4rem;
+}
+
+.section-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tide);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.section-eyebrow::before { content: '◐'; color: var(--tide); }
+
+.section-head h2 {
+  font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+  line-height: 1;
+}
+
+.section-head h2 .ital { font-style: italic; color: var(--tide); }
+
+.section-head .head-link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: 4px;
+}
+
+.section-head .head-link:hover { color: var(--tide); border-color: var(--tide); }
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.service {
+  background: var(--paper);
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  transition: all 0.4s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.service:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px -15px rgba(10,31,51,0.18);
+  border-color: rgba(13,110,125,0.3);
+}
+
+.service-img {
+  aspect-ratio: 5/3;
+  background: linear-gradient(135deg, #2a4055 0%, #0a1f33 100%);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.service-img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10,31,51,0) 50%, rgba(10,31,51,0.5) 100%);
+}
+
+.s-img-1 { background-image: linear-gradient(135deg, rgba(10,31,51,0) 0%, rgba(10,31,51,0.3) 100%), url("https://images.unsplash.com/photo-1564540583246-934409427776?w=900&q=80&auto=format&fit=crop"); }
+.s-img-2 { background-image: linear-gradient(135deg, rgba(10,31,51,0) 0%, rgba(10,31,51,0.3) 100%), url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&q=80&auto=format&fit=crop"); }
+.s-img-3 { background-image: linear-gradient(135deg, rgba(10,31,51,0) 0%, rgba(10,31,51,0.3) 100%), url("https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=900&q=80&auto=format&fit=crop"); }
+.s-img-4 { background-image: linear-gradient(135deg, rgba(10,31,51,0) 0%, rgba(10,31,51,0.3) 100%), url("https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=900&q=80&auto=format&fit=crop"); }
+.s-img-5 { background-image: linear-gradient(135deg, rgba(10,31,51,0) 0%, rgba(10,31,51,0.3) 100%), url("https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=900&q=80&auto=format&fit=crop"); }
+.s-img-6 { background-image: linear-gradient(135deg, rgba(10,31,51,0) 0%, rgba(10,31,51,0.3) 100%), url("https://images.unsplash.com/photo-1542621334-a254cf47733d?w=900&q=80&auto=format&fit=crop"); }
+
+.service-img .s-pill {
+  position: absolute;
+  top: 1rem; left: 1rem;
+  background: rgba(247,243,236,0.92);
+  color: var(--ink);
+  padding: 0.35rem 0.75rem;
+  border-radius: 99px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+  z-index: 2;
+  backdrop-filter: blur(8px);
+}
+
+.service-body {
+  padding: 1.8rem 1.6rem 1.6rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.service h3 {
+  font-size: 1.6rem;
+  line-height: 1.05;
+  margin-bottom: 0.7rem;
+}
+
+.service p {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  margin-bottom: 1.4rem;
+  flex: 1;
+}
+
+.service-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.service-price {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.service-price .lbl {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-right: 0.4rem;
+  font-weight: 500;
+}
+
+.service-arrow {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: var(--paper-warm);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.service:hover .service-arrow { background: var(--tide); color: var(--paper); transform: rotate(-45deg); }
+
+/* ============ TRANSFORMATION SECTION ============ */
+.transformation {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 7rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.transformation::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  left: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(13,110,125,0.25) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.transformation-inner {
+  max-width: 1500px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 5rem;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.transformation .section-eyebrow { color: var(--sun); }
+.transformation .section-eyebrow::before { color: var(--sun); }
+
+.transformation h2 {
+  font-size: clamp(2.5rem, 5vw, 4.2rem);
+  line-height: 1;
+  margin-bottom: 2rem;
+}
+
+.transformation h2 .ital { font-style: italic; color: var(--sun); }
+
+.transformation > .transformation-inner > div > p {
+  font-size: 1.1rem;
+  color: rgba(247,243,236,0.75);
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+  max-width: 480px;
+}
+
+.case-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  padding: 2rem 0;
+  border-top: 1px solid rgba(247,243,236,0.15);
+  border-bottom: 1px solid rgba(247,243,236,0.15);
+  margin-bottom: 2rem;
+}
+
+.case-stat .num {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 2.5rem;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--paper) 0%, var(--sun) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.4rem;
+}
+
+.case-stat .lbl {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(247,243,236,0.6);
+}
+
+.case-quote {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 1.15rem;
+  line-height: 1.4;
+  color: var(--paper);
+  border-left: 3px solid var(--sun);
+  padding-left: 1.2rem;
+}
+
+.case-quote .author {
+  font-style: normal;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(247,243,236,0.55);
+  margin-top: 0.8rem;
+  display: block;
+}
+
+.transformation-visual {
+  position: relative;
+  aspect-ratio: 6/5;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,0.5);
+}
+
+.transformation-visual .compare-before {
+  background-image:
+    linear-gradient(180deg, rgba(40,30,20,0.4) 0%, rgba(20,15,10,0.7) 100%),
+    url("https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=1400&q=80&auto=format&fit=crop");
+  filter: saturate(0.5) contrast(0.85) brightness(0.7) sepia(0.25);
+}
+
+.transformation-visual .compare-after {
+  background-image:
+    linear-gradient(180deg, rgba(231,238,245,0.05) 0%, rgba(13,110,125,0.15) 100%),
+    url("https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=1400&q=80&auto=format&fit=crop");
+  filter: saturate(1.15) contrast(1.08) brightness(1.05);
+}
+
+/* ============ PROCESS ============ */
+.process {
+  padding: 7rem 2rem;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.process-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  position: relative;
+}
+
+.process-grid::before {
+  content: '';
+  position: absolute;
+  top: 47px;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--line-strong) 0, var(--line-strong) 6px, transparent 6px, transparent 14px);
+  z-index: 0;
+}
+
+.process-step {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.process-num {
+  width: 92px; height: 92px;
+  margin: 0 auto 1.8rem;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 2.4rem;
+  color: var(--ink);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.process-step:hover .process-num {
+  background: var(--tide);
+  color: var(--paper);
+  border-color: var(--tide);
+  transform: scale(1.05);
+}
+
+.process-num::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px; height: 12px;
+  background: var(--ink);
+  border-radius: 50%;
+  border: 3px solid var(--paper);
+}
+
+.process-step h4 {
+  font-size: 1.4rem;
+  line-height: 1.05;
+  margin-bottom: 0.7rem;
+}
+
+.process-step p {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  max-width: 240px;
+  margin: 0 auto;
+}
+
+.process-step .duration {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tide);
+  margin-top: 1rem;
+  display: inline-block;
+}
+
+/* ============ TESTIMONIALS ============ */
+.testimonials {
+  background: var(--paper-warm);
+  padding: 7rem 2rem;
+}
+
+.testimonials-inner { max-width: 1500px; margin: 0 auto; }
+
+.testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.t-card {
+  background: var(--paper);
+  border-radius: 24px;
+  padding: 2rem;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+
+.t-card .stars {
+  color: var(--sun);
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.2rem;
+}
+
+.t-card .quote {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 1.15rem;
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: 2rem;
+  flex: 1;
+}
+
+.t-card .author {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
+}
+
+.t-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--tide);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.t-name { font-weight: 600; font-size: 0.95rem; line-height: 1.1; }
+.t-meta { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); margin-top: 4px; }
+
+/* ============ AREA / CTA ============ */
+.cta-section {
+  padding: 7rem 2rem;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.cta-card {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 32px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  position: relative;
+}
+
+.cta-card::before {
+  content: '';
+  position: absolute;
+  top: -200px; right: -200px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(239,178,74,0.18) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.cta-left {
+  padding: 4rem 3.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.cta-left .section-eyebrow { color: var(--sun); }
+.cta-left .section-eyebrow::before { color: var(--sun); }
+
+.cta-left h2 {
+  font-size: clamp(2rem, 4.5vw, 3.6rem);
+  line-height: 1;
+  margin-bottom: 1.5rem;
+}
+
+.cta-left h2 .ital { font-style: italic; color: var(--sun); }
+
+.cta-left > p {
+  font-size: 1.05rem;
+  color: rgba(247,243,236,0.7);
+  line-height: 1.55;
+  margin-bottom: 2.5rem;
+  max-width: 440px;
+}
+
+.cta-contacts {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.cta-row {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  text-decoration: none;
+  color: var(--paper);
+  padding: 1.1rem 1.3rem;
+  border-radius: 16px;
+  background: rgba(247,243,236,0.05);
+  border: 1px solid rgba(247,243,236,0.1);
+  transition: all 0.25s ease;
+}
+
+.cta-row:hover { background: rgba(239,178,74,0.1); border-color: var(--sun); transform: translateX(4px); }
+
+.cta-row .icon-circle {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(239,178,74,0.15);
+  color: var(--sun);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cta-row .lbl {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(247,243,236,0.55);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.cta-row .val { font-weight: 600; font-size: 1.05rem; }
+
+.quote-form {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 3.5rem 3rem;
+  position: relative;
+}
+
+.quote-form::before {
+  content: '';
+  position: absolute;
+  top: 30px; right: 30px;
+  width: 14px; height: 14px;
+  background: var(--coral);
+  border-radius: 50%;
+  box-shadow: 24px 0 0 var(--sun), 48px 0 0 var(--tide);
+}
+
+.quote-form h3 {
+  font-size: 1.8rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.quote-form .form-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tide);
+  margin-bottom: 2rem;
+  display: block;
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+.form-group { margin-bottom: 0.9rem; }
+
+.form-group label {
+  display: block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 0.4rem;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: var(--paper-warm);
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  color: var(--ink);
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  background: var(--paper);
+  border-color: var(--tide);
+  box-shadow: 0 0 0 4px rgba(13,110,125,0.12);
+}
+
+.form-submit {
+  width: 100%;
+  padding: 1.1rem;
+  background: var(--tide);
+  color: var(--paper);
+  border: none;
+  border-radius: 999px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 0.6rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 18px rgba(13,110,125,0.32);
+}
+
+.form-submit:hover { background: var(--tide-deep); transform: translateY(-2px); box-shadow: 0 12px 28px rgba(13,110,125,0.42); }
+
+/* ============ FOOTER ============ */
+footer {
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  padding: 3rem 2rem 2rem;
+}
+
+.footer-inner {
+  max-width: 1500px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.footer-inner .accent { color: var(--tide); }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1024px) {
+  .hero-grid, .transformation-inner, .cta-card { grid-template-columns: 1fr; gap: 3rem; }
+  .hero-visual, .transformation-visual { aspect-ratio: 4/3; }
+  .services-grid, .testimonial-grid { grid-template-columns: repeat(2, 1fr); }
+  .process-grid { grid-template-columns: repeat(2, 1fr); gap: 3rem; }
+  .process-grid::before { display: none; }
+  .case-stats { grid-template-columns: 1fr; gap: 1rem; }
+  .quote-form { padding: 2.5rem 2rem; }
+  .cta-left { padding: 2.5rem 2rem; }
+}
+
+@media (max-width: 640px) {
+  .top-bar { flex-direction: column; gap: 0.4rem; padding: 0.6rem 1rem; }
+  .top-bar-right { gap: 1rem; }
+  nav { padding: 0.9rem 1rem; }
+  .nav-links { display: none; }
+  .hero, .services, .transformation, .process, .testimonials, .cta-section { padding-left: 1rem; padding-right: 1rem; }
+  .services-grid, .testimonial-grid, .process-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .section-head { grid-template-columns: 1fr; gap: 1rem; }
+  .hero-trust { gap: 1.5rem; }
+  .compare-caption { flex-direction: column; gap: 0.4rem; align-items: flex-start; padding: 0.8rem 1rem; }
+  .compare-caption .left { border: none; padding: 0; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="tw-mark" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="46" fill="#0a1f33"/>
+      <!-- water drop -->
+      <path d="M 50 18 C 50 18, 30 42, 30 58 C 30 71, 39 80, 50 80 C 61 80, 70 71, 70 58 C 70 42, 50 18, 50 18 Z" fill="#0d6e7d"/>
+      <!-- highlight on drop -->
+      <path d="M 42 50 C 42 50, 40 56, 42 62 C 44 68, 49 70, 49 70" stroke="#cfeae3" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <!-- subtle splash dots -->
+      <circle cx="22" cy="34" r="2" fill="#efb24a"/>
+      <circle cx="78" cy="38" r="2" fill="#efb24a"/>
+      <circle cx="20" cy="68" r="1.5" fill="#cfeae3"/>
+    </symbol>
+
+    <symbol id="ico-phone" viewBox="0 0 24 24">
+      <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ico-mail" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+    <symbol id="ico-pin" viewBox="0 0 24 24">
+      <path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="12" cy="9" r="2.5" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="top-bar">
+  <span class="pill"><span class="dot"></span>Booking April 28 — May 5 · Same-Week Slots Open</span>
+  <div class="top-bar-right">
+    <a href="tel:8435551047">(843) 555-1047</a>
+    <a href="mailto:hello@tidewaterprowash.com">HELLO@TIDEWATERPROWASH.COM</a>
+    <span>MON–SAT · 7AM–7PM</span>
+  </div>
+</div>
+
+<nav>
+  <a href="#" class="nav-logo">
+    <svg><use href="#tw-mark"/></svg>
+    <div class="lockup">
+      <span class="name">Tidewater Pro Wash</span>
+      <span class="tag">EST. 2014 · CHARLESTON, SC</span>
+    </div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#work">Our Work</a></li>
+    <li><a href="#process">How It Works</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta">Get a Free Quote →</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="hero-tag"><span class="dot"></span>Soft Wash · Pressure Wash · Roof Treatment</div>
+      <h1>
+        Restored.<br>
+        <span class="ital">Refreshed.</span><br>
+        <span class="underline">Right at home.</span>
+      </h1>
+      <p class="hero-lead">Charleston's gentlest, most thorough exterior cleaning team. We strip a decade of mildew, salt, and pollen off your siding without lifting a single shingle — and we leave the landscaping happier than we found it.</p>
+      <div class="hero-actions">
+        <a href="#contact" class="btn btn-primary">Book a Free Quote <span class="btn-arrow">→</span></a>
+        <a href="#work" class="btn btn-ghost">See the Transformations</a>
+      </div>
+      <div class="hero-trust">
+        <div class="hero-trust-item">
+          <span class="num">4.9<span style="font-size:1rem;color:var(--sun);"> ★</span></span>
+          <span class="lbl">Google · 312 reviews</span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="num">2,400+</span>
+          <span class="lbl">Homes washed</span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="num">$2M</span>
+          <span class="lbl">Liability insured</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="compare" id="hero-compare">
+        <div class="compare-img compare-before"></div>
+        <div class="compare-img compare-after" id="hero-after"></div>
+        <div class="compare-handle" id="hero-handle"></div>
+        <span class="compare-label before">Before</span>
+        <span class="compare-label after">After</span>
+        <div class="compare-caption">
+          <span class="left">CASE 047</span>
+          <span class="mid">3,200 SF Cedar Siding</span>
+          <span class="right">3 hrs · soft wash</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee">
+  <div class="marquee-track">
+    <span><span class="dot"></span>SOFT WASH<span class="dot"></span>ROOF TREATMENT<span class="dot"></span>HOUSE WASH<span class="dot"></span>DRIVEWAY &amp; CONCRETE<span class="dot"></span>DECK &amp; FENCE<span class="dot"></span>FLEET &amp; COMMERCIAL<span class="dot"></span>GUTTER BRIGHTENING<span class="dot"></span>OYSTER SHELL DRIVES<span class="dot"></span></span>
+    <span><span class="dot"></span>SOFT WASH<span class="dot"></span>ROOF TREATMENT<span class="dot"></span>HOUSE WASH<span class="dot"></span>DRIVEWAY &amp; CONCRETE<span class="dot"></span>DECK &amp; FENCE<span class="dot"></span>FLEET &amp; COMMERCIAL<span class="dot"></span>GUTTER BRIGHTENING<span class="dot"></span>OYSTER SHELL DRIVES<span class="dot"></span></span>
+  </div>
+</div>
+
+<section class="services" id="services">
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow">Services / What We Wash</div>
+      <h2>Built for the <span class="ital">Lowcountry</span>.</h2>
+    </div>
+    <a href="#contact" class="head-link">View pricing →</a>
+  </div>
+  <div class="services-grid">
+    <div class="service">
+      <div class="service-img s-img-1"><span class="s-pill">Most Booked</span></div>
+      <div class="service-body">
+        <h3>House Soft Wash</h3>
+        <p>Low-pressure biocide treatment that wipes out mildew, algae, and salt film without harming siding, shutters, or shrubs.</p>
+        <div class="service-meta">
+          <div class="service-price"><span class="lbl">From</span>$289</div>
+          <div class="service-arrow">↗</div>
+        </div>
+      </div>
+    </div>
+    <div class="service">
+      <div class="service-img s-img-2"><span class="s-pill">No Pressure</span></div>
+      <div class="service-body">
+        <h3>Roof Treatment</h3>
+        <p>The black streaks aren't dirt — they're algae. Our soft-wash kills it at the root without touching a shingle granule. 5-yr no-streak warranty.</p>
+        <div class="service-meta">
+          <div class="service-price"><span class="lbl">From</span>$425</div>
+          <div class="service-arrow">↗</div>
+        </div>
+      </div>
+    </div>
+    <div class="service">
+      <div class="service-img s-img-3"><span class="s-pill">Curb Appeal</span></div>
+      <div class="service-body">
+        <h3>Driveway &amp; Concrete</h3>
+        <p>Surface-cleaner pressure wash for pavers, concrete, brick, and oyster-shell drives. Optional sealant for a 12-month finish.</p>
+        <div class="service-meta">
+          <div class="service-price"><span class="lbl">From</span>$199</div>
+          <div class="service-arrow">↗</div>
+        </div>
+      </div>
+    </div>
+    <div class="service">
+      <div class="service-img s-img-4"><span class="s-pill">Wood Safe</span></div>
+      <div class="service-body">
+        <h3>Decks &amp; Fences</h3>
+        <p>Cedar, IPE, pressure-treated pine, vinyl, composite. We brighten the wood, neutralize the cleaner, and let your stain breathe.</p>
+        <div class="service-meta">
+          <div class="service-price"><span class="lbl">From</span>$249</div>
+          <div class="service-arrow">↗</div>
+        </div>
+      </div>
+    </div>
+    <div class="service">
+      <div class="service-img s-img-5"><span class="s-pill">Commercial</span></div>
+      <div class="service-body">
+        <h3>Storefront &amp; Fleet</h3>
+        <p>Restaurants, dealerships, HOAs, property managers. Recurring schedules with COI on file and after-hours crews.</p>
+        <div class="service-meta">
+          <div class="service-price"><span class="lbl">Quote</span>Custom</div>
+          <div class="service-arrow">↗</div>
+        </div>
+      </div>
+    </div>
+    <div class="service">
+      <div class="service-img s-img-6"><span class="s-pill">Add-On</span></div>
+      <div class="service-body">
+        <h3>Gutter &amp; Detail</h3>
+        <p>Outside-of-gutter brightening, downspout flush, window-frame wipe. The little stuff that makes the whole house pop.</p>
+        <div class="service-meta">
+          <div class="service-price"><span class="lbl">From</span>$129</div>
+          <div class="service-arrow">↗</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="transformation" id="work">
+  <div class="transformation-inner">
+    <div>
+      <div class="section-eyebrow">Case Study / 047</div>
+      <h2>One afternoon. <span class="ital">Ten years</span> off the house.</h2>
+      <p>The Mills family had lived with green-grey siding so long they thought it was the paint color. A 4-hour soft-wash later, the original ivory cedar came back — no shingle replaced, no shrub harmed, no second visit needed.</p>
+      <div class="case-stats">
+        <div class="case-stat">
+          <div class="num">4 hrs</div>
+          <div class="lbl">On-site time</div>
+        </div>
+        <div class="case-stat">
+          <div class="num">3,200 SF</div>
+          <div class="lbl">Siding washed</div>
+        </div>
+        <div class="case-stat">
+          <div class="num">$489</div>
+          <div class="lbl">Final invoice</div>
+        </div>
+      </div>
+      <blockquote class="case-quote">
+        "I was ready to repaint the entire house. Tidewater showed up at 8 AM and by 1 PM the siding looked newer than the day we moved in twelve years ago."
+        <span class="author">— Sarah M. · Mount Pleasant · Verified Google Review</span>
+      </blockquote>
+    </div>
+    <div class="transformation-visual">
+      <div class="compare" id="case-compare">
+        <div class="compare-img compare-before"></div>
+        <div class="compare-img compare-after" id="case-after"></div>
+        <div class="compare-handle" id="case-handle"></div>
+        <span class="compare-label before">Before</span>
+        <span class="compare-label after">After</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="process" id="process">
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow">Process / How It Works</div>
+      <h2>From quote to <span class="ital">curb appeal</span>, in four steps.</h2>
+    </div>
+  </div>
+  <div class="process-grid">
+    <div class="process-step">
+      <div class="process-num">1</div>
+      <h4>Free Quote</h4>
+      <p>Text us a few photos and your address. We'll return a flat-rate quote within an hour — no high-pressure sales call.</p>
+      <span class="duration">⏱ 1 hour</span>
+    </div>
+    <div class="process-step">
+      <div class="process-num">2</div>
+      <h4>Schedule</h4>
+      <p>Pick a slot that works. We text the day before and the morning of with an exact ETA — not a 4-hour window.</p>
+      <span class="duration">⏱ Same week</span>
+    </div>
+    <div class="process-step">
+      <div class="process-num">3</div>
+      <h4>Wash</h4>
+      <p>Plant pre-rinse, soft-wash chemistry, surface clean, post-rinse. We protect what shouldn't get wet and brighten what should.</p>
+      <span class="duration">⏱ 2–6 hrs</span>
+    </div>
+    <div class="process-step">
+      <div class="process-num">4</div>
+      <h4>Walk-Through</h4>
+      <p>You walk the property with the lead tech. If anything's missed, we re-do it on the spot. Pay only when you're happy.</p>
+      <span class="duration">⏱ 15 min</span>
+    </div>
+  </div>
+</section>
+
+<section class="testimonials">
+  <div class="testimonials-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">Reviews / The Neighborhood Verdict</div>
+        <h2>4.9 stars across <span class="ital">312 reviews</span>.</h2>
+      </div>
+      <a href="#" class="head-link">All reviews →</a>
+    </div>
+    <div class="testimonial-grid">
+      <div class="t-card">
+        <div class="stars">★★★★★</div>
+        <p class="quote">"Booked Tuesday, washed Friday, and our 1920s home looks like the realtor staged it. The crew lead walked me around the house with me — no missed spots, no damage to the camellias."</p>
+        <div class="author">
+          <div class="t-avatar">SM</div>
+          <div>
+            <div class="t-name">Sarah M.</div>
+            <div class="t-meta">Mount Pleasant · Apr 2026</div>
+          </div>
+        </div>
+      </div>
+      <div class="t-card">
+        <div class="stars">★★★★★</div>
+        <p class="quote">"I manage 14 short-term rentals on the peninsula. Tidewater is on a quarterly schedule with all of them. Same crew, same quality, never a complaint from a guest."</p>
+        <div class="author">
+          <div class="t-avatar">DK</div>
+          <div>
+            <div class="t-name">Derek K.</div>
+            <div class="t-meta">Charleston STR Operator</div>
+          </div>
+        </div>
+      </div>
+      <div class="t-card">
+        <div class="stars">★★★★★</div>
+        <p class="quote">"Their soft-wash on the roof bought us another five years easy. Roofer came out for a separate inspection and asked who did it because the granules were untouched."</p>
+        <div class="author">
+          <div class="t-avatar">JR</div>
+          <div>
+            <div class="t-name">Jennifer R.</div>
+            <div class="t-meta">James Island · Mar 2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section" id="contact">
+  <div class="cta-card">
+    <div class="cta-left">
+      <div class="section-eyebrow">Contact / Free Quote</div>
+      <h2>Send a few photos. <span class="ital">Get a real quote.</span></h2>
+      <p>Skip the in-home pitch. Most quotes are turned around within the hour by text — flat rate, no hidden trip fees, never a markup for the second story.</p>
+      <div class="cta-contacts">
+        <a href="tel:8435551047" class="cta-row">
+          <div class="icon-circle"><svg width="20" height="20"><use href="#ico-phone"/></svg></div>
+          <div>
+            <span class="lbl">Call or text</span>
+            <span class="val">(843) 555-1047</span>
+          </div>
+        </a>
+        <a href="mailto:hello@tidewaterprowash.com" class="cta-row">
+          <div class="icon-circle"><svg width="20" height="20"><use href="#ico-mail"/></svg></div>
+          <div>
+            <span class="lbl">Email us</span>
+            <span class="val">hello@tidewaterprowash.com</span>
+          </div>
+        </a>
+        <div class="cta-row" style="cursor:default;">
+          <div class="icon-circle"><svg width="20" height="20"><use href="#ico-pin"/></svg></div>
+          <div>
+            <span class="lbl">Service area</span>
+            <span class="val">Charleston · Mt. Pleasant · Summerville · Kiawah</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form class="quote-form" id="quoteForm">
+      <h3>Free Quote, Within the Hour.</h3>
+      <span class="form-eyebrow">Average response time · 38 min</span>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" required />
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone</label>
+          <input type="tel" id="phone" required placeholder="(843) ..." />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="address">Property Address</label>
+        <input type="text" id="address" required />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="service">Service Needed</label>
+          <select id="service">
+            <option>House Soft Wash</option>
+            <option>Roof Treatment</option>
+            <option>Driveway / Concrete</option>
+            <option>Deck / Fence</option>
+            <option>Commercial / Fleet</option>
+            <option>Not sure — recommend</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="size">Home Size</label>
+          <select id="size">
+            <option>Under 1,500 SF</option>
+            <option>1,500–2,500 SF</option>
+            <option>2,500–4,000 SF</option>
+            <option>4,000+ SF</option>
+            <option>Commercial property</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="notes">Anything we should know?</label>
+        <textarea id="notes" rows="3" placeholder="Painted shutters, koi pond, two-story access, gate code..."></textarea>
+      </div>
+      <button type="submit" class="form-submit">Send Photos &amp; Get Quote →</button>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div>TIDEWATER PRO WASH © 2026 · <span class="accent">FULLY LICENSED &amp; INSURED</span></div>
+    <div>(843) 555-1047 · HELLO@TIDEWATERPROWASH.COM</div>
+    <div>CHARLESTON, SC · SC LIC #84512</div>
+  </div>
+</footer>
+
+<script>
+// Generic before/after slider — wires up draggable handle on any .compare element.
+function wireCompare(rootId, afterId, handleId) {
+  const root = document.getElementById(rootId);
+  const after = document.getElementById(afterId);
+  const handle = document.getElementById(handleId);
+  if (!root || !after || !handle) return;
+
+  let active = false;
+
+  function setPos(clientX) {
+    const rect = root.getBoundingClientRect();
+    let pct = ((clientX - rect.left) / rect.width) * 100;
+    pct = Math.max(2, Math.min(98, pct));
+    after.style.clipPath = `inset(0 0 0 ${pct}%)`;
+    handle.style.left = `${pct}%`;
+  }
+
+  root.addEventListener('mousedown', (e) => { active = true; setPos(e.clientX); });
+  window.addEventListener('mousemove', (e) => { if (active) setPos(e.clientX); });
+  window.addEventListener('mouseup', () => { active = false; });
+  root.addEventListener('touchstart', (e) => { active = true; setPos(e.touches[0].clientX); }, { passive: true });
+  window.addEventListener('touchmove', (e) => { if (active) setPos(e.touches[0].clientX); }, { passive: true });
+  window.addEventListener('touchend', () => { active = false; });
+}
+
+wireCompare('hero-compare', 'hero-after', 'hero-handle');
+wireCompare('case-compare', 'case-after', 'case-handle');
+
+// Form
+document.getElementById('quoteForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('.form-submit');
+  const original = btn.textContent;
+  btn.textContent = '✓ Quote request sent — we\'ll text within the hour';
+  btn.style.background = 'var(--sun)';
+  btn.style.color = 'var(--ink)';
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.style.background = '';
+    btn.style.color = '';
+    e.target.reset();
+  }, 4000);
+});
+</script>
+
+</body>
+</html>

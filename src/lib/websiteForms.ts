@@ -31,3 +31,37 @@ export function ensureFormHandler(html: string, siteId: string): string {
 
   return html + script;
 }
+
+/**
+ * White-label sites must never contain a "Powered by NextNote" badge.
+ * The model is instructed to omit it, but it ignores that instruction often
+ * enough to be a problem — so we always post-process white-label HTML and
+ * strip any element whose visible text mentions "powered by" + "nextnote".
+ *
+ * We target common wrappers (p, div, span, small, li, footer) and any
+ * leaked anchor pointing at nextnote.to that still carries the credit.
+ */
+export function stripPoweredByBadge(html: string): string {
+  let out = html;
+
+  // Strip wrapping containers whose flattened text contains both phrases.
+  out = out.replace(
+    /<(p|div|span|small|li|aside|figure)\b([^>]*)>([\s\S]*?)<\/\1>/gi,
+    (match, _tag, _attrs, inner) => {
+      const text = String(inner).replace(/<[^>]+>/g, " ").toLowerCase();
+      if (text.includes("powered by") && text.includes("nextnote")) return "";
+      if (text.includes("built with nextnote") || text.includes("made with nextnote")) return "";
+      return match;
+    },
+  );
+
+  // Strip any leftover <a> tag pointing at nextnote.to whose text mentions
+  // "powered" / "built" / "made" — defensive backstop for edge layouts.
+  out = out.replace(/<a\b[^>]*href=["'][^"']*nextnote\.to[^"']*["'][^>]*>([\s\S]*?)<\/a>/gi, (match, inner) => {
+    const text = String(inner).replace(/<[^>]+>/g, " ").toLowerCase();
+    if (text.includes("powered") || text.includes("built") || text.includes("made")) return "";
+    return match;
+  });
+
+  return out;
+}

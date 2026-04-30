@@ -5,7 +5,10 @@ import { getUserAIConfig, aiChat } from "@/lib/ai";
 import { getBalance, deductCredits, WEBSITE_GENERATION_CREDITS, WEBSITE_WHITELABEL_CREDITS } from "@/lib/credits";
 import { supabaseAdmin } from "@/lib/supabase";
 import { generateBusinessLogo } from "@/lib/logo";
-import { ensureFormHandler } from "@/lib/websiteForms";
+import { ensureFormHandler, stripPoweredByBadge } from "@/lib/websiteForms";
+import { reserveUniqueSlug, WHITELABEL_HOST } from "@/lib/websiteDomains";
+import { addVercelDomain } from "@/lib/vercelDomains";
+import { buildLockedDesignSystemBlock, pickDesignSystem, hashSeed } from "@/lib/websiteDesignSystems";
 
 type ServiceSpec = { name: string; keyword: string };
 
@@ -23,6 +26,107 @@ type PaletteHint = {
   logoConcept: string;
   services: ServiceSpec[];
 };
+
+// Color variants — same business name → same variant on every regeneration,
+// different business name in the same niche → different look. Variant 0 of
+// each entry preserves the previously-shipped palette so existing sites stay
+// visually stable if regenerated.
+type ColorVariant = {
+  primary: string;
+  accent: string;
+  background: string;
+  gradients: string;
+};
+
+const COLOR_VARIANTS: Record<string, ColorVariant[]> = {
+  "Roofing / Exterior": [
+    { primary: "#1e3a5f", accent: "#e87722", background: "#ffffff with #f7f7f5 alternating sections", gradients: "slate → midnight hero overlay only" },
+    { primary: "#2d4a32", accent: "#d4a017", background: "#ffffff with #f5f7f3 alternating sections", gradients: "forest → amber hero overlay only" },
+    { primary: "#3a2418", accent: "#c2683f", background: "#ffffff with #fdf8f3 alternating sections", gradients: "espresso → copper hero overlay only" },
+  ],
+  "Landscaping / Outdoor": [
+    { primary: "#1a3d2e", accent: "#84a98c", background: "#ffffff with #f7f9f5 alternating sections", gradients: "forest → sage hero overlay only" },
+    { primary: "#2d4a32", accent: "#c2683f", background: "#ffffff with #f4ede0 alternating sections", gradients: "moss → terracotta hero overlay only" },
+    { primary: "#3d4a2a", accent: "#d4c894", background: "#ffffff with #f8f5ec alternating sections", gradients: "olive → cream hero overlay only" },
+  ],
+  Dental: [
+    { primary: "#0f4c5c", accent: "#5fb3a5", background: "#ffffff with #f5fafa alternating sections", gradients: "teal → mint hero overlay only" },
+    { primary: "#1e4e72", accent: "#f4a59f", background: "#ffffff with #f7fafd alternating sections", gradients: "pearl-blue → coral hero overlay only" },
+    { primary: "#3a3530", accent: "#a8c8a0", background: "#ffffff with #faf8f4 alternating sections", gradients: "warm-clay → sage hero overlay only" },
+  ],
+  "Beauty / Medspa": [
+    { primary: "#3d2936", accent: "#d4a5a5", background: "#ffffff with #faf5f5 alternating sections", gradients: "mauve → blush hero overlay only" },
+    { primary: "#2a2520", accent: "#c9a394", background: "#ffffff with #f8f3ee alternating sections", gradients: "champagne-noir → rose-gold hero overlay only" },
+    { primary: "#1f3329", accent: "#e8d9c4", background: "#ffffff with #f6f4ee alternating sections", gradients: "deep-emerald → pearl hero overlay only" },
+  ],
+  "Law / Professional": [
+    { primary: "#0a1929", accent: "#b08968", background: "#ffffff with #f7f5f0 alternating sections", gradients: "navy → bronze hero overlay only" },
+    { primary: "#1d3a2f", accent: "#d4c4a0", background: "#ffffff with #f7f5ee alternating sections", gradients: "oxford-green → ivory hero overlay only" },
+    { primary: "#3a1f24", accent: "#b89968", background: "#ffffff with #faf5f1 alternating sections", gradients: "burgundy → brass hero overlay only" },
+  ],
+  "Home Services / Trades": [
+    { primary: "#1c1c1c", accent: "#d4471f", background: "#ffffff with #f7f7f7 alternating sections", gradients: "charcoal → black hero overlay only" },
+    { primary: "#0b2545", accent: "#ffb703", background: "#ffffff with #f5f7fa alternating sections", gradients: "navy → safety-yellow hero overlay only" },
+    { primary: "#1f2e22", accent: "#f6b72e", background: "#ffffff with #f5f7f3 alternating sections", gradients: "forest → safety-yellow hero overlay only" },
+  ],
+  Automotive: [
+    { primary: "#0a0a0a", accent: "#dc2626", background: "#ffffff with #f5f5f5 alternating sections", gradients: "black → graphite hero overlay only" },
+    { primary: "#1a1a1a", accent: "#0066ff", background: "#ffffff with #f4f6fa alternating sections", gradients: "graphite → electric-blue hero overlay only" },
+    { primary: "#2a2018", accent: "#b8b8b8", background: "#ffffff with #f5f3f0 alternating sections", gradients: "matte-bronze → chrome hero overlay only" },
+  ],
+  "Real Estate": [
+    { primary: "#2c2825", accent: "#c9a67c", background: "#ffffff with #faf7f2 alternating sections", gradients: "warm-black → champagne hero overlay only" },
+    { primary: "#1c1d20", accent: "#a07f3a", background: "#ffffff with #f6f3ed alternating sections", gradients: "ink → brass hero overlay only" },
+    { primary: "#1a2a3a", accent: "#d8c19a", background: "#ffffff with #f7f3ec alternating sections", gradients: "ocean-navy → sand hero overlay only" },
+  ],
+  "Food / Hospitality": [
+    { primary: "#3a1f1a", accent: "#d97757", background: "#ffffff with #fdf8f3 alternating sections", gradients: "espresso → terracotta hero overlay only" },
+    { primary: "#1f1c1a", accent: "#e8c878", background: "#ffffff with #f9f5ed alternating sections", gradients: "charcoal → butter hero overlay only" },
+    { primary: "#1f3a2a", accent: "#f0e3c8", background: "#ffffff with #f7f4eb alternating sections", gradients: "forest-green → cream hero overlay only" },
+  ],
+  "Fitness / Coaching": [
+    { primary: "#0f0f0f", accent: "#84cc16", background: "#ffffff with #f5f5f5 alternating sections", gradients: "black → lime hero overlay only" },
+    { primary: "#0a0a0a", accent: "#d4ff3a", background: "#ffffff with #f4f4f4 alternating sections", gradients: "black → neon-green hero overlay only" },
+    { primary: "#18181b", accent: "#f97316", background: "#ffffff with #f6f5f3 alternating sections", gradients: "graphite → magma hero overlay only" },
+  ],
+  "Tech / Agency": [
+    { primary: "#0f0f23", accent: "#6366f1", background: "#ffffff with #fafafa alternating sections", gradients: "indigo → violet hero overlay only" },
+    { primary: "#0a0a0a", accent: "#06b6d4", background: "#ffffff with #f7fafc alternating sections", gradients: "ink → cyan hero overlay only" },
+    { primary: "#050505", accent: "#f0db4f", background: "#ffffff with #f6f5ee alternating sections", gradients: "black → acid-yellow hero overlay only" },
+  ],
+  "Cleaning Services": [
+    { primary: "#1e40af", accent: "#38bdf8", background: "#ffffff with #f0f9ff alternating sections", gradients: "blue → sky hero overlay only" },
+    { primary: "#047857", accent: "#e0f2fe", background: "#ffffff with #f0f7f3 alternating sections", gradients: "spearmint → cloud hero overlay only" },
+    { primary: "#4338ca", accent: "#fde047", background: "#ffffff with #f6f5fb alternating sections", gradients: "lavender-blue → lemon hero overlay only" },
+  ],
+  "Pet / Veterinary": [
+    { primary: "#6b4423", accent: "#f97316", background: "#ffffff with #fdf8f3 alternating sections", gradients: "walnut → coral hero overlay only" },
+    { primary: "#0ea5e9", accent: "#facc15", background: "#ffffff with #f0f9ff alternating sections", gradients: "sky → sun hero overlay only" },
+    { primary: "#1f3a2a", accent: "#fda4af", background: "#ffffff with #f5faf6 alternating sections", gradients: "forest → peach hero overlay only" },
+  ],
+  "Creative / Events": [
+    { primary: "#2d2a26", accent: "#c9a0dc", background: "#ffffff with #faf7f5 alternating sections", gradients: "warm-black → lavender hero overlay only" },
+    { primary: "#1c1c1c", accent: "#c9a67c", background: "#ffffff with #fde0d0 alternating sections", gradients: "ink → gold hero overlay only" },
+    { primary: "#2a1d3a", accent: "#d4b58a", background: "#ffffff with #f6f3f7 alternating sections", gradients: "deep-violet → champagne hero overlay only" },
+  ],
+  "Healthcare / Wellness": [
+    { primary: "#134e4a", accent: "#5eead4", background: "#ffffff with #f0fdfa alternating sections", gradients: "teal → mint hero overlay only" },
+    { primary: "#5b4b6e", accent: "#a8c8a0", background: "#ffffff with #f6f4f8 alternating sections", gradients: "lavender → sage hero overlay only" },
+    { primary: "#4a4239", accent: "#f8b6a8", background: "#ffffff with #f8f5f2 alternating sections", gradients: "warm-stone → soft-coral hero overlay only" },
+  ],
+  "General Business": [
+    { primary: "#0f172a", accent: "#6366f1", background: "#ffffff with #fafafa alternating sections", gradients: "slate → indigo hero overlay only" },
+    { primary: "#0c1c2e", accent: "#b8896a", background: "#ffffff with #f6f4f1 alternating sections", gradients: "navy → bronze hero overlay only" },
+    { primary: "#1a2e25", accent: "#f59e0b", background: "#ffffff with #f5f7f4 alternating sections", gradients: "forest → amber hero overlay only" },
+  ],
+};
+
+function applyColorVariant(palette: PaletteHint, seed: number): PaletteHint {
+  const variants = COLOR_VARIANTS[palette.label];
+  if (!variants?.length) return palette;
+  const variant = variants[seed % variants.length];
+  return { ...palette, ...variant };
+}
 
 function paletteForNiche(raw: string | undefined | null): PaletteHint {
   const niche = (raw || "").toLowerCase();
@@ -427,9 +531,10 @@ function fallbackImageUrl(seed: string, width: number, height: number): string {
   return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${width}/${height}`;
 }
 
-function loremflickrUrl(keyword: string, width: number, height: number, lock: number): string {
-  const k = encodeURIComponent(keyword.replace(/[^a-zA-Z0-9 ,-]/g, "").trim());
-  return `https://loremflickr.com/${width}/${height}/${k}/all?lock=${lock}`;
+// Picsum gives us a guaranteed-loading image keyed by a stable seed. Not
+// niche-relevant, but at least the page never has empty image slots.
+function seededPicsum(seed: string, width: number, height: number): string {
+  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${width}/${height}`;
 }
 
 async function buildNicheImageUrls(p: PaletteHint): Promise<{
@@ -462,28 +567,28 @@ async function buildNicheImageUrls(p: PaletteHint): Promise<{
       return fallbackUrl;
     };
 
-    const hero = claim(heroPool, loremflickrUrl(k, 1920, 1080, 1));
+    const hero = claim(heroPool, seededPicsum(`${k}-hero`, 1920, 1080));
     const services = p.services.map((s, i) => ({
       name: s.name,
       keyword: s.keyword,
-      url: claim(servicePools[i], loremflickrUrl(s.keyword, 800, 600, 10 + i)),
+      url: claim(servicePools[i], seededPicsum(`${s.keyword}-${i}`, 800, 600)),
     }));
     const portfolio = [0, 1, 2].map((i) =>
-      claim(portfolioPool, loremflickrUrl(k, 1200, 800, 20 + i)),
+      claim(portfolioPool, seededPicsum(`${k}-portfolio-${i}`, 1200, 800)),
     );
 
     return { hero, services, portfolio, source: "pexels", fallback };
   }
 
-  // Loremflickr fallback — keyword-matched per service, but less reliable.
+  // Pexels failed — fall back to picsum (always loads, niche-stable seeds).
   return {
-    hero: loremflickrUrl(k, 1920, 1080, 1),
+    hero: seededPicsum(`${k}-hero`, 1920, 1080),
     services: p.services.map((s, i) => ({
       name: s.name,
       keyword: s.keyword,
-      url: loremflickrUrl(s.keyword, 800, 600, 10 + i),
+      url: seededPicsum(`${s.keyword}-${i}`, 800, 600),
     })),
-    portfolio: [20, 21, 22].map((lock) => loremflickrUrl(k, 1200, 800, lock)),
+    portfolio: [0, 1, 2].map((i) => seededPicsum(`${k}-portfolio-${i}`, 1200, 800)),
     source: "fallback",
     fallback,
   };
@@ -532,241 +637,6 @@ function formatPaletteInstructions(
   ].join("\n");
 }
 
-const PREMIUM_STRUCTURE_BLOCK = `MANDATORY PAGE STRUCTURE (follow this template in EXACT order — no skipping, no reordering):
-
-1. STICKY NAV (header)
-   - Solid white background, subtle bottom border or shadow on scroll
-   - Left: the logo lockup (icon + business-name wordmark) exactly as described in the LOGO section above. Icon ~32-36px tall, wordmark next to it.
-   - Center: 4 nav links — Services, About, Work, Contact — medium weight, subtle hover with accent underline
-   - Right: accent-filled CTA button "Call Now" or "Get Free Quote" with phone icon (use the tel: link)
-
-2. FULL-BLEED HERO
-   - Min-height 85vh, background-image = the niche hero URL, with dark gradient overlay
-   - Content centered vertically, left-aligned or centered horizontally
-   - Small eyebrow label in accent color (uppercase small-caps) above headline — e.g. "TRUSTED [NICHE] EXPERTS"
-   - Aspirational transformation headline at 56-72px, tight leading, max 2 lines. NOT feature-based. Examples of tone: "We Don't Just Cut Grass. We Create Experiences." / "Roofs Built to Last a Lifetime." / "Your Smile. Our Masterpiece."
-   - Subheadline 18-20px, max 3 lines, white/near-white, describing transformation/outcome
-   - TWO CTAs side-by-side: primary (filled accent, "Get Your Free Quote"), secondary (outlined white, niche-appropriate like "View Our Work" / "Book Consultation")
-   - Below CTAs: one line of trust — "★★★★★  200+ 5-Star Reviews  •  Licensed & Insured  •  Free Estimates"
-
-3. TRUST BADGES ROW (directly under hero)
-   - 4-column grid on white or #fafafa
-   - Each badge: small accent-colored icon (check-circle, shield, star, award) + bold short line + one-line supporting text
-   - Examples: "5-Star Rated" / "200+ Happy Customers" · "Licensed & Insured" / "Fully bonded, fully covered" · "Free Estimates" / "No hidden fees, no pressure" · "100% Guarantee" / "We stand behind every job"
-
-4. SERVICES GRID
-   - Eyebrow small-caps accent label + H2 section title + optional one-line kicker
-   - 6 service cards in a 3-column grid (2 on tablet, 1 on mobile)
-   - Each card: rounded image at top (16:10), H3 title, 2-3 line description, small "Learn more →" link in accent
-   - White bg, subtle shadow (shadow-sm), hover: -translate-y-1 + shadow-md
-   - Services must be specific to the business — not generic "Service 1 / Service 2"
-
-5. STATS / WHY CHOOSE US
-   - Full-width band on a subtly tinted background (e.g. very pale accent tint or #f7f9f8)
-   - 4-column grid, each stat: huge number (60-72px bold, in accent color) + label
-   - Use specific credible numbers: "15+ Years Experience", "500+ Projects Completed", "200+ 5-Star Reviews", "100% Satisfaction Guarantee"
-
-6. PORTFOLIO / TRANSFORMATION SHOWCASE
-   - H2 + kicker
-   - 3 featured projects. Cards can be vertical (image on top, content below) OR alternate horizontal (image left/right) — pick one approach and stay consistent
-   - Each: large image + project title + 2-line transformation story ("From dated concrete patio to a stunning outdoor living space with custom pergola and ambient lighting") + subtle accent metadata like location/year
-
-7. TESTIMONIALS
-   - 2-3 testimonial cards in a row, white bg with subtle shadow, rounded-xl
-   - Each: accent-colored quote mark icon, 5-star row, italicized quote, customer name in bold, role/location in muted
-
-8. LOCATION / GOOGLE MAPS (include ONLY if an address is provided in the business info)
-   - Full-width section, subtle tinted background
-   - Eyebrow + H2 ("Come Visit Us" / "Find Us" / "Our Studio") + one-line kicker
-   - Two-column grid on desktop (single column on mobile):
-     • Left column: address (with Map Pin icon), business hours (list), clickable phone (tel:), clickable email (mailto:), "Get Directions" accent button that links to https://www.google.com/maps/search/?api=1&query=[URL-ENCODED-ADDRESS]
-     • Right column: embedded Google Map iframe — src="https://www.google.com/maps?q=[URL-ENCODED-ADDRESS]&output=embed", width="100%", height="420", loading="lazy", class="rounded-2xl border border-gray-100 shadow-sm", style="border:0", referrerpolicy="no-referrer-when-downgrade"
-   - If no address was provided, OMIT this section entirely — do not render an empty map.
-
-9. CONTACT / LEAD FORM (this is where leads get captured — MUST be a real working form)
-   - Full-width section with a light tinted background (e.g. #f7f9f8 or subtle accent tint)
-   - Eyebrow small-caps ("GET IN TOUCH" or "REQUEST A QUOTE") + H2 ("Let's talk about your project" / "Tell us what you need")
-   - One-line kicker describing the response commitment ("We'll get back to you within 24 hours.")
-   - The form MUST have these EXACT attributes so our server can wire it up:
-     <form data-nn-form class="..."> — attribute "data-nn-form" is REQUIRED, do NOT add action=, method=, or an onsubmit handler, server-side JS will handle submission.
-   - The form MUST include these fields in this order, using these EXACT name attributes:
-     a) Hidden honeypot — wrap in <div class="sr-only" aria-hidden="true"> containing <label>Website<input type="text" name="company_website" tabindex="-1" autocomplete="off" /></label>. DO NOT style this field, DO NOT show it visually.
-     b) <input required name="name" type="text" placeholder="Your name" />
-     c) <input name="email" type="email" placeholder="Email address" />
-     d) <input name="phone" type="tel" placeholder="Phone number" />
-     e) <textarea name="message" rows="4" placeholder="How can we help?"></textarea>
-     f) <button type="submit">Send My Request</button> (or niche-appropriate label like "Get My Free Quote")
-     g) <p data-nn-form-status class="text-sm text-center min-h-[20px]"></p> — REQUIRED status line, kept empty; the submit script populates it with success/error text.
-   - Style the inputs: full width, border border-gray-200, rounded-lg, px-4 py-3 text-base, focus:outline-none focus:ring-2 focus:ring-accent bg-white, placeholder:text-gray-400.
-   - Layout: single column on mobile; two-column grid for name + phone on desktop, email + textarea full-width below.
-   - Wrap the form in a rounded-2xl border border-gray-100 shadow-sm p-8 bg-white card.
-   - Next to or above the form, include a second column or block with: big clickable phone (tel:), email (mailto:), business hours, and one trust line ("Licensed & Insured" etc.) — so prospects who prefer to call still have the info.
-   - The form MUST be a valid HTML5 form. Do NOT include action=, method=, or any custom JS — the server injects the submit handler.
-
-10. FINAL CTA BAND
-    - Full-width section, accent-colored background OR dark with accent button
-    - Center-aligned: short bold heading ("Ready to transform your [outcome]?"), one-line supporting text, single filled CTA button that scrolls to #contact (add id="contact" to the section above), phone tel: link below.
-
-11. FOOTER
-   - Dark (#0f172a) or white-gray with top border; 4 columns on desktop
-   - Col 1: business name + 2-line mission + big clickable phone (tel:) and email (mailto:)
-   - Col 2: Services (6 niche-specific links, # anchors are fine)
-   - Col 3: Company (About, Work, Contact, Reviews, Privacy, Terms)
-   - Col 4: Contact (address with Google Maps link, hours, social icons — Instagram/Facebook/Google)
-   - Copyright line: "© ${new Date().getFullYear()} [Business Name]. All rights reserved."`;
-
-const DESIGN_SYSTEM_BLOCK = `DESIGN SYSTEM (hit these specs exactly — this is what separates a $500 site from a generic template):
-
-- Typography: use Google Fonts via <link> in <head>. Body/UI = Inter (weight 400/500/600/700). Optional display serif for H1 only = "DM Serif Display" or "Fraunces" — use ONLY if the niche feels editorial (law, medspa, real estate, restaurant, events). Otherwise Inter for everything.
-- Font sizes: H1 56-72px bold, tight leading-[1.05]; H2 32-44px semibold; H3 22-28px semibold; eyebrow 12-13px uppercase tracking-widest; body 16-18px with leading-[1.65]; tiny/legal 13px.
-- Container: max-w-7xl (1280px) mx-auto with px-6 lg:px-8.
-- Section padding: py-20 md:py-28 (80-112px). No cramped sections.
-- Cards: rounded-2xl (16px) or rounded-xl (12px), border border-gray-100, shadow-sm, hover:shadow-lg transition-all duration-300.
-- Buttons: rounded-lg (8px) primary filled accent with px-6 py-3 text-sm font-semibold tracking-tight. Secondary = border-2 border-current bg-transparent. Hover = subtle brightness shift + translate-y.
-- Use Lucide icons via the CDN (exact setup in the ICONS section below — the script URL, init script, and markup rules are STRICT).
-- Motion: CSS-ONLY animations — no JS-driven reveals, no IntersectionObserver, no parallax, no carousels. See the MOTION section for the required premium animation system.
-- CRITICAL VISIBILITY RULE: never set an element's initial state to opacity: 0, visibility: hidden, or display: none and depend on JS to show it. All reveal animations MUST be pure CSS @keyframes with animation-fill-mode: both — they run once on page load and always end in the visible state, so content is visible even if JS never runs.
-- Do not use <marquee>, <blink>, emoji-as-icons, or Google Fonts script tags (use <link> only).`;
-
-const PREMIUM_MOTION_BLOCK = `MOTION SYSTEM — include this CSS-only animation system verbatim in a <style> block inside <head>. It makes the site feel premium like a SaaS homepage, is 100% CSS, respects prefers-reduced-motion, and always ends in the visible state.
-
-<style>
-  @media (prefers-reduced-motion: no-preference) {
-    @keyframes nn-fade-up { from { opacity: 0; transform: translate3d(0, 24px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
-    @keyframes nn-fade-in { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes nn-scale-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-    @keyframes nn-slide-right { from { opacity: 0; transform: translate3d(-24px, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
-    .nn-fade-up { animation: nn-fade-up .7s cubic-bezier(.22,1,.36,1) both; }
-    .nn-fade-in { animation: nn-fade-in .8s cubic-bezier(.22,1,.36,1) both; }
-    .nn-scale-in { animation: nn-scale-in .7s cubic-bezier(.22,1,.36,1) both; }
-    .nn-slide-right { animation: nn-slide-right .7s cubic-bezier(.22,1,.36,1) both; }
-    .nn-delay-1 { animation-delay: .08s; }
-    .nn-delay-2 { animation-delay: .16s; }
-    .nn-delay-3 { animation-delay: .24s; }
-    .nn-delay-4 { animation-delay: .32s; }
-    .nn-delay-5 { animation-delay: .40s; }
-    .nn-delay-6 { animation-delay: .48s; }
-  }
-  .nn-nav-scrolled { backdrop-filter: saturate(180%) blur(10px); background-color: rgba(255,255,255,0.88); box-shadow: 0 1px 0 rgba(0,0,0,0.06), 0 4px 20px -8px rgba(0,0,0,0.08); }
-  .nn-card { transition: transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s cubic-bezier(.22,1,.36,1); }
-  .nn-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px -12px rgba(0,0,0,0.18); }
-  .nn-image-zoom { overflow: hidden; }
-  .nn-image-zoom img { transition: transform .7s cubic-bezier(.22,1,.36,1); }
-  .nn-image-zoom:hover img { transform: scale(1.06); }
-</style>
-
-HOW TO APPLY (MANDATORY):
-- Hero eyebrow → class="nn-fade-up"
-- Hero headline → class="nn-fade-up nn-delay-1"
-- Hero subheadline → class="nn-fade-up nn-delay-2"
-- Hero CTA row → class="nn-fade-up nn-delay-3"
-- Hero trust row → class="nn-fade-up nn-delay-4"
-- Each trust-badges item → class="nn-fade-up nn-delay-1/2/3/4" (staggered)
-- Each service card → class="nn-card nn-fade-up nn-delay-1/2/3/4/5/6" (stagger across 6 cards)
-- Service card image wrapper → class="nn-image-zoom rounded-2xl"
-- Stats row items → class="nn-scale-in nn-delay-1/2/3/4"
-- Portfolio cards → class="nn-card nn-fade-up nn-delay-1/2/3"
-- Testimonial cards → class="nn-card nn-fade-up nn-delay-1/2/3"
-- Final CTA heading → class="nn-fade-up"
-
-NAV SCROLL STATE (small, safe JS):
-- Give the <nav> an id="nn-nav" and at the end of <body> include:
-  <script>(function(){var n=document.getElementById('nn-nav');if(!n)return;var t=function(){if(window.scrollY>24)n.classList.add('nn-nav-scrolled');else n.classList.remove('nn-nav-scrolled');};t();window.addEventListener('scroll',t,{passive:true});})();</script>
-- If the script fails, the nav just keeps its default look. Safe.
-
-BUTTON + CARD HOVER STATES (Tailwind, no custom CSS needed):
-- Primary button: transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl
-- Secondary button: transition-colors duration-200 hover:bg-black/5
-- Service cards: use .nn-card class above for the lift, and wrap the image in .nn-image-zoom for the gentle zoom.
-
-FORBIDDEN:
-- IntersectionObserver, scroll-triggered animations, AOS library, GSAP, ScrollTrigger.
-- ANY animation that leaves an element in a hidden state if JS fails.
-- Persistent opacity:0 or display:none on primary content.`;
-
-const ICONS_BLOCK = `ICONS SYSTEM — icons appear EVERYWHERE, not optional. Every CTA, every contact line, every trust badge, every service card, every stat, every nav link, every footer list — has an icon. A premium SaaS site never has a bare "Call Now" button without a phone icon next to it.
-
-SETUP (include EXACTLY this in the page — the script is UMD, NOT a module):
-<!-- In <head>, near the end: -->
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
-
-<!-- Just before </body>, include this init script verbatim: -->
-<script>
-  function nnInitIcons(){ if (window.lucide && typeof window.lucide.createIcons === 'function') { window.lucide.createIcons(); } }
-  if (document.readyState !== 'loading') nnInitIcons();
-  else document.addEventListener('DOMContentLoaded', nnInitIcons);
-  window.addEventListener('load', nnInitIcons);
-</script>
-
-ICON MARKUP (this exact pattern — do NOT use <svg> inline for UI icons, do NOT use emoji, do NOT use unicode):
-<i data-lucide="phone" class="w-4 h-4"></i>
-
-  - The tag is <i> (italic). Lucide replaces it with an <svg> on load, inheriting the Tailwind sizing classes.
-  - Use w-3.5 h-3.5 for tiny inline icons, w-4 h-4 for button icons, w-5 h-5 for list icons, w-6 h-6 for card/header icons, w-7 h-7 or w-8 h-8 for stat/trust icons.
-  - For colored icons, add Tailwind text color classes on a wrapper span or directly on the <i>: class="w-5 h-5 text-[ACCENT_HEX]".
-  - Always put the icon BEFORE the label text in buttons, with gap-2 on the flex parent.
-
-REQUIRED ICON PLACEMENTS (every one of these MUST have its icon — do not skip any):
-
-Navigation:
-  - Primary "Call Now" / "Get Quote" CTA button → data-lucide="phone" (if call) or "arrow-right" (if form CTA)
-  - Mobile menu toggle → data-lucide="menu"
-
-Hero:
-  - Primary CTA button → phone or arrow-right (match the CTA verb)
-  - Secondary CTA button → play-circle (for video), calendar (for booking), or eye (for portfolio view)
-  - Trust row stars → star (5 of them)
-  - Trust row separators → visual dot or vertical line (no icon needed)
-
-Trust Badges row:
-  - "5-Star Rated" → star
-  - "Licensed & Insured" → shield-check
-  - "Free Estimates" → badge-check or circle-check
-  - "Satisfaction Guarantee" → award
-  (Wrap each in a circle or rounded-xl tinted-bg container with the icon in the accent color, w-6 h-6.)
-
-Services Grid:
-  - Each of the 6 service cards gets a small icon (w-5 h-5, accent color) at the top-left of the card above/next to the title — choose contextually: oil change → "droplet", brake service → "disc", tire → "circle", engine → "cog" or "wrench", diagnostic → "activity", detailing → "sparkles"; or for other niches: lawn mowing → "scissors", design → "palette", patio → "layers", tree care → "tree-pine", cleanup → "wind", irrigation → "droplets", etc. Be specific and intentional.
-  - Every card's "Learn more →" link → ends with <i data-lucide="arrow-right" class="w-3.5 h-3.5 ml-1">
-
-Stats / Why Choose Us:
-  - Each stat gets an icon above the number (w-7 h-7 in accent color): years → "calendar", projects → "check-circle-2", reviews → "star", guarantee → "shield-check", customers → "users", locations → "map-pin", response time → "zap".
-
-Portfolio:
-  - Each card metadata row: <i data-lucide="map-pin" class="w-3.5 h-3.5"> for location, <i data-lucide="calendar" class="w-3.5 h-3.5"> for year.
-
-Testimonials:
-  - Big quote mark at top of each card → data-lucide="quote" (in accent color, w-8 h-8)
-  - Star row → 5× data-lucide="star" in accent color, w-4 h-4 with fill-current
-
-Location / Map section:
-  - Address line → data-lucide="map-pin"
-  - Hours list heading → data-lucide="clock"
-  - Phone line → data-lucide="phone"
-  - Email line → data-lucide="mail"
-  - "Get Directions" button → data-lucide="navigation" or "map-pin"
-
-Final CTA:
-  - Button icon matching the action: "phone" or "arrow-right"
-  - Below-button phone line → data-lucide="phone" (w-4 h-4)
-
-Footer:
-  - Column headings (optional): none
-  - Contact list: phone line → "phone", email line → "mail", address line → "map-pin", hours line → "clock"
-  - Social icons row: data-lucide="instagram", "facebook", "twitter" (or "x"), "youtube" — circular tinted-bg buttons, 40×40, icon w-4 h-4
-
-CTA BUTTON PATTERN (copy exactly for every CTA):
-<a href="tel:..." class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[ACCENT] text-white font-semibold text-sm tracking-tight transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl">
-  <i data-lucide="phone" class="w-4 h-4"></i>
-  Call Now
-</a>
-
-RULES:
-- EVERY button that says "Call", "Phone", "Talk", "Contact" has a phone icon.
-- EVERY button that says "Get Quote", "Get Started", "Learn More", "View Work" has an arrow-right icon.
-- EVERY button that says "Book", "Schedule", "Reserve" has a calendar icon.
-- EVERY contact line (phone, email, address, hours) has a leading icon.
-- NO plain-text CTAs. NO emoji icons. NO unicode arrows (→ character). Use Lucide <i data-lucide="arrow-right"> instead of an emoji or typographic arrow.`;
 
 function formatLogoSpec(p: PaletteHint, logoUrl: string | null): string {
   if (logoUrl) {
@@ -845,7 +715,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { prospectId, name, service, phone, email, address, contactName, tier = "standard" } = await req.json();
+  const { prospectId, name, service, phone, email, address, contactName, tier = "standard", extraInstructions } =
+    await req.json();
+  const extra = typeof extraInstructions === "string" ? extraInstructions.trim().slice(0, 2000) : "";
   if (!name) {
     return NextResponse.json({ error: "Business name is required" }, { status: 400 });
   }
@@ -865,7 +737,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: aiResult.error }, { status: 400 });
   }
 
-  const palette = paletteForNiche(service);
+  // Hash the business name into a stable seed so the same name always picks the
+  // same variant on regeneration, but a different name in the same niche gets a
+  // different palette. Variant 0 of each niche preserves the original palette.
+  const seed = hashSeed(name);
+  const palette = applyColorVariant(paletteForNiche(service), seed);
   // 128-bit cryptographic ID (32 hex chars). The GET endpoint for these pages is
   // public-by-design (users share the URL with prospects), so the ID itself is the
   // authorization token — it must be unguessable.
@@ -886,29 +762,25 @@ export async function POST(req: Request) {
       ? `BRANDING: this is a white-label site. Do NOT include any "Powered by NextNote" badge or third-party branding anywhere.`
       : `BRANDING: include a small, tasteful "Powered by NextNote" link in the footer — single line, muted gray, href="https://nextnote.to" target="_blank". Do not make it loud.`;
 
-  const systemPrompt = `You are a senior editorial web designer producing conversion-optimized single-file landing pages for small businesses. Your output is a complete, self-contained HTML document using Tailwind CSS via CDN. Your work is indistinguishable from a $3,000 custom-built site — clean, light, editorial, and specific to the niche.
+  const designSystemId = pickDesignSystem(palette.label, seed);
+  const lockedDesignBlock = buildLockedDesignSystemBlock(
+    designSystemId,
+    { label: palette.label, mood: palette.mood, accent: palette.accent, primary: palette.primary },
+    { hero: images.hero, services: images.services, portfolio: images.portfolio, fallback: images.fallback },
+  );
 
-DESIGN PHILOSOPHY:
-- Clean, LIGHT, editorial aesthetic. Not dark-themed, not cinematic-gold, not cluttered.
-- White/near-white base, generous whitespace, disciplined typography, ONE niche-appropriate accent color used sparingly.
-- Real photography per niche — hero and sections show actual images of the work, not abstract gradients or flat color blocks.
-- Restrained motion, consistent 6-12px border radius, subtle shadows only.
-- Every section ends with a clear conversion path (CTA or contact link).
+  const systemPrompt = `You are a senior editorial web designer producing conversion-optimized single-file landing pages for small businesses. Your output is a complete, self-contained HTML document with hand-written CSS — the design system is LOCKED below. Your work is indistinguishable from a $3,000 custom-built site.
+
+CRITICAL: Use ONLY the CSS provided in the locked design system below. Do NOT add Tailwind CDN. Do NOT add Lucide CDN. Do NOT use Tailwind utility classes. Do NOT invent your own layout, palette, or typography. The design system tells you exactly which CSS to embed and which class names to use — your job is to fill in real, niche-specific content.
 
 ${paletteBlock}
 
 ${logoBlock}
 
-${PREMIUM_STRUCTURE_BLOCK}
-
-${DESIGN_SYSTEM_BLOCK}
-
-${PREMIUM_MOTION_BLOCK}
-
-${ICONS_BLOCK}
+${lockedDesignBlock}
 
 CONVERSION COPY RULES:
-- Aspirational transformation headlines, NOT feature lists. ("We Create Experiences" beats "We Offer Lawn Services").
+- Aspirational transformation headlines, NOT feature lists.
 - Specific, credible numbers in the stats section ("15+ Years", "500+ Projects"). Never "many" or "lots".
 - Every contact surface uses tel: and mailto: links. If an address is provided, wrap it in a Google Maps link.
 - Services must be SPECIFIC to the niche, derived from the business info — not generic filler.
@@ -917,12 +789,11 @@ CONVERSION COPY RULES:
 ${footerBrandingLine}
 
 TECHNICAL:
-- Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
-- Google Fonts via <link> tag in <head>
-- Semantic HTML5 (header, nav, section, article, footer)
-- Mobile-first responsive (sm/md/lg breakpoints)
-- Alt text on every image
-- Lucide icons via the UMD CDN script + lucide.createIcons() call in a <script> before </body>
+- Single self-contained HTML file. All CSS lives in the <style> block from the locked design system above.
+- Google Fonts via <link> tag in <head> exactly as specified in the locked design system.
+- Semantic HTML5 (header, nav, section, article, footer).
+- Alt text on every image. Every <img> tag must include the onerror fallback specified in the locked block.
+- DO NOT include the Tailwind CDN script. DO NOT include the Lucide CDN script. The locked CSS already covers all visual styling.
 
 ${OUTPUT_FORMAT_BLOCK}`;
 
@@ -937,7 +808,7 @@ BUSINESS INFO:
 - Primary Contact: ${contactName || "N/A"}
 
 Niche category detected: ${palette.label}. Commit to this niche's visual identity (${palette.mood}) — imagery, accent color, and tone should feel native to this industry, not generic.
-
+${extra ? `\nADDITIONAL DESIGN DIRECTION FROM THE USER (apply these on top of the rules above; if anything below conflicts with the structural/format/preserve rules, the structural/format/preserve rules win):\n"""\n${extra}\n"""\n` : ""}
 Produce the full page per the structure above, at the quality of a professionally designed agency site. Return the complete HTML document only.`;
 
   try {
@@ -979,25 +850,26 @@ Produce the full page per the structure above, at the quality of a professionall
 </style></head>`,
     );
 
-    // If the model loaded Lucide as type="module" (wrong — UMD doesn't expose
-    // window.lucide under module scope), fix it so createIcons() actually runs.
-    html = html.replace(
-      /<script([^>]*?)\btype=["']module["']([^>]*?)src=["'][^"']*lucide[^"']*["']([^>]*)><\/script>/gi,
-      (_m, a, b, c) => `<script${a}${b}src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer${c}></script>`,
-    );
-
-    // Safety net: guarantee the Lucide UMD script + init script are present.
-    if (!/unpkg\.com\/lucide/i.test(html)) {
+    // The locked design systems use inline SVG icons, not Lucide. But if the
+    // model slipped in any data-lucide attributes anyway, inject the CDN +
+    // init so they render instead of showing as empty <i> tags.
+    if (/data-lucide=/.test(html)) {
       html = html.replace(
-        /<\/head>/i,
-        `<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script></head>`,
+        /<script([^>]*?)\btype=["']module["']([^>]*?)src=["'][^"']*lucide[^"']*["']([^>]*)><\/script>/gi,
+        (_m, a, b, c) => `<script${a}${b}src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer${c}></script>`,
       );
-    }
-    if (!/lucide\.createIcons/.test(html)) {
-      html = html.replace(
-        /<\/body>/i,
-        `<script>(function(){function init(){if(window.lucide&&typeof window.lucide.createIcons==='function')window.lucide.createIcons();}if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);window.addEventListener('load',init);})();</script></body>`,
-      );
+      if (!/unpkg\.com\/lucide/i.test(html)) {
+        html = html.replace(
+          /<\/head>/i,
+          `<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script></head>`,
+        );
+      }
+      if (!/lucide\.createIcons/.test(html)) {
+        html = html.replace(
+          /<\/body>/i,
+          `<script>(function(){function init(){if(window.lucide&&typeof window.lucide.createIcons==='function')window.lucide.createIcons();}if(document.readyState!=='loading')init();else document.addEventListener('DOMContentLoaded',init);window.addEventListener('load',init);})();</script></body>`,
+        );
+      }
     }
 
     // Swap logo placeholder for the real uploaded PNG URL (or leave empty if
@@ -1011,6 +883,16 @@ Produce the full page per the structure above, at the quality of a professionall
     // leads make it from the public site back into the owner's prospects CRM.
     html = ensureFormHandler(html, siteId);
 
+    // Hard guarantee: a white-label site never ships with a "Powered by NextNote"
+    // badge, even if the model ignored the prompt instruction.
+    if (tier === "whitelabel") {
+      html = stripPoweredByBadge(html);
+    }
+
+    // White-label sites get a {slug}.pitchsite.dev public URL — reserve the
+    // slug now so it's persisted alongside the HTML.
+    const slug = tier === "whitelabel" ? await reserveUniqueSlug(session.userId, name) : null;
+
     const { error: dbErr } = await supabaseAdmin.from("generated_websites").insert({
       id: siteId,
       user_id: session.userId,
@@ -1018,6 +900,7 @@ Produce the full page per the structure above, at the quality of a professionall
       prospect_name: name,
       html_content: html,
       tier,
+      slug,
     });
 
     if (dbErr) {
@@ -1030,7 +913,25 @@ Produce the full page per the structure above, at the quality of a professionall
       metadata: { prospectId, prospectName: name, tier },
     });
 
-    return NextResponse.json({ siteId, tier });
+    // Register the white-label subdomain with Vercel so it provisions an
+    // HTTPS cert. Failure is non-fatal: the row is saved, the user can
+    // re-trigger registration later, and the rest of the response is unaffected.
+    let domainError: string | null = null;
+    if (slug) {
+      const result = await addVercelDomain(`${slug}.${WHITELABEL_HOST}`);
+      if (!result.ok) {
+        domainError = result.error;
+        console.error(`[white-label] Vercel domain attach failed for ${slug}.${WHITELABEL_HOST}: ${result.error}`);
+      }
+    }
+
+    return NextResponse.json({
+      siteId,
+      tier,
+      slug,
+      publicUrl: slug ? `https://${slug}.${WHITELABEL_HOST}` : null,
+      domainError,
+    });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Generation failed";
     return NextResponse.json({ error: msg }, { status: 500 });

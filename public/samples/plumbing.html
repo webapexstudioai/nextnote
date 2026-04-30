@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Ironside Plumbing — 24/7 Emergency Plumbers · Phoenix, AZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0b2545;
+    --navy-deep: #061735;
+    --steel: #1d3557;
+    --signal: #1d8cf8;
+    --signal-bright: #2bb1ff;
+    --safety: #ffb703;
+    --emergency: #e63946;
+    --paper: #f6f7fb;
+    --paper-warm: #eef1f7;
+    --line: #d6dbe6;
+    --ink: #0e1a2b;
+    --muted: #5a6878;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-weight: 500; letter-spacing: 0.04em; }
+
+  /* TOP EMERGENCY BAR */
+  .emergency-bar {
+    background: var(--emergency);
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 9px 0;
+  }
+  .emergency-bar .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  }
+  .emergency-bar .pulse {
+    width: 8px; height: 8px; border-radius: 50%; background: #fff;
+    animation: pulse 1.6s infinite ease-in-out;
+    display: inline-block; margin-right: 8px;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.4); }
+  }
+  .emergency-bar a { color: #fff; text-decoration: none; font-weight: 700; }
+
+  /* NAV */
+  nav.main {
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 50;
+  }
+  nav.main .row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
+  .brand-mark {
+    width: 42px; height: 42px;
+    background: var(--navy); border-radius: 10px;
+    display: grid; place-items: center;
+  }
+  .brand-name {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900; font-size: 19px;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .brand-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links a {
+    color: var(--ink); text-decoration: none; font-weight: 600; font-size: 14px;
+  }
+  .nav-cta {
+    display: flex; gap: 12px; align-items: center;
+  }
+  .btn-call {
+    background: var(--navy); color: #fff;
+    padding: 12px 22px; border-radius: 6px;
+    font-weight: 700; text-decoration: none;
+    font-size: 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-call:hover { background: var(--navy-deep); }
+
+  /* HERO */
+  .hero {
+    background:
+      linear-gradient(135deg, rgba(11,37,69,0.92) 0%, rgba(6,23,53,0.95) 100%),
+      url('https://images.pexels.com/photos/8486971/pexels-photo-8486971.jpeg?auto=compress&cs=tinysrgb&w=1920') center/cover;
+    color: #fff;
+    padding: 80px 0 100px;
+    position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, var(--signal) 0%, var(--safety) 50%, var(--emergency) 100%);
+  }
+  .hero-grid {
+    display: grid; grid-template-columns: 1.3fr 1fr; gap: 64px; align-items: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18);
+    padding: 8px 16px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #4ade80;
+    box-shadow: 0 0 0 0 rgba(74,222,128,0.6); animation: livePulse 2s infinite;
+  }
+  @keyframes livePulse {
+    0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.6); }
+    70% { box-shadow: 0 0 0 12px rgba(74,222,128,0); }
+    100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+  }
+  h1.hero-title {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900; font-size: clamp(42px, 6vw, 76px);
+    line-height: 1.0; letter-spacing: -0.025em;
+    margin: 0 0 24px;
+  }
+  h1.hero-title .tag {
+    color: var(--signal-bright);
+  }
+  .hero-lead {
+    font-size: 18px; line-height: 1.6; color: rgba(255,255,255,0.85);
+    max-width: 540px; margin: 0 0 36px;
+  }
+  .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-bottom: 40px; }
+  .btn-primary {
+    background: var(--safety); color: var(--navy-deep);
+    padding: 18px 32px; border-radius: 8px;
+    font-weight: 800; text-decoration: none;
+    font-size: 16px; letter-spacing: 0.01em;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .btn-primary:hover { background: #ffc933; }
+  .btn-ghost {
+    color: #fff; padding: 18px 28px; border-radius: 8px;
+    font-weight: 600; text-decoration: none;
+    font-size: 15px;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.06); }
+
+  /* trust badges in hero */
+  .hero-trust {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+    padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .hero-trust .badge .num {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800; font-size: 28px;
+    color: var(--safety);
+    line-height: 1;
+  }
+  .hero-trust .badge .lab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.7); margin-top: 6px;
+  }
+
+  /* hero status card (right side) */
+  .status-card {
+    background: #fff; color: var(--ink);
+    border-radius: 16px; padding: 32px;
+    box-shadow: 0 24px 60px rgba(6,23,53,0.4);
+  }
+  .status-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 18px; border-bottom: 1px solid var(--line);
+    margin-bottom: 20px;
+  }
+  .status-title {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800; font-size: 18px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .status-pill {
+    background: #d4f5d4; color: #166534;
+    padding: 6px 12px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #16a34a; }
+
+  .crew-list { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+  .crew-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px; background: var(--paper-warm); border-radius: 10px;
+  }
+  .crew-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--signal), var(--navy));
+    color: #fff; font-weight: 700; font-size: 14px;
+    display: grid; place-items: center;
+    font-family: 'Archivo', sans-serif;
+  }
+  .crew-info { flex: 1; }
+  .crew-name { font-weight: 700; font-size: 14px; }
+  .crew-eta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .crew-status { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: 600; }
+  .crew-status.dispatch { background: #fef3c7; color: #92400e; }
+  .crew-status.en-route { background: #dbeafe; color: #1e40af; }
+  .crew-status.available { background: #d4f5d4; color: #166534; }
+
+  .status-cta {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--navy); color: #fff;
+    padding: 16px 18px; border-radius: 10px;
+    text-decoration: none;
+  }
+  .status-cta .label { font-size: 13px; }
+  .status-cta .num { font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 18px; }
+
+  /* SECTION HEADER */
+  .section { padding: 90px 0; }
+  .section-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--signal); margin-bottom: 14px;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .section-eyebrow::before {
+    content: ''; width: 28px; height: 2px; background: var(--signal);
+  }
+  h2.section-title {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900; font-size: clamp(34px, 4.5vw, 56px);
+    line-height: 1.05; letter-spacing: -0.02em;
+    margin: 0 0 20px;
+  }
+  .section-lead { font-size: 17px; color: var(--muted); max-width: 620px; }
+
+  /* SERVICES with PRICING */
+  .services-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    margin-top: 56px;
+  }
+  .service-card {
+    background: #fff; border: 1px solid var(--line);
+    border-radius: 14px; overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .service-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(11,37,69,0.12); }
+  .service-card .img {
+    height: 200px; background-size: cover; background-position: center;
+    position: relative;
+  }
+  .service-card .badge {
+    position: absolute; top: 14px; left: 14px;
+    background: rgba(255,255,255,0.95); color: var(--navy);
+    padding: 5px 10px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .service-card .body {
+    padding: 24px; flex: 1; display: flex; flex-direction: column;
+  }
+  .service-card h3 {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800; font-size: 20px;
+    letter-spacing: -0.01em;
+    margin: 0 0 10px;
+  }
+  .service-card p {
+    font-size: 14px; color: var(--muted); line-height: 1.6;
+    margin: 0 0 18px; flex: 1;
+  }
+  .service-card .price-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding-top: 18px; border-top: 1px solid var(--line);
+  }
+  .service-card .price-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .service-card .price-num {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800; font-size: 22px;
+    color: var(--navy);
+  }
+  .service-card .price-num small { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+  /* TRUST STRIP */
+  .trust-strip {
+    background: var(--navy); color: #fff;
+    padding: 60px 0;
+  }
+  .trust-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px;
+  }
+  .trust-stat .num {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900; font-size: 56px;
+    color: var(--safety); line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .trust-stat .lab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(255,255,255,0.7); margin-top: 10px;
+  }
+
+  /* PROCESS / GUARANTEE */
+  .guarantee {
+    background: var(--paper-warm);
+  }
+  .guarantee-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+    margin-top: 56px;
+  }
+  .guarantee-card {
+    background: #fff; padding: 32px 28px;
+    border-radius: 14px; position: relative;
+    border-top: 4px solid var(--signal);
+  }
+  .guarantee-card .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--signal);
+    font-weight: 700; letter-spacing: 0.16em;
+    margin-bottom: 16px;
+  }
+  .guarantee-card .icon {
+    width: 56px; height: 56px;
+    background: var(--paper-warm); border-radius: 14px;
+    display: grid; place-items: center;
+    margin-bottom: 18px;
+  }
+  .guarantee-card h3 {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800; font-size: 18px;
+    margin: 0 0 12px;
+  }
+  .guarantee-card p {
+    font-size: 14px; color: var(--muted); line-height: 1.6; margin: 0;
+  }
+
+  /* PRICING TABLE */
+  .pricing-table {
+    background: #fff; border-radius: 16px;
+    overflow: hidden; margin-top: 48px;
+    border: 1px solid var(--line);
+  }
+  .pricing-row {
+    display: grid; grid-template-columns: 1fr auto auto;
+    gap: 24px; padding: 22px 28px; align-items: center;
+    border-bottom: 1px solid var(--line);
+  }
+  .pricing-row:last-child { border-bottom: none; }
+  .pricing-row.head {
+    background: var(--navy); color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .pricing-row .name { font-weight: 700; font-size: 15px; }
+  .pricing-row .desc { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .pricing-row .time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--muted);
+    background: var(--paper-warm); padding: 6px 10px; border-radius: 4px;
+    text-align: center; min-width: 80px;
+  }
+  .pricing-row .cost {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800; font-size: 18px;
+    color: var(--navy); text-align: right; min-width: 100px;
+  }
+
+  /* TESTIMONIALS */
+  .testimonials { background: var(--paper); }
+  .test-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    margin-top: 56px;
+  }
+  .test-card {
+    background: #fff; padding: 32px;
+    border-radius: 14px; border: 1px solid var(--line);
+    display: flex; flex-direction: column;
+  }
+  .test-stars {
+    color: var(--safety); font-size: 16px; letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+  .test-quote {
+    font-size: 16px; line-height: 1.65; color: var(--ink);
+    margin: 0 0 24px; flex: 1;
+    font-weight: 500;
+  }
+  .test-author {
+    display: flex; align-items: center; gap: 12px;
+    padding-top: 20px; border-top: 1px solid var(--line);
+  }
+  .test-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--signal), var(--navy));
+    color: #fff; font-weight: 700; font-size: 15px;
+    display: grid; place-items: center;
+    font-family: 'Archivo', sans-serif;
+  }
+  .test-name { font-weight: 700; font-size: 14px; }
+  .test-loc { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .test-source {
+    margin-left: auto; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+
+  /* CTA / CONTACT */
+  .cta-section {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: #fff;
+  }
+  .cta-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 64px;
+    align-items: start;
+  }
+  .cta-section h2 {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 900; font-size: clamp(34px, 4.5vw, 56px);
+    line-height: 1.05; letter-spacing: -0.02em;
+    margin: 0 0 24px;
+  }
+  .cta-list {
+    list-style: none; padding: 0; margin: 32px 0 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .cta-list li {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 15px; color: rgba(255,255,255,0.88);
+  }
+  .cta-list .check {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--safety);
+    color: var(--navy-deep); font-weight: 800; font-size: 14px;
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .form-card {
+    background: #fff; color: var(--ink);
+    padding: 36px; border-radius: 16px;
+  }
+  .form-card h3 {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800; font-size: 22px;
+    margin: 0 0 8px;
+  }
+  .form-card .sub {
+    font-size: 14px; color: var(--muted); margin: 0 0 24px;
+  }
+  .form-row { margin-bottom: 16px; }
+  .form-row label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: var(--ink); margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 13px 14px; border: 1px solid var(--line);
+    border-radius: 8px; font-size: 14px; font-family: inherit;
+    background: var(--paper-warm); color: var(--ink);
+  }
+  .form-row textarea { min-height: 90px; resize: vertical; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-submit {
+    width: 100%; background: var(--safety); color: var(--navy-deep);
+    padding: 16px; border: none; border-radius: 8px;
+    font-weight: 800; font-size: 15px; cursor: pointer;
+    font-family: 'Archivo', sans-serif;
+    letter-spacing: 0.02em; text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .form-submit:hover { background: #ffc933; }
+  .form-foot {
+    text-align: center; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted); margin-top: 14px;
+    letter-spacing: 0.08em;
+  }
+
+  /* FOOTER */
+  footer {
+    background: var(--navy-deep); color: rgba(255,255,255,0.7);
+    padding: 60px 0 32px;
+  }
+  .footer-grid {
+    display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px;
+    padding-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .footer-grid h4 {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 800; font-size: 13px;
+    color: #fff; margin: 0 0 16px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .footer-grid a {
+    display: block; color: rgba(255,255,255,0.7);
+    text-decoration: none; font-size: 14px; padding: 4px 0;
+  }
+  .footer-grid a:hover { color: var(--safety); }
+  .footer-bottom {
+    padding-top: 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 980px) {
+    .hero-grid, .cta-grid { grid-template-columns: 1fr; gap: 40px; }
+    .services-grid, .guarantee-grid, .test-grid { grid-template-columns: 1fr; }
+    .hero-trust, .trust-grid { grid-template-columns: repeat(2, 1fr); }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .pricing-row { grid-template-columns: 1fr auto; }
+    .pricing-row .time { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- EMERGENCY BAR -->
+<div class="emergency-bar">
+  <div class="container row">
+    <div><span class="pulse"></span> 24/7 EMERGENCY · CREW AVAILABLE NOW · AVG ARRIVAL 38 MIN</div>
+    <div>CALL <a href="tel:6025550182">(602) 555-0182</a></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="main">
+  <div class="container row">
+    <a href="#" class="brand">
+      <div class="brand-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffb703" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">IRONSIDE PLUMBING</div>
+        <div class="brand-sub">EST. 2009 · LIC #ROC287104</div>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="#services">Services</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#guarantee">Guarantee</a>
+      <a href="#reviews">Reviews</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <div class="nav-cta">
+      <a href="tel:6025550182" class="btn-call">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        (602) 555-0182
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-eyebrow">
+          <span class="live-dot"></span>
+          PHOENIX · TEMPE · MESA · SCOTTSDALE
+        </div>
+        <h1 class="hero-title">Burst pipe? <span class="tag">We're already on the way.</span></h1>
+        <p class="hero-lead">38-minute average arrival, every time. Licensed master plumbers. Flat-rate pricing in writing before we touch a wrench. No after-hours surcharges, ever.</p>
+        <div class="hero-actions">
+          <a href="tel:6025550182" class="btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Call dispatch now
+          </a>
+          <a href="#contact" class="btn-ghost">Schedule online</a>
+        </div>
+        <div class="hero-trust">
+          <div class="badge"><div class="num">38<small style="font-size:18px;color:rgba(255,255,255,0.5);"> MIN</small></div><div class="lab">Avg arrival</div></div>
+          <div class="badge"><div class="num">4.9★</div><div class="lab">From 2,140 reviews</div></div>
+          <div class="badge"><div class="num">$0</div><div class="lab">Trip charge</div></div>
+          <div class="badge"><div class="num">15<small style="font-size:18px;color:rgba(255,255,255,0.5);"> YR</small></div><div class="lab">Workmanship warranty</div></div>
+        </div>
+      </div>
+
+      <!-- LIVE DISPATCH STATUS -->
+      <div class="status-card">
+        <div class="status-header">
+          <div class="status-title">Live Dispatch</div>
+          <div class="status-pill">5 crews available</div>
+        </div>
+        <div class="crew-list">
+          <div class="crew-row">
+            <div class="crew-avatar">MR</div>
+            <div class="crew-info">
+              <div class="crew-name">Marcus R. · Master Plumber</div>
+              <div class="crew-eta">Truck 04 · 22 min from you</div>
+            </div>
+            <div class="crew-status available">AVAILABLE</div>
+          </div>
+          <div class="crew-row">
+            <div class="crew-avatar">DH</div>
+            <div class="crew-info">
+              <div class="crew-name">Diego H. · Drain Specialist</div>
+              <div class="crew-eta">Truck 09 · 41 min · finishing job</div>
+            </div>
+            <div class="crew-status en-route">EN ROUTE</div>
+          </div>
+          <div class="crew-row">
+            <div class="crew-avatar">SK</div>
+            <div class="crew-info">
+              <div class="crew-name">Sarah K. · Water Heater Tech</div>
+              <div class="crew-eta">Truck 12 · 35 min from you</div>
+            </div>
+            <div class="crew-status available">AVAILABLE</div>
+          </div>
+        </div>
+        <a href="tel:6025550182" class="status-cta">
+          <span class="label">Dispatch the closest crew</span>
+          <span class="num">(602) 555-0182</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="section" id="services">
+  <div class="container">
+    <div class="section-eyebrow">What we fix</div>
+    <h2 class="section-title">Everything water touches.<br/>Done right the first time.</h2>
+    <p class="section-lead">From a dripping faucet at 2 a.m. to a full re-pipe of a 1970s ranch home. Same crew, same standards, same warranty.</p>
+
+    <div class="services-grid">
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/1078521/pexels-photo-1078521.jpeg?auto=compress&cs=tinysrgb&w=900')">
+          <div class="badge">24/7 Emergency</div>
+        </div>
+        <div class="body">
+          <h3>Burst & Leaking Pipes</h3>
+          <p>Same-day diagnosis with leak-detection cameras. We isolate, repair, and pressure-test before we leave the property.</p>
+          <div class="price-row">
+            <div class="price-label">Starting at</div>
+            <div class="price-num">$189<small> flat</small></div>
+          </div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/4239013/pexels-photo-4239013.jpeg?auto=compress&cs=tinysrgb&w=900')">
+          <div class="badge">Same Day</div>
+        </div>
+        <div class="body">
+          <h3>Drain Cleaning</h3>
+          <p>Hydro-jetting and camera inspection. We clear the line and show you exactly what was in there — no upsell pressure.</p>
+          <div class="price-row">
+            <div class="price-label">Starting at</div>
+            <div class="price-num">$129<small> flat</small></div>
+          </div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/6419128/pexels-photo-6419128.jpeg?auto=compress&cs=tinysrgb&w=900')">
+          <div class="badge">Tankless Certified</div>
+        </div>
+        <div class="body">
+          <h3>Water Heater Install</h3>
+          <p>Tank, tankless, hybrid heat pump. Rinnai, Rheem, and Bradford White certified. Most installs done in under 4 hours.</p>
+          <div class="price-row">
+            <div class="price-label">Install from</div>
+            <div class="price-num">$1,840</div>
+          </div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/8961064/pexels-photo-8961064.jpeg?auto=compress&cs=tinysrgb&w=900')">
+          <div class="badge">Free Camera Scope</div>
+        </div>
+        <div class="body">
+          <h3>Sewer Line Repair</h3>
+          <p>Trenchless pipe lining and bursting. Save your driveway, lawn, and patio. We video-document the entire job.</p>
+          <div class="price-row">
+            <div class="price-label">Repair from</div>
+            <div class="price-num">$2,400</div>
+          </div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/7641860/pexels-photo-7641860.jpeg?auto=compress&cs=tinysrgb&w=900')">
+          <div class="badge">Warranty Included</div>
+        </div>
+        <div class="body">
+          <h3>Toilet & Fixture Install</h3>
+          <p>Kohler, TOTO, Delta — bring the box or let us source it. Old fixture haul-away always included.</p>
+          <div class="price-row">
+            <div class="price-label">Install from</div>
+            <div class="price-num">$245<small> flat</small></div>
+          </div>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="img" style="background-image: url('https://images.pexels.com/photos/3964736/pexels-photo-3964736.jpeg?auto=compress&cs=tinysrgb&w=900')">
+          <div class="badge">Whole Home</div>
+        </div>
+        <div class="body">
+          <h3>Re-Pipe & Repipe</h3>
+          <p>PEX, copper, or hybrid. Drywall patch and texture-match included. Most homes finish in 2-3 days.</p>
+          <div class="price-row">
+            <div class="price-label">Quote in</div>
+            <div class="price-num">24 hrs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST STRIP -->
+<section class="trust-strip">
+  <div class="container">
+    <div class="trust-grid">
+      <div class="trust-stat"><div class="num">16</div><div class="lab">Years in Phoenix</div></div>
+      <div class="trust-stat"><div class="num">38,400+</div><div class="lab">Calls completed</div></div>
+      <div class="trust-stat"><div class="num">A+</div><div class="lab">BBB accredited</div></div>
+      <div class="trust-stat"><div class="num">$2M</div><div class="lab">Liability insured</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSPARENT PRICING TABLE -->
+<section class="section" id="pricing">
+  <div class="container">
+    <div class="section-eyebrow">What it costs</div>
+    <h2 class="section-title">Flat-rate pricing.<br/>In writing. Before we start.</h2>
+    <p class="section-lead">No hourly meter running. No "while we're in there" surprises. You see the number, you sign, then we work.</p>
+
+    <div class="pricing-table">
+      <div class="pricing-row head">
+        <div>Service</div>
+        <div>Avg Time</div>
+        <div>Price</div>
+      </div>
+      <div class="pricing-row">
+        <div><div class="name">Service call diagnostic</div><div class="desc">Full property assessment, written quote, no obligation</div></div>
+        <div class="time">30 min</div>
+        <div class="cost">$0</div>
+      </div>
+      <div class="pricing-row">
+        <div><div class="name">Garbage disposal replacement</div><div class="desc">Includes disposal unit + install + haul-away</div></div>
+        <div class="time">45 min</div>
+        <div class="cost">$289</div>
+      </div>
+      <div class="pricing-row">
+        <div><div class="name">Toilet replacement (standard)</div><div class="desc">Wax ring, supply line, wax-seal warranty included</div></div>
+        <div class="time">90 min</div>
+        <div class="cost">$245</div>
+      </div>
+      <div class="pricing-row">
+        <div><div class="name">Kitchen drain unclog</div><div class="desc">Mechanical snake or hydro-jet · camera scope</div></div>
+        <div class="time">1 hour</div>
+        <div class="cost">$129</div>
+      </div>
+      <div class="pricing-row">
+        <div><div class="name">Faucet replacement</div><div class="desc">Kitchen, bath, or utility · supply lines + shut-offs</div></div>
+        <div class="time">75 min</div>
+        <div class="cost">$215</div>
+      </div>
+      <div class="pricing-row">
+        <div><div class="name">Tankless water heater install</div><div class="desc">Rinnai or Navien · permits + venting included</div></div>
+        <div class="time">5-6 hours</div>
+        <div class="cost">$3,200</div>
+      </div>
+      <div class="pricing-row">
+        <div><div class="name">Hydro-jet sewer line</div><div class="desc">4,000 PSI · before/after camera footage on USB</div></div>
+        <div class="time">2 hours</div>
+        <div class="cost">$489</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GUARANTEE / 4-PILLAR -->
+<section class="section guarantee" id="guarantee">
+  <div class="container">
+    <div class="section-eyebrow">The Ironside Guarantee</div>
+    <h2 class="section-title">If it leaks, we come back.<br/>That simple.</h2>
+    <p class="section-lead">15-year workmanship warranty in writing. If anything we install or repair fails on labor, we fix it — no charge, no questions.</p>
+
+    <div class="guarantee-grid">
+      <div class="guarantee-card">
+        <div class="num">01</div>
+        <div class="icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1d8cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3>Licensed & insured</h3>
+        <p>ROC #287104 master plumber license. $2M general liability. Every tech background-checked and drug-tested.</p>
+      </div>
+      <div class="guarantee-card">
+        <div class="num">02</div>
+        <div class="icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1d8cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>On-time guarantee</h3>
+        <p>Late by more than 15 minutes from your scheduled window? Service call is on us. Period.</p>
+      </div>
+      <div class="guarantee-card">
+        <div class="num">03</div>
+        <div class="icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1d8cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h3>No surprise pricing</h3>
+        <p>Quote you sign is the price you pay. Don't run into "complications" or "additional parts" mid-job.</p>
+      </div>
+      <div class="guarantee-card">
+        <div class="num">04</div>
+        <div class="icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1d8cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h3>15-year workmanship</h3>
+        <p>Longest warranty in Arizona. If labor fails on any install we performed, we make it right — for 15 years.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section testimonials" id="reviews">
+  <div class="container">
+    <div class="section-eyebrow">Verified reviews</div>
+    <h2 class="section-title">2,140 five-star reviews<br/>across Google, Yelp, and Nextdoor.</h2>
+
+    <div class="test-grid">
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"Slab leak at 11pm on a Sunday. Marcus was at the door in 34 minutes. Quoted $1,890 flat, finished in under 4 hours, charged me exactly $1,890. Already calling them for the water heater next month."</p>
+        <div class="test-author">
+          <div class="test-avatar">JT</div>
+          <div>
+            <div class="test-name">Jennifer T.</div>
+            <div class="test-loc">Arcadia, AZ</div>
+          </div>
+          <div class="test-source">Google</div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"Three other plumbers told me I needed a $14,000 sewer replacement. Diego scoped the line, found a single root intrusion, jetted it, and charged $489. Sent me the camera footage on a USB. These guys are the real deal."</p>
+        <div class="test-author">
+          <div class="test-avatar">RM</div>
+          <div>
+            <div class="test-name">Robert M.</div>
+            <div class="test-loc">Mesa, AZ</div>
+          </div>
+          <div class="test-source">Yelp</div>
+        </div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <p class="test-quote">"Sarah replaced our old gas heater with a Rinnai tankless. Pulled all the permits, hauled away the old unit, even cleaned up the closet floor. We've used Ironside for 6 years across two houses now."</p>
+        <div class="test-author">
+          <div class="test-avatar">PV</div>
+          <div>
+            <div class="test-name">Priya V.</div>
+            <div class="test-loc">Scottsdale, AZ</div>
+          </div>
+          <div class="test-source">Nextdoor</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section cta-section" id="contact">
+  <div class="container">
+    <div class="cta-grid">
+      <div>
+        <div class="section-eyebrow" style="color: var(--safety);">Get help now</div>
+        <h2>Two ways to reach us.<br/>Both go straight to a real plumber.</h2>
+        <p style="color: rgba(255,255,255,0.75); font-size: 17px; line-height: 1.6;">No call centers. No "ticket numbers". You either talk to dispatch on the phone, or your form goes directly to the on-call master plumber's tablet.</p>
+        <ul class="cta-list">
+          <li><span class="check">✓</span> Free written quote before any work</li>
+          <li><span class="check">✓</span> Same-day service for emergencies</li>
+          <li><span class="check">✓</span> No after-hours surcharges, ever</li>
+          <li><span class="check">✓</span> Senior, military, and first-responder discount</li>
+          <li><span class="check">✓</span> 0% financing on jobs over $1,500</li>
+        </ul>
+      </div>
+
+      <form class="form-card" onsubmit="event.preventDefault(); alert('Thanks — dispatch will call within 10 minutes.');">
+        <h3>Schedule a service call</h3>
+        <p class="sub">Same-day slots available. We'll call to confirm within 10 minutes during business hours.</p>
+        <div class="form-row-2">
+          <div class="form-row">
+            <label>First name</label>
+            <input type="text" required>
+          </div>
+          <div class="form-row">
+            <label>Last name</label>
+            <input type="text" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Phone</label>
+          <input type="tel" placeholder="(602) 000-0000" required>
+        </div>
+        <div class="form-row">
+          <label>Service needed</label>
+          <select required>
+            <option value="">Select an issue…</option>
+            <option>Emergency burst / leak</option>
+            <option>Drain clog</option>
+            <option>Water heater (tank or tankless)</option>
+            <option>Toilet, faucet, or fixture</option>
+            <option>Sewer line</option>
+            <option>Whole-home re-pipe</option>
+            <option>Other / not sure yet</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Quick description</label>
+          <textarea placeholder="Where in the house? When did it start? Any photos help — text them to (602) 555-0182."></textarea>
+        </div>
+        <button type="submit" class="form-submit">Request service call</button>
+        <div class="form-foot">YOUR INFO STAYS WITH US — NO SPAM, NO RESALE</div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <div class="brand-mark"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffb703" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg></div>
+          <div>
+            <div style="color: #fff; font-family: 'Archivo'; font-weight: 900; font-size: 17px;">IRONSIDE PLUMBING</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 10px; letter-spacing: 0.14em; color: rgba(255,255,255,0.5);">EST. 2009 · LIC #ROC287104</div>
+          </div>
+        </div>
+        <p style="font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.6);">Family-owned master plumbing service in Phoenix, AZ. Serving the Valley since 2009.</p>
+      </div>
+      <div>
+        <h4>Services</h4>
+        <a href="#">Emergency repair</a>
+        <a href="#">Drain cleaning</a>
+        <a href="#">Water heaters</a>
+        <a href="#">Sewer line</a>
+        <a href="#">Re-pipe</a>
+      </div>
+      <div>
+        <h4>Service area</h4>
+        <a href="#">Phoenix</a>
+        <a href="#">Tempe</a>
+        <a href="#">Mesa</a>
+        <a href="#">Scottsdale</a>
+        <a href="#">Chandler</a>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <a href="tel:6025550182" style="color: var(--safety); font-weight: 700;">(602) 555-0182</a>
+        <a href="#">dispatch@ironside.plumbing</a>
+        <a href="#">4218 N. 32nd St, Phoenix</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 IRONSIDE PLUMBING LLC · ROC #287104 · ROC #287105</div>
+      <div>BUILT IN PHOENIX</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
