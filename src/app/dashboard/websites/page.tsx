@@ -66,7 +66,6 @@ export default function WebsitesPage() {
   const [pickerFolderId, setPickerFolderId] = useState<string | null>(null);
   const [pickerFileId, setPickerFileId] = useState<string | null>(null);
   const [prospectSearch, setProspectSearch] = useState("");
-  const [promptMode, setPromptMode] = useState<"auto" | "custom">("auto");
   const [extraInstructions, setExtraInstructions] = useState("");
   const [draftingPrompt, setDraftingPrompt] = useState(false);
   const [promptError, setPromptError] = useState("");
@@ -138,7 +137,6 @@ export default function WebsitesPage() {
     setPickerFolderId(null);
     setPickerFileId(null);
     setProspectSearch("");
-    setPromptMode("auto");
     setExtraInstructions("");
     setPromptError("");
   };
@@ -192,7 +190,7 @@ export default function WebsitesPage() {
           address: customAddress.trim(),
           contactName: customContact.trim(),
           tier: selectedTier,
-          extraInstructions: promptMode === "custom" ? extraInstructions.trim() : "",
+          extraInstructions: extraInstructions.trim(),
         }),
       });
       const data = await res.json();
@@ -740,64 +738,36 @@ export default function WebsitesPage() {
                 </div>
               </div>
 
-              {/* Design direction (optional) */}
+              {/* Design notes (optional) */}
               <div>
-                <label className="block text-xs font-medium text-[var(--muted)] mb-2">Design direction</label>
-                <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-medium text-[var(--muted)]">
+                    Design notes <span className="text-zinc-600">(optional)</span>
+                  </label>
                   <button
                     type="button"
-                    onClick={() => setPromptMode("auto")}
-                    className={`rounded-lg border px-3 py-2 text-left transition-all ${
-                      promptMode === "auto"
-                        ? "border-[var(--accent)]/60 bg-[var(--accent)]/[0.06]"
-                        : "border-[var(--border)] hover:border-[var(--border)]"
-                    }`}
+                    onClick={draftPrompt}
+                    disabled={draftingPrompt}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--accent)]/10 hover:bg-[var(--accent)]/15 text-[var(--accent)] text-[11px] font-medium transition-colors disabled:opacity-50"
                   >
-                    <p className="text-xs font-semibold">Auto from details</p>
-                    <p className="text-[10px] text-[var(--muted)] mt-0.5">Let NextNote pick the look</p>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPromptMode("custom")}
-                    className={`rounded-lg border px-3 py-2 text-left transition-all ${
-                      promptMode === "custom"
-                        ? "border-[var(--accent)]/60 bg-[var(--accent)]/[0.06]"
-                        : "border-[var(--border)] hover:border-[var(--border)]"
-                    }`}
-                  >
-                    <p className="text-xs font-semibold">Custom prompt</p>
-                    <p className="text-[10px] text-[var(--muted)] mt-0.5">Describe the vibe yourself</p>
+                    {draftingPrompt ? (
+                      <><Loader2 className="w-3 h-3 animate-spin" /> Drafting...</>
+                    ) : (
+                      <><Sparkles className="w-3 h-3" /> AI-suggest</>
+                    )}
                   </button>
                 </div>
-                {promptMode === "custom" && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-[11px] text-[var(--muted)]">
-                        Add a few notes on the vibe, palette, or hero imagery you want.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={draftPrompt}
-                        disabled={draftingPrompt}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--accent)]/10 hover:bg-[var(--accent)]/15 text-[var(--accent)] text-[11px] font-medium transition-colors disabled:opacity-50"
-                      >
-                        {draftingPrompt ? (
-                          <><Loader2 className="w-3 h-3 animate-spin" /> Drafting...</>
-                        ) : (
-                          <><Sparkles className="w-3 h-3" /> AI-suggest</>
-                        )}
-                      </button>
-                    </div>
-                    <textarea
-                      value={extraInstructions}
-                      onChange={(e) => setExtraInstructions(e.target.value)}
-                      placeholder="e.g. warm sandstone palette with deep navy accents, sun-washed exterior hero shot, headline angle around craftsmanship, copy tone confident and unhurried"
-                      rows={5}
-                      className="w-full px-3 py-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] placeholder:text-zinc-600 resize-y"
-                    />
-                    {promptError && <p className="text-[11px] text-rose-400 mt-1">{promptError}</p>}
-                  </div>
-                )}
+                <p className="text-[11px] text-[var(--muted)] mb-1.5">
+                  Leave blank to let NextNote pick the look, or steer the vibe, palette, or hero imagery.
+                </p>
+                <textarea
+                  value={extraInstructions}
+                  onChange={(e) => setExtraInstructions(e.target.value)}
+                  placeholder="e.g. warm sandstone palette with deep navy accents, sun-washed exterior hero shot, headline angle around craftsmanship, copy tone confident and unhurried"
+                  rows={4}
+                  className="w-full px-3 py-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] placeholder:text-zinc-600 resize-y"
+                />
+                {promptError && <p className="text-[11px] text-rose-400 mt-1">{promptError}</p>}
               </div>
 
               {/* Tier Selection */}
