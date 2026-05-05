@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const sid = process.env.TWILIO_ACCOUNT_SID;
     const token = process.env.TWILIO_AUTH_TOKEN;
     if (!sid || !token) {
-      return NextResponse.json({ error: "Twilio not configured" }, { status: 503 });
+      return NextResponse.json({ error: "Phone provider not configured" }, { status: 503 });
     }
 
     const { from_number, audio_url, campaign_name, targets } = await req.json();
@@ -190,11 +190,11 @@ export async function POST(req: NextRequest) {
             .from("voicemail_drops")
             .update({
               status: "failed",
-              error_message: callData?.message || "Twilio rejected",
+              error_message: callData?.message || "Carrier rejected",
               completed_at: new Date().toISOString(),
             })
             .eq("id", drop.id);
-          results.push({ phone: t.phone, ok: false, error: callData?.message || "Twilio error", drop_id: drop.id });
+          results.push({ phone: t.phone, ok: false, error: callData?.message || "Carrier error", drop_id: drop.id });
           continue;
         }
 

@@ -25,7 +25,7 @@ export async function purchaseAgencyNumber(opts: {
 
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
-  if (!sid || !token) return { success: false, error: "Twilio is not configured." };
+  if (!sid || !token) return { success: false, error: "Phone provider is not configured." };
 
   const appUrl = getAppUrl();
   if (!appUrl) return { success: false, error: "APP_URL not configured — webhooks cannot be registered." };
@@ -65,7 +65,7 @@ export async function purchaseAgencyNumber(opts: {
   );
   const purchaseData = await purchaseRes.json();
   if (!purchaseRes.ok) {
-    return { success: false, error: purchaseData?.message || "Twilio purchase failed" };
+    return { success: false, error: purchaseData?.message || "Phone purchase failed" };
   }
 
   const trialStartedAt = trial ? new Date() : null;
@@ -110,7 +110,7 @@ export async function releaseAgencyNumber(opts: {
   const { userId, twilioSid } = opts;
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
-  if (!sid || !token) return { success: false, error: "Twilio is not configured." };
+  if (!sid || !token) return { success: false, error: "Phone provider is not configured." };
 
   if (twilioSid) {
     const auth = `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`;
@@ -120,7 +120,7 @@ export async function releaseAgencyNumber(opts: {
     ).catch(() => null);
     // Twilio returns 204 on success or 404 if already gone — both are fine.
     if (res && !res.ok && res.status !== 404) {
-      return { success: false, error: `Twilio release failed: ${res.status}` };
+      return { success: false, error: `Number release failed: ${res.status}` };
     }
   }
 

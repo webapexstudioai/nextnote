@@ -4,9 +4,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Loader2, Wand2, Send, MousePointerClick, MessageSquare,
-  Save, RotateCcw, ExternalLink, Check,
+  Save, RotateCcw, ExternalLink, Check, Globe2,
 } from "lucide-react";
 import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
+import CustomDomainModal from "@/components/dashboard/CustomDomainModal";
 
 const WEBSITE_AI_EDIT_CREDITS = 15;
 const WHITELABEL_HOST = "pitchsite.dev";
@@ -15,6 +16,19 @@ type ChatMessage = {
   role: "user" | "assistant";
   text: string;
   timestamp: number;
+  // Present while a streaming edit is in progress; cleared when done.
+  progress?: {
+    phase: string;
+    applied?: number;
+    total?: number;
+  } | null;
+};
+
+const PHASE_LABEL: Record<string, string> = {
+  reading: "Reading your site",
+  planning: "Planning the changes",
+  applying: "Applying changes",
+  saving: "Saving to your site",
 };
 
 const EDITABLE_TAGS = [
@@ -42,7 +56,9 @@ export default function WebsiteEditPage() {
   const [saving, setSaving] = useState(false);
   const [savedTick, setSavedTick] = useState(false);
   const [visualDirty, setVisualDirty] = useState(false);
-  const [siteMeta, setSiteMeta] = useState<{ tier: "standard" | "whitelabel"; slug: string | null } | null>(null);
+  const [siteMeta, setSiteMeta] = useState<{ tier: "standard" | "whitelabel"; slug: string | null; prospectName: string | null } | null>(null);
+  const [domainModalOpen, setDomainModalOpen] = useState(false);
+  const [attachedDomain, setAttachedDomain] = useState<string | null>(null);
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [iframeVersion, setIframeVersion] = useState(0);
@@ -53,18 +69,94 @@ export default function WebsiteEditPage() {
   useEffect(() => {
     // Prime: website exists and loads + fetch tier/slug for the Open button.
     const prime = async () => {
-      const [previewRes, metaRes] = await Promise.all([
+      const [previewRes, metaRes, domainRes] = await Promise.all([
         fetch(`/api/websites/${siteId}`, { cache: "no-store", method: "HEAD" }),
         fetch(`/api/websites/${siteId}/meta`, { cache: "no-store" }),
+        fetch(`/api/websites/${siteId}/domain`, { cache: "no-store" }),
       ]);
       if (!previewRes.ok) setError("Failed to load website");
       if (metaRes.ok) {
         const m = await metaRes.json();
-        setSiteMeta({ tier: m.tier, slug: m.slug ?? null });
+        setSiteMeta({ tier: m.tier, slug: m.slug ?? null, prospectName: m.prospect_name ?? null });
+      }
+      if (domainRes.ok) {
+        const d = await domainRes.json();
+        if (d.status === "verified" && d.domain) setAttachedDomain(d.domain);
       }
       setLoading(false);
     };
     prime();
+  }, [siteId]);
+
+  // Stripe checkout completion: drop a confirmation message into chat and
+  // poll the domain endpoint for ~30s while Vercel finishes registration.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const purchase = params.get("domain_purchase");
+    if (!purchase) return;
+    // Strip the param so refreshes don't re-fire.
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, "", cleanUrl);
+
+    if (purchase === "canceled") {
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", text: "Domain purchase canceled. No charge was made.", timestamp: Date.now() },
+      ]);
+      return;
+    }
+
+    setMessages((m) => [
+      ...m,
+      {
+        role: "assistant",
+        text: "Payment received — registering your domain now. This usually takes under a minute…",
+        timestamp: Date.now(),
+        progress: { phase: "registering" },
+      },
+    ]);
+
+    let tries = 0;
+    const poll = async () => {
+      tries++;
+      try {
+        const res = await fetch(`/api/websites/${siteId}/domain`, { cache: "no-store" });
+        if (res.ok) {
+          const d = await res.json();
+          if (d.domain) {
+            setAttachedDomain(d.status === "verified" ? d.domain : null);
+            setMessages((m) =>
+              m.map((msg) =>
+                msg.progress?.phase === "registering"
+                  ? {
+                      ...msg,
+                      text: d.status === "verified"
+                        ? `✓ ${d.domain} is registered and live.`
+                        : `✓ ${d.domain} is registered. Vercel is finishing the SSL certificate — usually a few more minutes.`,
+                      progress: null,
+                    }
+                  : msg,
+              ),
+            );
+            return;
+          }
+        }
+      } catch {
+        // ignore — keep polling
+      }
+      if (tries < 15) setTimeout(poll, 2000);
+      else {
+        setMessages((m) =>
+          m.map((msg) =>
+            msg.progress?.phase === "registering"
+              ? { ...msg, text: "Domain payment cleared, but registration is taking longer than usual. Refresh in a minute or two.", progress: null }
+              : msg,
+          ),
+        );
+      }
+    };
+    setTimeout(poll, 1500);
   }, [siteId]);
 
   const openHref = siteMeta?.tier === "whitelabel" && siteMeta.slug
@@ -77,7 +169,9 @@ export default function WebsiteEditPage() {
 
   const refreshPreview = () => {
     setVisualDirty(false);
-    setIframeVersion((v) => v + 1);
+    // Use a timestamp instead of a small counter so the URL is guaranteed unique
+    // — defeats any intermediate cache that might key on `?v=N` we already used.
+    setIframeVersion(Date.now());
   };
 
   const applyVisualEditMode = useCallback(() => {
@@ -180,38 +274,166 @@ export default function WebsiteEditPage() {
     }
     setApplying(true);
     setError("");
-    setMessages((m) => [...m, { role: "user", text, timestamp: Date.now() }]);
+    const placeholderTs = Date.now() + 1;
+    setMessages((m) => [
+      ...m,
+      { role: "user", text, timestamp: Date.now() },
+      {
+        role: "assistant",
+        text: "Reading your site…",
+        timestamp: placeholderTs,
+        progress: { phase: "reading" },
+      },
+    ]);
     setInstruction("");
+
+    const updatePlaceholder = (
+      patch: Partial<ChatMessage> | ((prev: ChatMessage) => ChatMessage),
+    ) => {
+      setMessages((m) =>
+        m.map((msg) => {
+          if (msg.timestamp !== placeholderTs) return msg;
+          return typeof patch === "function" ? patch(msg) : { ...msg, ...patch };
+        }),
+      );
+    };
+
     try {
       const res = await fetch(`/api/websites/${siteId}/edit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ instruction: text }),
       });
-      const data = await res.json();
-      if (!res.ok) {
+
+      // Non-streaming responses (auth, paywall, validation, domain redirect) come back as JSON.
+      const contentType = res.headers.get("Content-Type") || "";
+      if (!contentType.includes("text/event-stream")) {
+        const data = await res.json().catch(() => ({}));
+        // Domain operations are redirected to the modal — show the explanation as
+        // a normal assistant reply (no warning) and pop the modal open.
+        if (res.ok && data.kind === "domain_redirect") {
+          const message = typeof data.message === "string"
+            ? data.message
+            : "Domains live in the Connect domain button — opening it now.";
+          updatePlaceholder({ text: message, progress: null });
+          setDomainModalOpen(true);
+          return;
+        }
         if (res.status === 402 && typeof data.required === "number" && typeof data.balance === "number") {
           setCreditsPaywall({ required: data.required, balance: data.balance });
-          setMessages((m) => m.slice(0, -1));
+          // Drop the user prompt + placeholder so the chat doesn't show a dangling request.
+          setMessages((m) => m.filter((msg) => msg.timestamp !== placeholderTs).slice(0, -1));
           return;
         }
         const errMsg = data.error || "Edit failed";
-        setMessages((m) => [...m, { role: "assistant", text: `⚠ ${errMsg}`, timestamp: Date.now() }]);
+        updatePlaceholder({ text: `⚠ ${errMsg}`, progress: null });
         setError(errMsg);
         return;
       }
-      refreshPreview();
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          text: `Applied. Charged ${data.creditsCharged ?? WEBSITE_AI_EDIT_CREDITS} credits.`,
-          timestamp: Date.now(),
-        },
-      ]);
+
+      if (!res.body) {
+        updatePlaceholder({ text: "⚠ Streaming not supported", progress: null });
+        setError("Streaming not supported");
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finished = false;
+      let gotTerminal = false;
+
+      while (!finished) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE frames are separated by a blank line.
+        let sep: number;
+        while ((sep = buffer.indexOf("\n\n")) !== -1) {
+          const frame = buffer.slice(0, sep);
+          buffer = buffer.slice(sep + 2);
+          if (!frame.trim()) continue;
+
+          let event = "message";
+          let dataLine = "";
+          for (const line of frame.split("\n")) {
+            if (line.startsWith("event:")) event = line.slice(6).trim();
+            else if (line.startsWith("data:")) dataLine += line.slice(5).trim();
+          }
+          if (!dataLine) continue;
+
+          let payload: Record<string, unknown> = {};
+          try { payload = JSON.parse(dataLine); } catch { continue; }
+
+          if (event === "step") {
+            const phase = String(payload.phase || "");
+            const label = String(payload.label || PHASE_LABEL[phase] || phase);
+            updatePlaceholder((prev) => ({
+              ...prev,
+              text: label,
+              progress: {
+                phase,
+                applied: prev.progress?.applied,
+                total: prev.progress?.total,
+              },
+            }));
+          } else if (event === "progress") {
+            const applied = Number(payload.applied ?? 0);
+            const total = Number(payload.total ?? applied);
+            updatePlaceholder((prev) => ({
+              ...prev,
+              progress: { phase: prev.progress?.phase || "applying", applied, total },
+            }));
+          } else if (event === "done") {
+            const credits = Number(payload.creditsCharged ?? WEBSITE_AI_EDIT_CREDITS);
+            const summary = typeof payload.summary === "string" ? payload.summary : "";
+            const applied = Number(payload.applied ?? 0);
+            const failed = Number(payload.failed ?? 0);
+            const diffs = Array.isArray(payload.diffs)
+              ? (payload.diffs as Array<{ find?: string; replace?: string; all?: boolean }>)
+              : [];
+            const failedNote = failed > 0 ? ` (${failed} skipped)` : "";
+            const summaryNote = summary ? `\n${summary}` : "";
+            const diffNote = diffs.length
+              ? "\n\nChanges:\n" +
+                diffs
+                  .map((d) => {
+                    const f = (d.find ?? "").replace(/\s+/g, " ").trim();
+                    const r = (d.replace ?? "").replace(/\s+/g, " ").trim();
+                    const arrow = d.all ? " ⇢ " : " → ";
+                    return `• "${f}"${arrow}"${r}"`;
+                  })
+                  .join("\n")
+              : "";
+            updatePlaceholder({
+              text: `✓ Applied ${applied} change${applied === 1 ? "" : "s"}${failedNote}. Charged ${credits} credits.${summaryNote}${diffNote}`,
+              progress: null,
+            });
+            refreshPreview();
+            finished = true;
+            gotTerminal = true;
+          } else if (event === "error") {
+            const errMsg = String(payload.error || "Edit failed");
+            updatePlaceholder({ text: `⚠ ${errMsg}`, progress: null });
+            setError(errMsg);
+            finished = true;
+            gotTerminal = true;
+          }
+        }
+      }
+
+      // Stream ended without a done/error event — function timeout, dropped
+      // connection, or proxy buffer flushed late. Surface it instead of leaving
+      // the user staring at a half-finished phase label.
+      if (!gotTerminal) {
+        const errMsg = "The edit timed out before completing. Try a smaller change.";
+        updatePlaceholder({ text: `⚠ ${errMsg}`, progress: null });
+        setError(errMsg);
+      }
     } catch {
       setError("Network error");
-      setMessages((m) => [...m, { role: "assistant", text: "⚠ Network error", timestamp: Date.now() }]);
+      updatePlaceholder({ text: "⚠ Network error", progress: null });
     } finally {
       setApplying(false);
     }
@@ -275,8 +497,20 @@ export default function WebsiteEditPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setDomainModalOpen(true)}
+              className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-colors ${
+                attachedDomain
+                  ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30"
+                  : "bg-white/5 hover:bg-white/10"
+              }`}
+              title={attachedDomain ? `Connected: ${attachedDomain}` : "Connect your own domain"}
+            >
+              <Globe2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{attachedDomain ? "Domain" : "Connect domain"}</span>
+            </button>
             <a
-              href={openHref}
+              href={attachedDomain ? `https://${attachedDomain}` : openHref}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
@@ -362,7 +596,7 @@ export default function WebsiteEditPage() {
                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {messages.length === 0 && (
                       <div className="rounded-xl border border-dashed border-white/10 p-4 text-xs text-[var(--muted)] space-y-2">
-                        <p className="font-medium text-[var(--foreground)]">Ask for big changes here.</p>
+                        <p className="font-medium text-[var(--foreground)]">Ask for big changes.</p>
                         <p>Examples:</p>
                         <ul className="list-disc pl-4 space-y-1">
                           <li>Switch the whole color palette to emerald green</li>
@@ -373,23 +607,35 @@ export default function WebsiteEditPage() {
                         <p className="pt-1 text-[10px]">Each AI edit costs <span className="text-[var(--foreground)] font-semibold">{WEBSITE_AI_EDIT_CREDITS} credits</span>. For small text tweaks, use the Visual Edit tab — that&apos;s free.</p>
                       </div>
                     )}
-                    {messages.map((msg, i) => (
-                      <div
-                        key={i}
-                        className={`rounded-xl px-3 py-2 text-sm whitespace-pre-wrap ${
-                          msg.role === "user"
-                            ? "bg-[var(--accent)]/12 border border-[var(--accent)]/25 ml-6"
-                            : "bg-white/[0.03] border border-white/5 mr-6"
-                        }`}
-                      >
-                        {msg.text}
-                      </div>
-                    ))}
-                    {applying && (
-                      <div className="rounded-xl px-3 py-2 text-sm bg-white/[0.03] border border-white/5 mr-6 inline-flex items-center gap-2 text-[var(--muted)]">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Applying change…
-                      </div>
-                    )}
+                    {messages.map((msg, i) => {
+                      const inProgress = !!msg.progress;
+                      return (
+                        <div
+                          key={i}
+                          className={`rounded-xl px-3 py-2 text-sm whitespace-pre-wrap ${
+                            msg.role === "user"
+                              ? "bg-[var(--accent)]/12 border border-[var(--accent)]/25 ml-6"
+                              : "bg-white/[0.03] border border-white/5 mr-6"
+                          }`}
+                        >
+                          {inProgress ? (
+                            <div className="flex flex-col gap-1.5">
+                              <div className="inline-flex items-center gap-2 text-[var(--muted)]">
+                                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                                <span>{msg.text}</span>
+                              </div>
+                              {msg.progress?.total != null && msg.progress.total > 0 && (
+                                <div className="text-[10px] text-[var(--muted)] pl-5">
+                                  {msg.progress.applied ?? 0} of {msg.progress.total} applied
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            msg.text
+                          )}
+                        </div>
+                      );
+                    })}
                     <div ref={chatEndRef} />
                   </div>
                   <div className="p-3 border-t border-white/5">
@@ -498,6 +744,14 @@ export default function WebsiteEditPage() {
           action="Applying an AI edit to this site"
         />
       )}
+
+      <CustomDomainModal
+        open={domainModalOpen}
+        onClose={() => setDomainModalOpen(false)}
+        siteId={siteId}
+        defaultSearchTerm={siteMeta?.prospectName ?? null}
+        onAttachedDomainChange={(d) => setAttachedDomain(d)}
+      />
     </>
   );
 }

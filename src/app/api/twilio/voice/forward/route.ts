@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { normalizePhone } from "@/lib/twilio";
+import { softphoneIdentityFor } from "@/lib/twilioAccessToken";
 
 // Twilio Voice webhook for agency-line numbers. Looks up the user that owns
-// the receiving number and dials their forward_to_number cell. If no
-// forward target is configured, Twilio reads a fallback message.
+// the receiving number. If the user is currently "Available" (browser tab
+// with an active heartbeat), the call rings their browser via <Client>.
+// Otherwise it falls back to dialing their forward_to_number cell.
+
 function escapeXml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -21,8 +24,6 @@ function twiml(body: string): NextResponse {
   });
 }
 
-// Window in which an inbound call is treated as a voicedrop callback. After
-// this many days we assume any inbound is unrelated to a past campaign.
 const CALLBACK_MATCH_WINDOW_DAYS = 14;
 
 async function logVoicedropCallback(opts: {
@@ -31,11 +32,9 @@ async function logVoicedropCallback(opts: {
   to: string;
   callSid: string;
   forwardTo: string | null;
-}): Promise<{ matched: boolean; campaignName: string | null; prospectName: string | null }> {
+}): Promise<{ matched: boolean; campaignName: string | null; prospectName: string | null; prospectId: string | null }> {
   const since = new Date(Date.now() - CALLBACK_MATCH_WINDOW_DAYS * 86400 * 1000).toISOString();
 
-  // Find the most recent drop where this caller was the recipient and our
-  // number was the sender. That's the drop they're responding to.
   const { data: drop } = await supabaseAdmin
     .from("voicemail_drops")
     .select("campaign_id, prospect_id, prospect_name")
@@ -47,7 +46,7 @@ async function logVoicedropCallback(opts: {
     .limit(1)
     .maybeSingle();
 
-  if (!drop) return { matched: false, campaignName: null, prospectName: null };
+  if (!drop) return { matched: false, campaignName: null, prospectName: null, prospectId: null };
 
   let campaignName: string | null = null;
   if (drop.campaign_id) {
@@ -71,8 +70,6 @@ async function logVoicedropCallback(opts: {
     status: "in_progress",
   });
 
-  // Auto-advance the prospect to Contacted on first callback. Only bump
-  // from earlier stages so we don't regress someone already further along.
   if (drop.prospect_id) {
     await supabaseAdmin
       .from("prospects")
@@ -86,7 +83,36 @@ async function logVoicedropCallback(opts: {
     matched: true,
     campaignName,
     prospectName: drop.prospect_name ?? null,
+    prospectId: drop.prospect_id ?? null,
   };
+}
+
+async function isUserAvailable(userId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from("phone_presence")
+    .select("available_until")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!data) return false;
+  return new Date(data.available_until).getTime() > Date.now();
+}
+
+async function recordInboundVoiceCall(opts: {
+  userId: string;
+  prospectId: string | null;
+  from: string;
+  to: string;
+  callSid: string;
+}): Promise<void> {
+  await supabaseAdmin.from("voice_calls").insert({
+    user_id: opts.userId,
+    prospect_id: opts.prospectId,
+    direction: "inbound",
+    from_number: opts.from,
+    to_number: opts.to,
+    twilio_call_sid: opts.callSid,
+    status: "in_progress",
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -120,6 +146,7 @@ export async function POST(req: NextRequest) {
 
   const forwardTo = userRow?.forward_to_number ? normalizePhone(userRow.forward_to_number) : null;
 
+  let prospectId: string | null = null;
   let whisper = "";
   if (from && callSid) {
     const result = await logVoicedropCallback({
@@ -133,30 +160,53 @@ export async function POST(req: NextRequest) {
       const campaign = result.campaignName || "a recent voicedrop";
       const prospect = result.prospectName || "a prospect";
       whisper = `Callback from ${prospect} regarding ${campaign}. Press any key to accept.`;
+      prospectId = result.prospectId;
     }
   }
 
+  // Master voice_calls row for this inbound call.
+  if (callSid) {
+    await recordInboundVoiceCall({
+      userId: ownedNumber.user_id,
+      prospectId,
+      from: from || fromRaw,
+      to,
+      callSid,
+    });
+  }
+
+  const origin = req.nextUrl.origin;
+  const recordingCallback = `${origin}/api/twilio/voice/recording-status`;
+  const callStatusCallback = `${origin}/api/twilio/voice/call-status`;
+  const browserAvailable = await isUserAvailable(ownedNumber.user_id);
+
+  // --- Browser softphone path -------------------------------------------
+  // If the user has the dashboard open with "Available" toggled on, ring
+  // their browser. Recording happens on the parent call leg.
+  if (browserAvailable) {
+    const identity = softphoneIdentityFor(ownedNumber.user_id);
+    return twiml(
+      `<Dial timeout="25" record="record-from-answer-dual" recordingStatusCallback="${escapeXml(recordingCallback)}" action="${escapeXml(callStatusCallback)}">` +
+        `<Client>${escapeXml(identity)}</Client>` +
+      `</Dial>`,
+    );
+  }
+
+  // --- Cell phone fallback path -----------------------------------------
   if (!forwardTo) {
     return twiml(`<Say>The agency owner is unavailable right now. Please send a text message and they will get back to you.</Say><Hangup/>`);
   }
 
-  // Twilio's status callback records the duration + recording URL for the
-  // outer call once it ends — that's how we close out the callback row.
-  const origin = req.nextUrl.origin;
-  const statusCallback = `${origin}/api/twilio/voicedrop-callback-status`;
-
   if (whisper) {
-    // Use <Number url=...> so a TwiML Bin runs only on the forwarded leg —
-    // gives the user a quick whisper of who's calling before the call connects.
     const whisperBin = `${origin}/api/twilio/voicedrop-whisper?text=${encodeURIComponent(whisper)}`;
     return twiml(
-      `<Dial timeout="20" record="record-from-answer-dual" recordingStatusCallback="${escapeXml(statusCallback)}" action="${escapeXml(statusCallback)}">` +
+      `<Dial timeout="20" record="record-from-answer-dual" recordingStatusCallback="${escapeXml(recordingCallback)}" action="${escapeXml(callStatusCallback)}">` +
         `<Number url="${escapeXml(whisperBin)}">${escapeXml(forwardTo)}</Number>` +
       `</Dial>`,
     );
   }
 
   return twiml(
-    `<Dial timeout="20" action="${escapeXml(statusCallback)}">${escapeXml(forwardTo)}</Dial>`,
+    `<Dial timeout="20" record="record-from-answer-dual" recordingStatusCallback="${escapeXml(recordingCallback)}" action="${escapeXml(callStatusCallback)}">${escapeXml(forwardTo)}</Dial>`,
   );
 }

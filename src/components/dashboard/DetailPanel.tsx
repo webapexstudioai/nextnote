@@ -1,12 +1,16 @@
 "use client";
 
 import { Prospect, ProspectStatus, AppointmentDuration, CancelReason } from "@/types";
-import { X, Phone, Mail, Briefcase, FileText, Calendar, ArrowRight, Video, Wand2, Loader2, Save, Check, XCircle, RefreshCw, UserX, Voicemail, Upload, Music, Trash2, Play, Bot, DollarSign, ExternalLink, User as UserIcon, Building2, MapPin, Globe, Pencil, Plus, MessageSquare, Send } from "lucide-react";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { X, Phone, Mail, Briefcase, FileText, Calendar, ArrowRight, Video, Wand2, Loader2, Save, Check, XCircle, RefreshCw, UserX, Voicemail, Trash2, Bot, DollarSign, ExternalLink, User as UserIcon, Building2, MapPin, Globe, Pencil, Plus } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useProspects } from "@/context/ProspectsContext";
+import { useSoftphone } from "@/context/SoftphoneProvider";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
+import MessageThread from "@/components/messages/MessageThread";
+import VoicedropModal from "@/components/dashboard/VoicedropModal";
+import { SendToMyPhoneButton } from "@/components/SendToMyPhoneButton";
 
 interface DetailPanelProps {
   prospect: Prospect;
@@ -62,6 +66,7 @@ function extractMapsName(url: string): string {
 
 export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   const { updateStatus, bookAppointment, updateProspect, updateMeetingNotes, updateAppointmentOutcome, rescheduleAppointment, googleConnected, deleteProspect } = useProspects();
+  const { startCall, available: softphoneAvailable, ready: softphoneReady } = useSoftphone();
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -130,27 +135,10 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   const [apptTab, setApptTab] = useState<"upcoming" | "past">("upcoming");
   const [expandedApptId, setExpandedApptId] = useState<string | null>(null);
 
-  // Voicemail drop
+  // Voicemail drop (uses shared VoicedropModal — verified caller-id dropdown built in)
   const [showVoicemailModal, setShowVoicemailModal] = useState(false);
-  const [vmCallerId, setVmCallerId] = useState("");
-  const [vmSending, setVmSending] = useState(false);
-  const [vmResult, setVmResult] = useState<{ success: boolean; text: string } | null>(null);
 
-  // Voicemail tabs
-  type VmTab = "upload" | "ai";
-  const [vmTab, setVmTab] = useState<VmTab>("upload");
-
-  // Upload audio state
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // SMS follow-up
-  type SmsTemplate = { id: string; name: string; body: string };
-  type FromNumber = { phone_number: string; label: string; source: "caller_id" | "purchased" };
+  // SMS / call history (SMS sending now happens via the user's own phone — sms: link in Quick Actions)
   type SmsMessage = {
     id: string;
     direction: "inbound" | "outbound";
@@ -165,15 +153,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   };
   type CallLog = { id: string; outcome: string; notes: string | null; created_at: string };
 
-  const [showSmsModal, setShowSmsModal] = useState(false);
-  const [smsTemplates, setSmsTemplates] = useState<SmsTemplate[]>([]);
-  const [smsTemplateId, setSmsTemplateId] = useState<string>("");
-  const [smsBody, setSmsBody] = useState("");
-  const [smsFromNumbers, setSmsFromNumbers] = useState<FromNumber[]>([]);
-  const [smsFromNumber, setSmsFromNumber] = useState("");
-  const [smsSending, setSmsSending] = useState(false);
-  const [smsResult, setSmsResult] = useState<{ success: boolean; text: string } | null>(null);
-  const [smsPaywall, setSmsPaywall] = useState<{ required: number; balance: number } | null>(null);
   const [smsHistory, setSmsHistory] = useState<SmsMessage[]>([]);
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   type Enrollment = {
@@ -190,14 +169,12 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [haltingEnrollmentId, setHaltingEnrollmentId] = useState<string | null>(null);
   const [loggingOutcome, setLoggingOutcome] = useState<string | null>(null);
-  const [senderProfile, setSenderProfile] = useState<{ name: string; agencyName: string }>({ name: "", agencyName: "" });
 
   // Build Receptionist
   const [showReceptionistBuilder, setShowReceptionistBuilder] = useState(false);
   const [buildingReceptionist, setBuildingReceptionist] = useState(false);
   const [receptionistError, setReceptionistError] = useState("");
   const [receptionistPaywall, setReceptionistPaywall] = useState<{ required: number; balance: number } | null>(null);
-  const [voicemailPaywall, setVoicemailPaywall] = useState<{ required: number; balance: number } | null>(null);
   const [creatingAgent, setCreatingAgent] = useState(false);
   const [createdAgent, setCreatedAgent] = useState<{ agentId: string; agentName: string } | null>(null);
   const [createAgentError, setCreateAgentError] = useState("");
@@ -354,106 +331,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
     }
   };
 
-  const ACCEPTED_AUDIO = ".mp3,.wav,.m4a";
-  const ACCEPTED_MIME = ["audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4", "audio/x-m4a", "audio/m4a"];
-
-  const isValidAudioFile = (file: File) => {
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    return ["mp3", "wav", "m4a"].includes(ext || "") || ACCEPTED_MIME.includes(file.type);
-  };
-
-  const handleFileSelect = useCallback((file: File) => {
-    if (!isValidAudioFile(file)) { // eslint-disable-line react-hooks/exhaustive-deps
-      setVmResult({ success: false, text: "Only MP3, WAV, and M4A files are allowed" });
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setVmResult({ success: false, text: "File exceeds 10MB limit" });
-      return;
-    }
-    setUploadFile(file);
-    setUploadedUrl(null);
-    setVmResult(null);
-  }, []);
-
-  const handleUploadFile = async () => {
-    if (!uploadFile) return;
-    setUploading(true);
-    setUploadProgress(0);
-    setVmResult(null);
-
-    const formData = new FormData();
-    formData.append("file", uploadFile);
-
-    // Simulate progress since fetch doesn't support progress natively
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => Math.min(prev + 15, 90));
-    }, 200);
-
-    try {
-      const res = await fetch("/api/upload/audio", { method: "POST", body: formData });
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      const data = await res.json();
-      if (res.ok) {
-        setUploadedUrl(data.url);
-      } else {
-        setVmResult({ success: false, text: data.error || "Upload failed" });
-      }
-    } catch {
-      clearInterval(progressInterval);
-      setVmResult({ success: false, text: "Upload failed — network error" });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleSendUploadedVoicemail = async () => {
-    if (!prospect.phone || !uploadedUrl) return;
-    const callerId = vmCallerId.trim();
-    if (!callerId) {
-      setVmResult({ success: false, text: "Enter a verified caller ID first." });
-      return;
-    }
-    setVmSending(true);
-    setVmResult(null);
-    try {
-      const audioUrl = uploadedUrl.startsWith("http")
-        ? uploadedUrl
-        : `${window.location.origin}${uploadedUrl}`;
-      const res = await fetch("/api/voicemail/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from_number: callerId,
-          audio_url: audioUrl,
-          campaign_name: `NextNote — ${prospect.name}`,
-          targets: [{
-            prospect_id: prospect.id,
-            prospect_name: prospect.name,
-            phone: prospect.phone,
-          }],
-        }),
-      });
-      const data = await res.json();
-      if (res.status === 402 && typeof data?.required === "number" && typeof data?.balance === "number") {
-        setVoicemailPaywall({ required: data.required, balance: data.balance });
-        return;
-      }
-      if (res.ok && data?.successful > 0) {
-        setVmResult({ success: true, text: "Voicemail queued — prospect will get it shortly." });
-      } else {
-        const firstErr = data?.results?.find((r: { ok: boolean; error?: string }) => !r.ok)?.error;
-        setVmResult({ success: false, text: firstErr || data?.error || "Failed to send voicemail" });
-      }
-    } catch {
-      setVmResult({ success: false, text: "Network error — please try again." });
-    } finally {
-      setVmSending(false);
-    }
-  };
-
   // ---- SMS / call-log helpers ----
   const loadSmsHistory = useCallback(async () => {
     try {
@@ -496,94 +373,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
     }
   };
 
-  const renderSmsBody = (raw: string): string => {
-    const contact = (prospect.contactName || prospect.name || "").trim();
-    const firstName = contact ? contact.split(/\s+/)[0] : "";
-    const map: Record<string, string> = {
-      first_name: firstName,
-      name: contact,
-      business: (prospect.name || "").trim(),
-      my_name: senderProfile.name || "",
-      my_agency: senderProfile.agencyName || "",
-    };
-    return raw.replace(/\{(\w+)\}/g, (full, key: string) =>
-      Object.prototype.hasOwnProperty.call(map, key) ? map[key] : full
-    );
-  };
-
-  const openSmsModal = async () => {
-    setShowSmsModal(true);
-    setSmsResult(null);
-    setSmsTemplateId("");
-    setSmsBody("");
-    try {
-      const [tplRes, numRes, meRes] = await Promise.all([
-        fetch("/api/sms/templates"),
-        fetch("/api/sms/from-numbers"),
-        fetch("/api/auth/me"),
-      ]);
-      const tplData = await tplRes.json();
-      const numData = await numRes.json();
-      const meData = await meRes.json();
-      if (tplRes.ok) setSmsTemplates(tplData.templates || []);
-      if (numRes.ok) {
-        const nums: FromNumber[] = numData.numbers || [];
-        setSmsFromNumbers(nums);
-        if (nums.length > 0 && !smsFromNumber) setSmsFromNumber(nums[0].phone_number);
-      }
-      if (meRes.ok && meData.user) {
-        setSenderProfile({ name: meData.user.name || "", agencyName: meData.user.agencyName || "" });
-      }
-    } catch {}
-  };
-
-  const handleSendSms = async () => {
-    if (!prospect.phone) {
-      setSmsResult({ success: false, text: "Prospect has no phone number." });
-      return;
-    }
-    if (!smsFromNumber) {
-      setSmsResult({ success: false, text: "Pick a from-number." });
-      return;
-    }
-    const sourceBody = smsTemplateId
-      ? smsTemplates.find((t) => t.id === smsTemplateId)?.body ?? ""
-      : smsBody;
-    if (!sourceBody.trim()) {
-      setSmsResult({ success: false, text: "Body is empty." });
-      return;
-    }
-    setSmsSending(true);
-    setSmsResult(null);
-    try {
-      const res = await fetch("/api/sms/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prospect_id: prospect.id,
-          template_id: smsTemplateId || undefined,
-          body: smsTemplateId ? undefined : sourceBody,
-          from_number: smsFromNumber,
-        }),
-      });
-      const data = await res.json();
-      if (res.status === 402 && typeof data?.required === "number" && typeof data?.balance === "number") {
-        setSmsPaywall({ required: data.required, balance: data.balance });
-        return;
-      }
-      if (res.ok) {
-        setSmsResult({ success: true, text: "Message sent." });
-        loadSmsHistory();
-      } else {
-        setSmsResult({ success: false, text: data.error || "Failed to send" });
-      }
-    } catch {
-      setSmsResult({ success: false, text: "Network error — please try again." });
-    } finally {
-      setSmsSending(false);
-    }
-  };
-
   const handleLogCall = async (outcome: string) => {
     setLoggingOutcome(outcome);
     try {
@@ -600,28 +389,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
     finally {
       setLoggingOutcome(null);
     }
-  };
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
-  }, [handleFileSelect]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback(() => {
-    setDragOver(false);
-  }, []);
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const renderBookingForm = (isReschedule: boolean) => (
@@ -875,122 +642,233 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
         </div>
 
         {/* Contact Details */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Contact Details</h3>
-            <span className="text-[10px] text-[var(--muted)]">Click any field to edit</span>
-          </div>
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)]/60 divide-y divide-[var(--border)] overflow-hidden">
-            {([
-              { key: "name", label: "Company Name", icon: Building2, type: "text", placeholder: "Business name", multiline: false, linkHref: null as ((v: string) => string) | null, displayValue: null as ((v: string) => string) | null },
-              { key: "contactName", label: "Contact Name", icon: UserIcon, type: "text", placeholder: "Who you speak with", multiline: false, linkHref: null as ((v: string) => string) | null, displayValue: null as ((v: string) => string) | null },
-              { key: "phone", label: "Phone", icon: Phone, type: "tel", placeholder: "+1 555 555 5555", multiline: false, linkHref: (v: string) => `tel:${v}`, displayValue: null as ((v: string) => string) | null },
-              { key: "email", label: "Email", icon: Mail, type: "email", placeholder: "name@company.com", multiline: false, linkHref: (v: string) => `mailto:${v}`, displayValue: null as ((v: string) => string) | null },
-              { key: "service", label: "Service", icon: Briefcase, type: "text", placeholder: "What they need", multiline: false, linkHref: null as ((v: string) => string) | null, displayValue: null as ((v: string) => string) | null },
-              { key: "address", label: "Address", icon: MapPin, type: "text", placeholder: "Street, city, state", multiline: true, linkHref: (v: string) => `https://maps.google.com/?q=${encodeURIComponent(v)}`, displayValue: null as ((v: string) => string) | null },
-              { key: "website", label: "Website", icon: Globe, type: "url", placeholder: "https://example.com", multiline: false, linkHref: (v: string) => (v.startsWith("http") ? v : `https://${v}`), displayValue: null as ((v: string) => string) | null },
-              { key: "mapsUrl", label: "Google Maps Link", icon: MapPin, type: "url", placeholder: "Paste Google Maps URL", multiline: false, linkHref: (v: string) => v, displayValue: (v: string) => extractMapsName(v) },
-            ] as const).map(({ key, label, icon: Icon, type, placeholder, multiline, linkHref, displayValue }) => {
-              const value = (prospect[key] as string | undefined) ?? "";
-              const isEditing = editingField === key;
-              const isEmpty = !value.trim();
-              return (
-                <div key={key} className="group relative flex items-start gap-3 p-3 hover:bg-[var(--card)]/40 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon className="w-4 h-4 text-[var(--accent)]" />
+        {(() => {
+          type FieldConfig = {
+            key: ContactKey;
+            label: string;
+            icon: typeof Phone;
+            type: string;
+            placeholder: string;
+            multiline: boolean;
+            linkHref: ((v: string) => string) | null;
+            displayValue: ((v: string) => string) | null;
+            openInNewTab?: boolean;
+          };
+
+          const fields: Record<string, FieldConfig> = {
+            name:        { key: "name", label: "Company Name", icon: Building2, type: "text", placeholder: "Business name", multiline: false, linkHref: null, displayValue: null },
+            contactName: { key: "contactName", label: "Contact Name", icon: UserIcon, type: "text", placeholder: "Who you speak with", multiline: false, linkHref: null, displayValue: null },
+            phone:       { key: "phone", label: "Phone", icon: Phone, type: "tel", placeholder: "+1 555 555 5555", multiline: false, linkHref: (v) => `tel:${v}`, displayValue: null },
+            email:       { key: "email", label: "Email", icon: Mail, type: "email", placeholder: "name@company.com", multiline: false, linkHref: (v) => `mailto:${v}`, displayValue: null },
+            service:     { key: "service", label: "Service", icon: Briefcase, type: "text", placeholder: "What they need", multiline: false, linkHref: null, displayValue: null },
+            address:     { key: "address", label: "Address", icon: MapPin, type: "text", placeholder: "Street, city, state", multiline: true, linkHref: (v) => `https://maps.google.com/?q=${encodeURIComponent(v)}`, displayValue: null, openInNewTab: true },
+            website:     { key: "website", label: "Website", icon: Globe, type: "url", placeholder: "https://example.com", multiline: false, linkHref: (v) => (v.startsWith("http") ? v : `https://${v}`), displayValue: null, openInNewTab: true },
+            mapsUrl:     { key: "mapsUrl", label: "Google Maps Link", icon: MapPin, type: "url", placeholder: "Paste Google Maps URL", multiline: false, linkHref: (v) => v, displayValue: (v) => extractMapsName(v), openInNewTab: true },
+          };
+
+          const renderRow = (cfg: FieldConfig) => {
+            const Icon = cfg.icon;
+            const value = (prospect[cfg.key] as string | undefined) ?? "";
+            const isEditing = editingField === cfg.key;
+            const isEmpty = !value.trim();
+            return (
+              <div key={cfg.key} className="group relative flex items-start gap-3 p-3 hover:bg-[var(--card)]/40 transition-colors">
+                <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Icon className="w-4 h-4 text-[var(--accent)]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-medium">{cfg.label}</div>
+                  {isEditing ? (
+                    <div className="mt-1 flex items-center gap-2">
+                      {cfg.multiline ? (
+                        <textarea
+                          autoFocus
+                          value={fieldDraft}
+                          onChange={(e) => setFieldDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") setEditingField(null);
+                            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) saveField(cfg.key);
+                          }}
+                          rows={2}
+                          placeholder={cfg.placeholder}
+                          className="flex-1 bg-[var(--card)] border border-[var(--accent)]/40 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-[var(--accent)] resize-none"
+                        />
+                      ) : (
+                        <input
+                          autoFocus
+                          type={cfg.type}
+                          value={fieldDraft}
+                          onChange={(e) => setFieldDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") setEditingField(null);
+                            if (e.key === "Enter") saveField(cfg.key);
+                          }}
+                          placeholder={cfg.placeholder}
+                          className="flex-1 bg-[var(--card)] border border-[var(--accent)]/40 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-[var(--accent)]"
+                        />
+                      )}
+                      <button onClick={() => saveField(cfg.key)} className="p-1.5 rounded-md bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors" aria-label="Save">
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setEditingField(null)} className="p-1.5 rounded-md bg-[var(--card)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors" aria-label="Cancel">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-0.5 flex items-center gap-2">
+                      {isEmpty ? (
+                        <button onClick={() => startEditField(cfg.key)} className="inline-flex items-center gap-1 text-xs text-[var(--accent)] hover:underline">
+                          <Plus className="w-3 h-3" /> Add {cfg.label.toLowerCase()}
+                        </button>
+                      ) : (
+                        <>
+                          {cfg.linkHref ? (
+                            <a
+                              href={cfg.linkHref(value)}
+                              target={cfg.openInNewTab ? "_blank" : undefined}
+                              rel="noopener noreferrer"
+                              className="text-sm text-[var(--foreground)] hover:text-[var(--accent)] transition-colors truncate"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {cfg.displayValue ? cfg.displayValue(value) : value}
+                            </a>
+                          ) : (
+                            <span className="text-sm text-[var(--foreground)] truncate">{value}</span>
+                          )}
+                          <button onClick={() => startEditField(cfg.key)} className="opacity-0 group-hover:opacity-100 p-1 rounded text-[var(--muted)] hover:text-[var(--accent)] transition-all" aria-label={`Edit ${cfg.label}`}>
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          };
+
+          const initials = (prospect.name || "?")
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((s) => s[0]?.toUpperCase() ?? "")
+            .join("") || "?";
+
+          const statusPillCls: Record<ProspectStatus, string> = {
+            New: "bg-blue-500/15 text-blue-300 border-blue-500/25",
+            Contacted: "bg-amber-500/15 text-amber-300 border-amber-500/25",
+            Qualified: "bg-purple-500/15 text-purple-300 border-purple-500/25",
+            Booked: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
+            Closed: "bg-[rgba(232,85,61,0.15)] text-[var(--accent)] border-[rgba(232,85,61,0.3)]",
+          };
+
+          const formatRelative = (iso: string): string => {
+            const ms = Date.now() - new Date(iso).getTime();
+            const min = Math.round(ms / 60000);
+            if (min < 1) return "just now";
+            if (min < 60) return `${min}m ago`;
+            const hrs = Math.round(min / 60);
+            if (hrs < 24) return `${hrs}h ago`;
+            const days = Math.round(hrs / 24);
+            if (days < 30) return `${days}d ago`;
+            const months = Math.round(days / 30);
+            if (months < 12) return `${months}mo ago`;
+            return `${Math.round(months / 12)}y ago`;
+          };
+
+          const lastContactedIso = callLogs[0]?.created_at || smsHistory[0]?.created_at || null;
+          const groups: Array<{ title: string; rows: FieldConfig[] }> = [
+            { title: "Identity", rows: [fields.name, fields.contactName, fields.service] },
+            { title: "Reach", rows: [fields.phone, fields.email] },
+            { title: "Location", rows: [fields.address, fields.mapsUrl] },
+            { title: "Web", rows: [fields.website] },
+          ];
+
+          return (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider">Contact Details</h3>
+                <span className="text-[10px] text-[var(--muted)]">Click any field to edit</span>
+              </div>
+
+              {/* Identity header card */}
+              <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--card)] via-[var(--card)] to-[var(--background)]/60 p-4">
+                <div
+                  className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full opacity-20 blur-3xl"
+                  style={{ background: `rgb(${theme.rgb.startsWith("var") ? "var(--accent-rgb)" : theme.rgb})` }}
+                />
+                <div className="relative flex items-center gap-4">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg shrink-0"
+                    style={{
+                      background: `linear-gradient(135deg, rgb(${theme.rgb.startsWith("var") ? "var(--accent-rgb)" : theme.rgb}) 0%, rgba(${theme.rgb.startsWith("var") ? "var(--accent-rgb)" : theme.rgb}, 0.7) 100%)`,
+                    }}
+                  >
+                    {initials}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-medium">{label}</div>
-                    {isEditing ? (
-                      <div className="mt-1 flex items-center gap-2">
-                        {multiline ? (
-                          <textarea
-                            autoFocus
-                            value={fieldDraft}
-                            onChange={(e) => setFieldDraft(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Escape") setEditingField(null);
-                              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) saveField(key);
-                            }}
-                            rows={2}
-                            placeholder={placeholder}
-                            className="flex-1 bg-[var(--card)] border border-[var(--accent)]/40 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-[var(--accent)] resize-none"
-                          />
-                        ) : (
-                          <input
-                            autoFocus
-                            type={type}
-                            value={fieldDraft}
-                            onChange={(e) => setFieldDraft(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Escape") setEditingField(null);
-                              if (e.key === "Enter") saveField(key);
-                            }}
-                            placeholder={placeholder}
-                            className="flex-1 bg-[var(--card)] border border-[var(--accent)]/40 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-[var(--accent)]"
-                          />
-                        )}
-                        <button
-                          onClick={() => saveField(key)}
-                          className="p-1.5 rounded-md bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
-                          aria-label="Save"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setEditingField(null)}
-                          className="p-1.5 rounded-md bg-[var(--card)] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-                          aria-label="Cancel"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="mt-0.5 flex items-center gap-2">
-                        {isEmpty ? (
-                          <button
-                            onClick={() => startEditField(key)}
-                            className="inline-flex items-center gap-1 text-xs text-[var(--accent)] hover:underline"
-                          >
-                            <Plus className="w-3 h-3" /> Add {label.toLowerCase()}
-                          </button>
-                        ) : (
-                          <>
-                            {linkHref ? (
-                              <a
-                                href={linkHref(value)}
-                                target={key === "address" || key === "website" || key === "mapsUrl" ? "_blank" : undefined}
-                                rel="noopener noreferrer"
-                                className="text-sm text-[var(--foreground)] hover:text-[var(--accent)] transition-colors truncate"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {displayValue ? displayValue(value) : value}
-                              </a>
-                            ) : (
-                              <span className="text-sm text-[var(--foreground)] truncate">{value}</span>
-                            )}
-                            <button
-                              onClick={() => startEditField(key)}
-                              className="opacity-0 group-hover:opacity-100 p-1 rounded text-[var(--muted)] hover:text-[var(--accent)] transition-all"
-                              aria-label={`Edit ${label}`}
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[15px] font-semibold truncate text-[var(--foreground)]">{prospect.name || "Untitled prospect"}</span>
+                      <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusPillCls[prospect.status]}`}>
+                        {prospect.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5 text-[11px] text-[var(--muted)] flex-wrap">
+                      {prospect.contactName && (
+                        <span className="inline-flex items-center gap-1">
+                          <UserIcon className="w-3 h-3" /> {prospect.contactName}
+                        </span>
+                      )}
+                      {prospect.service && (
+                        <span className="inline-flex items-center gap-1">
+                          <Briefcase className="w-3 h-3" /> {prospect.service}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="w-3 h-3" /> Added {formatRelative(prospect.createdAt)}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {lastContactedIso ? `Last contact ${formatRelative(lastContactedIso)}` : "Never contacted"}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-          {/* Quick actions */}
+              </div>
+
+              {/* Grouped field sections */}
+              <div className="grid sm:grid-cols-2 gap-3">
+                {groups.map((g) => (
+                  <div key={g.title} className="rounded-2xl border border-[var(--border)] bg-[var(--background)]/60 overflow-hidden">
+                    <div className="px-3 pt-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+                      {g.title}
+                    </div>
+                    <div className="divide-y divide-[var(--border)]">
+                      {g.rows.map((cfg) => renderRow(cfg))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Quick actions */}
           <div className="flex flex-wrap gap-2">
             {prospect.phone && (
-              <a href={`tel:${prospect.phone}`} className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/40 transition-colors">
-                <Phone className="w-3 h-3" /> Call
-              </a>
+              softphoneAvailable && softphoneReady ? (
+                <button
+                  onClick={() => {
+                    if (!prospect.phone) return;
+                    startCall({ to: prospect.phone, prospectId: prospect.id, prospectName: prospect.name });
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-[rgba(232,85,61,0.12)] border border-[rgba(232,85,61,0.4)] text-[#ff8a6a] hover:bg-[rgba(232,85,61,0.18)] transition-colors"
+                  title="Call in browser"
+                >
+                  <Phone className="w-3 h-3" /> Call
+                </button>
+              ) : (
+                <a href={`tel:${prospect.phone}`} className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/40 transition-colors">
+                  <Phone className="w-3 h-3" /> Call
+                </a>
+              )
             )}
             {prospect.phone && (
               <a href={`sms:${prospect.phone}`} className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/40 transition-colors">
@@ -1007,8 +885,21 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
                 <ExternalLink className="w-3 h-3" /> Visit site
               </a>
             )}
-          </div>
-        </div>
+                <SendToMyPhoneButton
+                  label="Text me details"
+                  body={[
+                    `${prospect.name}${prospect.service ? ` — ${prospect.service}` : ""}`,
+                    prospect.contactName ? `Contact: ${prospect.contactName}` : null,
+                    prospect.phone ? `Phone: ${prospect.phone}` : null,
+                    prospect.email ? `Email: ${prospect.email}` : null,
+                    prospect.address ? `Address: ${prospect.address}` : null,
+                    prospect.website ? `Site: ${prospect.website}` : null,
+                  ].filter(Boolean).join("\n")}
+                />
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Deal Value */}
         <div>
@@ -1377,20 +1268,11 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
             )}
             {prospect.phone && (
               <button
-                onClick={() => { setShowVoicemailModal(true); setVmResult(null); setVmTab("upload"); setUploadFile(null); setUploadedUrl(null); setUploadProgress(0); }}
+                onClick={() => setShowVoicemailModal(true)}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border)] text-sm font-medium hover:bg-[var(--card-hover)] transition-colors"
               >
                 <Voicemail className="w-4 h-4 text-amber-400" />
                 Send Voicemail Drop
-              </button>
-            )}
-            {prospect.phone && (
-              <button
-                onClick={openSmsModal}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border)] text-sm font-medium hover:bg-[var(--card-hover)] transition-colors"
-              >
-                <MessageSquare className="w-4 h-4 text-sky-400" />
-                Send SMS
               </button>
             )}
           </div>
@@ -1423,6 +1305,20 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
                 Last call: <span className="text-[var(--foreground)]">{callLogs[0].outcome.replace("_", " ")}</span> · {new Date(callLogs[0].created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Conversation */}
+        {prospect.phone && (
+          <div>
+            <h3 className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-2">Conversation</h3>
+            <div className="h-[420px] rounded-lg border border-[var(--border)] overflow-hidden">
+              <MessageThread
+                prospectId={prospect.id}
+                prospectName={prospect.name}
+                remoteNumber={prospect.phone}
+              />
+            </div>
           </div>
         )}
 
@@ -1524,326 +1420,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
           </div>
         )}
 
-        {/* Voicemail Drop Modal */}
-        {showVoicemailModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 w-full max-w-md mx-4 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold flex items-center gap-2">
-                  <Voicemail className="w-4 h-4 text-amber-400" /> Voicemail Drop
-                </h3>
-                <button onClick={() => setShowVoicemailModal(false)} className="p-1 rounded-lg hover:bg-[var(--background)]">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-xs text-[var(--muted)]">
-                Send a ringless voicemail to <span className="text-[var(--foreground)] font-medium">{prospect.name}</span> at {prospect.phone}
-              </p>
-
-              {/* Caller ID */}
-              <div>
-                <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1 block">Your Callback Number (Caller ID)</label>
-                <input
-                  type="tel"
-                  placeholder="e.g. 3125550100"
-                  value={vmCallerId}
-                  onChange={(e) => setVmCallerId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] placeholder:text-zinc-600"
-                />
-                <p className="text-[10px] text-[var(--muted)] mt-1">Prospects will see this number when they get the voicemail</p>
-              </div>
-
-              {/* Tabs */}
-              <div className="flex rounded-lg bg-[var(--background)] p-1 gap-1">
-                {([
-                  { key: "ai" as VmTab, label: "AI Generate" },
-                  { key: "upload" as VmTab, label: "Upload Audio" },
-                ]).map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => { setVmTab(tab.key); setVmResult(null); }}
-                    className={`flex-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                      vmTab === tab.key
-                        ? "bg-[var(--card)] text-[var(--foreground)] shadow-sm"
-                        : "text-[var(--muted)] hover:text-[var(--foreground)]"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* AI Generate Tab */}
-              {vmTab === "ai" && (
-                <div className="flex flex-col items-center justify-center py-8 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-[rgba(232,85,61,0.1)] flex items-center justify-center">
-                    <Wand2 className="w-6 h-6 text-[var(--accent)]" />
-                  </div>
-                  <p className="text-sm font-medium text-[var(--foreground)]">AI Voice Generation</p>
-                  <p className="text-xs text-[var(--muted)] text-center">
-                    Coming Soon — Generate personalized voicemail messages with AI voice cloning.
-                  </p>
-                </div>
-              )}
-
-              {/* Upload Audio Tab */}
-              {vmTab === "upload" && (
-                <div className="space-y-3">
-                  {!uploadFile ? (
-                    <div
-                      onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center gap-3 transition-colors cursor-pointer ${
-                        dragOver
-                          ? "border-amber-400 bg-amber-500/5"
-                          : "border-[var(--border)] hover:border-[var(--accent)]"
-                      }`}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                        <Upload className="w-5 h-5 text-amber-400" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs font-medium text-[var(--foreground)]">
-                          Drag & drop your audio file here
-                        </p>
-                        <p className="text-[10px] text-[var(--muted)] mt-1">
-                          MP3, WAV, or M4A up to 10MB
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--accent)] transition-colors"
-                      >
-                        Browse Files
-                      </button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept={ACCEPTED_AUDIO}
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileSelect(file);
-                          e.target.value = "";
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* File info */}
-                      <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--background)]">
-                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-                          <Music className="w-4 h-4 text-amber-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{uploadFile.name}</p>
-                          <p className="text-[10px] text-[var(--muted)]">{formatFileSize(uploadFile.size)}</p>
-                        </div>
-                        <button
-                          onClick={() => { setUploadFile(null); setUploadedUrl(null); setUploadProgress(0); }}
-                          className="p-1.5 rounded-lg hover:bg-[var(--card-hover)] text-[var(--muted)] hover:text-rose-400 transition-colors"
-                          title="Remove file"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Upload progress */}
-                      {uploading && (
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-[var(--muted)]">Uploading...</span>
-                            <span className="text-[10px] text-[var(--muted)]">{uploadProgress}%</span>
-                          </div>
-                          <div className="w-full h-1.5 rounded-full bg-[var(--background)]">
-                            <div
-                              className="h-full rounded-full bg-amber-400 transition-all duration-300"
-                              style={{ width: `${uploadProgress}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Audio preview */}
-                      {uploadedUrl && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-1.5">
-                            <Play className="w-3 h-3 text-amber-400" />
-                            <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider">Preview</span>
-                          </div>
-                          <audio
-                            controls
-                            src={uploadedUrl}
-                            className="w-full h-8 [&::-webkit-media-controls-panel]:bg-zinc-800 rounded"
-                          />
-                        </div>
-                      )}
-
-                      {/* Action buttons */}
-                      {!uploadedUrl ? (
-                        <button
-                          onClick={handleUploadFile}
-                          disabled={uploading}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500/20 text-amber-400 text-sm font-medium hover:bg-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                          {uploading ? "Uploading..." : "Upload File"}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={handleSendUploadedVoicemail}
-                          disabled={vmSending}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500/20 text-amber-400 text-sm font-medium hover:bg-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {vmSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Voicemail className="w-4 h-4" />}
-                          {vmSending ? "Sending..." : "Send Drop"}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Result message (shared across tabs) */}
-              {vmResult && (
-                <div className={`p-3 rounded-lg text-xs font-medium ${
-                  vmResult.success ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-                }`}>
-                  {vmResult.text}
-                </div>
-              )}
-
-              {/* Close button */}
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setShowVoicemailModal(false)}
-                  className="px-4 py-2 rounded-lg border border-[var(--border)] text-sm hover:bg-[var(--card-hover)] transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* SMS Modal */}
-        {showSmsModal && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 w-full max-w-md mx-4 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-sky-400" /> Send SMS
-                </h3>
-                <button onClick={() => setShowSmsModal(false)} className="p-1 rounded-lg hover:bg-[var(--background)]">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-xs text-[var(--muted)]">
-                To <span className="text-[var(--foreground)] font-medium">{prospect.name}</span> at {prospect.phone}
-              </p>
-
-              {/* From number */}
-              <div>
-                <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1 block">From</label>
-                {smsFromNumbers.length === 0 ? (
-                  <div className="px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs text-[var(--muted)]">
-                    No verified caller IDs or purchased numbers. Add one in Settings.
-                  </div>
-                ) : (
-                  <select
-                    value={smsFromNumber}
-                    onChange={(e) => setSmsFromNumber(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)]"
-                  >
-                    {smsFromNumbers.map((n) => (
-                      <option key={n.phone_number} value={n.phone_number}>
-                        {n.label} {n.source === "caller_id" ? "(verified caller ID)" : "(purchased)"}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {/* Template picker */}
-              <div>
-                <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1 block">Template</label>
-                <select
-                  value={smsTemplateId}
-                  onChange={(e) => {
-                    setSmsTemplateId(e.target.value);
-                    if (!e.target.value) setSmsBody("");
-                  }}
-                  className="w-full px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)]"
-                >
-                  <option value="">— Custom message —</option>
-                  {smsTemplates.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Body */}
-              {!smsTemplateId && (
-                <div>
-                  <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1 block">Message</label>
-                  <textarea
-                    value={smsBody}
-                    onChange={(e) => setSmsBody(e.target.value)}
-                    rows={4}
-                    placeholder="Hey {first_name}, just following up..."
-                    className="w-full px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--accent)] resize-none"
-                  />
-                  <p className="text-[10px] text-[var(--muted)] mt-1">
-                    Placeholders: {"{first_name}"}, {"{name}"}, {"{business}"}, {"{my_name}"}, {"{my_agency}"}
-                  </p>
-                </div>
-              )}
-
-              {/* Preview */}
-              {(() => {
-                const sourceBody = smsTemplateId
-                  ? smsTemplates.find((t) => t.id === smsTemplateId)?.body ?? ""
-                  : smsBody;
-                if (!sourceBody.trim()) return null;
-                return (
-                  <div>
-                    <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wider mb-1 block">Preview</label>
-                    <div className="px-3 py-2 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs whitespace-pre-wrap">
-                      {renderSmsBody(sourceBody)}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {smsResult && (
-                <div className={`p-3 rounded-lg text-xs font-medium ${
-                  smsResult.success ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-                }`}>
-                  {smsResult.text}
-                </div>
-              )}
-
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => setShowSmsModal(false)}
-                  className="px-4 py-2 rounded-lg border border-[var(--border)] text-sm hover:bg-[var(--card-hover)] transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleSendSms}
-                  disabled={smsSending || smsFromNumbers.length === 0}
-                  className="px-4 py-2 rounded-lg bg-sky-500/20 text-sky-400 text-sm font-medium hover:bg-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-2"
-                >
-                  {smsSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  {smsSending ? "Sending..." : "Send"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       </div>
 
@@ -1998,25 +1574,14 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
         />
       )}
 
-      {voicemailPaywall && (
-        <InsufficientCreditsModal
-          open
-          onClose={() => setVoicemailPaywall(null)}
-          required={voicemailPaywall.required}
-          balance={voicemailPaywall.balance}
-          action="Sending a voicemail drop"
+      {showVoicemailModal && (
+        <VoicedropModal
+          prospects={[prospect]}
+          onClose={() => setShowVoicemailModal(false)}
+          onSent={() => loadEnrollments()}
         />
       )}
 
-      {smsPaywall && (
-        <InsufficientCreditsModal
-          open
-          onClose={() => setSmsPaywall(null)}
-          required={smsPaywall.required}
-          balance={smsPaywall.balance}
-          action="Sending an SMS"
-        />
-      )}
     </div>
   );
 }

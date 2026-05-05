@@ -9,6 +9,7 @@ import {
 import { TIERS } from "@/lib/subscriptions";
 import type { SubscriptionTier } from "@/lib/subscriptions";
 import { startGuidedTour } from "@/components/dashboard/GuidedTour";
+import { PersonalPhoneCard } from "@/components/settings/PersonalPhoneCard";
 
 type SettingsTab = "profile" | "subscription" | "credits" | "caller_id" | "integrations" | "appearance" | "notifications";
 
@@ -990,7 +991,7 @@ export default function SettingsPage() {
                   <Phone className="w-4 h-4 text-[var(--accent)]" /> Verified Caller IDs
                 </h3>
                 <p className="text-xs text-[var(--muted)] mb-4">
-                  Verify your personal phone number so voicemail drops appear to come from you. Twilio will call the number with a 6-digit code — enter it on your keypad to verify.
+                  Verify your personal phone number so voicemail drops appear to come from you. We'll call the number with a 6-digit code — enter it on your keypad to verify.
                 </p>
 
                 {callerIdError && (
@@ -1012,7 +1013,7 @@ export default function SettingsPage() {
                         {pendingVerification.code}
                       </div>
                       <p className="text-[11px] text-[var(--muted)] mt-2 text-center">
-                        Twilio is calling now. Answer the call and enter these digits on your keypad.
+                        Calling now. Answer the call and enter these digits on your keypad.
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -1333,6 +1334,8 @@ export default function SettingsPage() {
           {/* ─── Notifications Tab ─── */}
           {activeTab === "notifications" && (
             <div className="space-y-6">
+              <PersonalPhoneCard />
+
               <div className="rounded-xl liquid-glass p-5">
                 <h3 className="text-sm font-medium mb-4 flex items-center gap-2 text-[var(--foreground)]">
                   <Bell className="w-4 h-4 text-amber-400" /> Notification Preferences

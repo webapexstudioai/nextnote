@@ -1,14 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Globe, Plus, ExternalLink, Copy, Loader2, Search,
   Crown, Check, X, ChevronDown, Trash2, Wand2, Sparkles,
+  Database, Image as ImageIcon, Palette, LayoutPanelTop, PenTool, CheckCircle2, Clock,
 } from "lucide-react";
-import { Folder as FolderIcon, FileText, ChevronRight, ArrowLeft } from "lucide-react";
+import { Folder as FolderIcon, FileText, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useProspects } from "@/context/ProspectsContext";
 import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
+import { SendToMyPhoneButton } from "@/components/SendToMyPhoneButton";
+import { ShareWithProspectButton } from "@/components/ShareWithProspectButton";
 const WEBSITE_GENERATION_CREDITS = 50;
 const WEBSITE_WHITELABEL_CREDITS = 200;
 
@@ -43,6 +47,10 @@ export default function WebsitesPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [creditsPaywall, setCreditsPaywall] = useState<{ required: number; balance: number; tier: Tier } | null>(null);
+
+  // Modal portals need to wait for client mount before reading document.body.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Generate form
   const [showForm, setShowForm] = useState(false);
@@ -208,23 +216,44 @@ export default function WebsitesPage() {
     }
   };
 
-  const GENERATION_STEPS = [
-    { label: "Analyzing the niche", sub: "Picking the right palette and imagery direction" },
-    { label: "Designing the logo", sub: "Generating a custom brand mark for the business" },
-    { label: "Drafting the layout", sub: "Building a 9-section editorial structure" },
-    { label: "Writing the copy", sub: "Crafting aspirational headlines and specific services" },
-    { label: "Sourcing imagery", sub: "Matching real photos to the business niche" },
-    { label: "Polishing the design", sub: "Tightening typography, spacing, and CTAs" },
-    { label: "Finalizing the page", sub: "Almost there — saving your new site" },
+  const GENERATION_STEPS_STANDARD = [
+    { label: "Pulling real business data", sub: "Reading Google Maps reviews and details", icon: Database },
+    { label: "Sourcing on-brand imagery", sub: "Picking real photos for hero and sections", icon: ImageIcon },
+    { label: "Designing the logo", sub: "Generating a custom brand mark", icon: Palette },
+    { label: "Designing the page from scratch", sub: "Claude is building a custom layout — no template", icon: LayoutPanelTop },
+    { label: "Writing the copy", sub: "Specific, on-brand headlines and sections", icon: PenTool },
+    { label: "Polishing the design", sub: "Tightening typography, spacing, and CTAs", icon: Sparkles },
+    { label: "Finalizing the page", sub: "Saving your new site", icon: CheckCircle2 },
   ];
-  const [genStep, setGenStep] = useState(0);
+  const GENERATION_STEPS_WHITELABEL = [
+    ...GENERATION_STEPS_STANDARD.slice(0, 6),
+    { label: "Provisioning your domain", sub: "Reserving a unique URL on nextnote.to", icon: Globe },
+    { label: "Finalizing the page", sub: "Saving your new site", icon: CheckCircle2 },
+  ];
+  // Tuned from observed timings — Claude generation + logo + (optional) domain
+  // provisioning. White-label runs noticeably longer because of slug
+  // reservation + Vercel domain attach.
+  const EXPECTED_DURATION_MS = { standard: 45_000, whitelabel: 90_000 } as const;
+
+  const [genElapsed, setGenElapsed] = useState(0);
+  const [genTier, setGenTier] = useState<"standard" | "whitelabel">("standard");
   useEffect(() => {
-    if (!generating) { setGenStep(0); return; }
-    const id = setInterval(() => {
-      setGenStep((s) => Math.min(s + 1, GENERATION_STEPS.length - 1));
-    }, 7000);
+    if (!generating) { setGenElapsed(0); return; }
+    setGenTier(selectedTier);
+    const start = Date.now();
+    setGenElapsed(0);
+    const id = setInterval(() => setGenElapsed(Date.now() - start), 250);
     return () => clearInterval(id);
-  }, [generating]);
+  }, [generating, selectedTier]);
+
+  const genSteps = genTier === "whitelabel" ? GENERATION_STEPS_WHITELABEL : GENERATION_STEPS_STANDARD;
+  const genExpected = EXPECTED_DURATION_MS[genTier];
+  // Asymptotic curve — caps at 95% so the bar can never claim "done" before
+  // the API actually returns. Reaches ~80% at expected duration, ~95% at 1.5×.
+  const genProgress = Math.min(0.95, 1 - Math.exp(-genElapsed / (genExpected * 0.6)));
+  const genStep = Math.min(genSteps.length - 1, Math.floor(genProgress * genSteps.length));
+  const genStalled = genElapsed > genExpected * 1.4;
+  const genElapsedLabel = `${Math.floor(genElapsed / 60_000)}:${String(Math.floor((genElapsed / 1000) % 60)).padStart(2, "0")}`;
 
   const copyUrl = (site: GeneratedSite) => {
     const url = publicSiteUrl(site, window.location.origin);
@@ -421,6 +450,24 @@ export default function WebsitesPage() {
                         <Copy className="w-3.5 h-3.5" />
                       )}
                     </button>
+                    <SendToMyPhoneButton
+                      label=""
+                      className="!px-3 !py-2"
+                      body={`${site.prospect_name} — site ready: ${publicSiteUrl(site, typeof window !== "undefined" ? window.location.origin : "")}`}
+                    />
+                    {(() => {
+                      const linkedProspect = site.prospect_id
+                        ? prospects.find((p) => p.id === site.prospect_id)
+                        : null;
+                      return (
+                        <ShareWithProspectButton
+                          prospectName={site.prospect_name}
+                          prospectPhone={linkedProspect?.phone}
+                          prospectEmail={linkedProspect?.email}
+                          url={publicSiteUrl(site, typeof window !== "undefined" ? window.location.origin : "")}
+                        />
+                      );
+                    })()}
                     {confirmDelete === site.id ? (
                       <div className="flex gap-1">
                         <button
@@ -454,10 +501,18 @@ export default function WebsitesPage() {
       </div>
 
       {/* Generate Modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => { setShowForm(false); resetForm(); }} />
-          <div className="relative w-full max-w-lg liquid-glass-strong rounded-3xl overflow-hidden my-auto">
+      {showForm && mounted && createPortal(
+        <>
+          <div
+            className="fixed z-[200] bg-black/70 backdrop-blur-md"
+            style={{ top: 0, left: 0, width: "100vw", height: "100vh" }}
+            onClick={() => { setShowForm(false); resetForm(); }}
+          />
+          <div
+            className="fixed z-[201] flex items-start justify-center p-4 overflow-y-auto"
+            style={{ top: 0, left: 0, width: "100vw", height: "100vh" }}
+          >
+            <div className="relative w-full max-w-lg liquid-glass-strong rounded-3xl overflow-hidden my-auto">
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/60 to-transparent" />
 
             <div className="p-6 border-b border-white/5 flex items-center justify-between">
@@ -812,63 +867,98 @@ export default function WebsitesPage() {
                 </button>
               </div>
             </div>
+            </div>
           </div>
-        </div>
+        </>,
+        document.body
       )}
 
       {/* Generation loading overlay */}
-      {generating && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md px-4">
-          <div className="w-full max-w-md liquid-glass rounded-3xl p-8 text-center relative overflow-hidden">
+      {generating && mounted && createPortal(
+        <div
+          className="fixed z-[210] flex items-center justify-center bg-black/80 backdrop-blur-md px-4"
+          style={{ top: 0, left: 0, width: "100vw", height: "100vh" }}
+        >
+          <div className="w-full max-w-md liquid-glass rounded-3xl p-7 relative overflow-hidden">
             {/* Animated accent glow */}
-            <div className="pointer-events-none absolute -top-20 -left-20 w-64 h-64 rounded-full bg-[var(--accent)]/20 blur-3xl animate-pulse" />
-            <div className="pointer-events-none absolute -bottom-20 -right-20 w-64 h-64 rounded-full bg-[var(--accent)]/10 blur-3xl animate-pulse" />
+            <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-[var(--accent)]/20 blur-3xl animate-pulse" />
+            <div className="pointer-events-none absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-[var(--accent)]/10 blur-3xl animate-pulse" />
 
             <div className="relative">
-              <div className="mx-auto w-16 h-16 rounded-2xl bg-[var(--accent)]/15 flex items-center justify-center mb-5">
-                <Wand2 className="w-7 h-7 text-[var(--accent)] animate-pulse" />
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className="relative w-11 h-11 rounded-2xl bg-[var(--accent)]/15 border border-[var(--accent)]/30 flex items-center justify-center shrink-0">
+                  <Wand2 className="w-5 h-5 text-[var(--accent)]" />
+                  <span className="absolute inset-0 rounded-2xl border border-[var(--accent)]/40 animate-ping" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-base font-bold tracking-tight">Building your website</h2>
+                  <p className="text-[11px] text-[var(--muted)] flex items-center gap-1.5 mt-0.5">
+                    <Clock className="w-3 h-3" />
+                    <span className="font-mono tabular-nums">{genElapsedLabel}</span>
+                    <span className="text-white/20">·</span>
+                    <span>{genTier === "whitelabel" ? "white-label takes ~90s" : "usually 30–60s"}</span>
+                  </p>
+                </div>
               </div>
 
-              <h2 className="text-xl font-bold tracking-tight mb-1">
-                Generating your website
-              </h2>
-              <p className="text-xs text-[var(--muted)] mb-6">
-                This usually takes 30-60 seconds. Don&apos;t close this tab.
-              </p>
-
-              {/* Progress bar */}
-              <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden mb-6">
+              {/* Progress bar with shimmer */}
+              <div className="relative h-2 w-full rounded-full bg-white/5 overflow-hidden mb-1.5">
                 <div
-                  className="h-full bg-[var(--accent)] transition-all duration-700 ease-out"
-                  style={{ width: `${((genStep + 1) / GENERATION_STEPS.length) * 100}%` }}
+                  className="h-full rounded-full transition-[width] duration-700 ease-out relative overflow-hidden"
+                  style={{
+                    width: `${genProgress * 100}%`,
+                    background: "linear-gradient(90deg, var(--accent) 0%, #ff8a6a 50%, var(--accent) 100%)",
+                    backgroundSize: "200% 100%",
+                    animation: "shimmer 2.4s linear infinite",
+                  }}
                 />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-[var(--muted)] mb-5">
+                <span className="font-mono tabular-nums">{Math.round(genProgress * 100)}%</span>
+                {genStalled ? (
+                  <span className="text-[var(--accent)]/90">Still working — almost there.</span>
+                ) : (
+                  <span>Don&apos;t close this tab</span>
+                )}
               </div>
 
               {/* Steps */}
-              <ul className="space-y-2.5 text-left">
-                {GENERATION_STEPS.map((step, i) => {
+              <ul className="space-y-1.5">
+                {genSteps.map((step, i) => {
                   const done = i < genStep;
                   const active = i === genStep;
+                  const Icon = step.icon;
                   return (
                     <li
-                      key={step.label}
-                      className={`flex items-start gap-3 transition-opacity ${
-                        done || active ? "opacity-100" : "opacity-40"
-                      }`}
+                      key={`${i}-${step.label}`}
+                      className={`flex items-start gap-3 rounded-xl p-2 transition-all border ${
+                        active
+                          ? "bg-[var(--accent)]/8 border-[var(--accent)]/25"
+                          : "border-transparent"
+                      } ${done || active ? "opacity-100" : "opacity-45"}`}
                     >
-                      <span className="mt-0.5 w-5 h-5 shrink-0 flex items-center justify-center">
+                      <span
+                        className={`mt-0.5 w-7 h-7 shrink-0 rounded-lg flex items-center justify-center transition-colors ${
+                          done
+                            ? "bg-[var(--accent)]/15 text-[var(--accent)]"
+                            : active
+                            ? "bg-[var(--accent)]/20 text-[var(--accent)]"
+                            : "bg-white/5 text-[var(--muted)]"
+                        }`}
+                      >
                         {done ? (
-                          <Check className="w-4 h-4 text-[var(--accent)]" />
+                          <Check className="w-3.5 h-3.5" />
                         ) : active ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-[var(--accent)]" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                          <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                          <Icon className="w-3.5 h-3.5" />
                         )}
                       </span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-medium">{step.label}</span>
+                      <span className="flex-1 min-w-0 pt-0.5">
+                        <span className="block text-sm font-medium text-[var(--foreground)] leading-tight">{step.label}</span>
                         {active && (
-                          <span className="block text-[11px] text-[var(--muted)] mt-0.5">
+                          <span className="block text-[11px] text-[var(--muted)] mt-0.5 leading-snug">
                             {step.sub}
                           </span>
                         )}
@@ -879,7 +969,8 @@ export default function WebsitesPage() {
               </ul>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {creditsPaywall && (

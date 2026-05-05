@@ -146,7 +146,7 @@ export default function InfrastructureClient() {
       <section className="rounded-lg border border-neutral-900 bg-neutral-950/50 p-4 text-xs text-neutral-500">
         <p className="font-semibold text-neutral-400 mb-1">Configuration notes</p>
         <ul className="space-y-1 list-disc list-inside">
-          <li>Twilio + Stripe + ElevenLabs + Outscraper read from existing env vars and update live.</li>
+          <li>Carrier + Stripe + ElevenLabs + Outscraper read from existing env vars and update live.</li>
           <li>Anthropic + OpenAI usage need <code className="text-neutral-300">ANTHROPIC_ADMIN_KEY</code> / <code className="text-neutral-300">OPENAI_ADMIN_KEY</code> (admin keys, not regular API keys) to render last-30d usage estimates.</li>
           <li>Fixed-cost services use <code className="text-neutral-300">INFRA_FIXED_MONTHLY_USD</code> like <code className="text-neutral-300">Vercel:20,Supabase:25,Resend:0</code>.</li>
         </ul>

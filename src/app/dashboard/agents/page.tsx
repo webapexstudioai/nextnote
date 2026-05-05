@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import AgentTestWidget from "@/components/dashboard/AgentTestWidget";
 import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
+import { SendToMyPhoneButton } from "@/components/SendToMyPhoneButton";
 
 interface ElevenAgent {
   agent_id: string;
@@ -499,10 +500,10 @@ export default function AgentsPage() {
               {showImportPhone && (
                 <div className="liquid-glass rounded-2xl p-5 space-y-4 border border-[rgba(232,85,61,0.18)]">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold flex items-center gap-2"><Link2 className="w-4 h-4 text-[var(--accent)]" /> Import Twilio Number</h3>
+                    <h3 className="text-sm font-semibold flex items-center gap-2"><Link2 className="w-4 h-4 text-[var(--accent)]" /> Import Phone Number</h3>
                     <button onClick={() => setShowImportPhone(false)} className="p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"><X className="w-4 h-4" /></button>
                   </div>
-                  <p className="text-xs text-[var(--muted)]">Connect a Twilio phone number to route calls to your AI agent. You need your Twilio Account SID and Auth Token.</p>
+                  <p className="text-xs text-[var(--muted)]">Connect an existing phone number to route calls to your AI agent. You'll need the carrier Account SID and Auth Token from your provider.</p>
                   {importError && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{importError}</div>}
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
@@ -514,11 +515,11 @@ export default function AgentsPage() {
                       <input value={importForm.phone_number} onChange={(e) => setImportForm((p) => ({ ...p, phone_number: e.target.value }))} placeholder="+1 555 000 0000" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm" />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Twilio Account SID</label>
+                      <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Account SID</label>
                       <input value={importForm.sid} onChange={(e) => setImportForm((p) => ({ ...p, sid: e.target.value }))} placeholder="ACxxxxxxxxxxxxxxxx" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm font-mono" />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Twilio Auth Token</label>
+                      <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Auth Token</label>
                       <input type="password" value={importForm.token} onChange={(e) => setImportForm((p) => ({ ...p, token: e.target.value }))} placeholder="••••••••••••••••" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm" />
                     </div>
                   </div>
@@ -563,7 +564,7 @@ export default function AgentsPage() {
                 <div className="rounded-2xl border-2 border-dashed border-[var(--border)] p-12 text-center space-y-4">
                   <div className="w-14 h-14 rounded-2xl bg-[rgba(232,85,61,0.08)] flex items-center justify-center mx-auto"><Phone className="w-7 h-7 text-[var(--accent)]" /></div>
                   <p className="font-semibold text-sm">No phone numbers yet</p>
-                  <p className="text-xs text-[var(--muted)]">Import a Twilio number to let your agent receive and make calls.</p>
+                  <p className="text-xs text-[var(--muted)]">Import a phone number to let your agent receive and make calls.</p>
                 </div>
               ) : (
                 <div className="liquid-glass rounded-2xl overflow-hidden">
@@ -574,11 +575,22 @@ export default function AgentsPage() {
                   </div>
                   {phoneNumbers.map((phone) => (
                     <div key={phone.phone_number_id} className="grid grid-cols-[1fr_120px_180px_100px_48px] gap-4 px-5 py-4 border-b border-[var(--border)] last:border-0 hover:bg-white/[0.04] transition-colors items-center">
-                      <div>
-                        <p className="text-sm font-medium">{phone.phone_number}</p>
-                        <p className="text-[10px] text-[var(--muted)]">{phone.label || "—"}</p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{phone.phone_number}</p>
+                          <p className="text-[10px] text-[var(--muted)] truncate">{phone.label || "—"}</p>
+                        </div>
+                        <SendToMyPhoneButton
+                          label=""
+                          className="!px-2 !py-1 shrink-0"
+                          body={[
+                            phone.assigned_agent ? `${phone.assigned_agent.agent_name} — AI receptionist` : "AI receptionist number",
+                            phone.phone_number,
+                            phone.label ? `(${phone.label})` : null,
+                          ].filter(Boolean).join("\n")}
+                        />
                       </div>
-                      <div><span className="inline-flex px-2 py-0.5 rounded-full text-[10px] border bg-blue-500/10 text-blue-400 border-blue-500/20">{phone.type || "Twilio"}</span></div>
+                      <div><span className="inline-flex px-2 py-0.5 rounded-full text-[10px] border bg-blue-500/10 text-blue-400 border-blue-500/20">{phone.type || "Imported"}</span></div>
                       <div>
                         {phone.assigned_agent ? (
                           <span className="text-xs text-emerald-400 font-medium truncate block">{phone.assigned_agent.agent_name}</span>

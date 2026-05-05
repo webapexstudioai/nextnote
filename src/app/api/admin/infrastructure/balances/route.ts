@@ -22,7 +22,7 @@ async function fetchTwilio(): Promise<ProviderResult> {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   const link = "https://console.twilio.com/us1/billing/manage-billing";
-  const base: ProviderResult = { id: "twilio", name: "Twilio", status: "not_configured", link, fetchedAt: new Date().toISOString() };
+  const base: ProviderResult = { id: "twilio", name: "Telecom carrier", status: "not_configured", link, fetchedAt: new Date().toISOString() };
 
   if (!sid || !token) return base;
 

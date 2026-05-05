@@ -11,6 +11,8 @@ import CreditGiftCelebration from "@/components/dashboard/CreditGiftCelebration"
 import ImpersonationBanner from "@/components/dashboard/ImpersonationBanner";
 import TrialBanner from "@/components/dashboard/TrialBanner";
 import { ProspectsProvider } from "@/context/ProspectsContext";
+import { SoftphoneProvider } from "@/context/SoftphoneProvider";
+import SoftphoneDock from "@/components/softphone/SoftphoneDock";
 
 function applyAccent(hex: string) {
   const clean = /^#?([0-9a-fA-F]{6})$/.exec(hex)?.[1];
@@ -68,6 +70,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
   return (
     <ProspectsProvider>
+      <SoftphoneProvider>
       <ImpersonationBanner />
       <div className="relative flex h-screen bg-[var(--background)]">
         <div className="dashboard-stage" aria-hidden />
@@ -106,7 +109,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             </div>
           </div>
         )}
+
+        <SoftphoneDock />
       </div>
+      </SoftphoneProvider>
     </ProspectsProvider>
   );
 }

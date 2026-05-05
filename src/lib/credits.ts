@@ -30,6 +30,7 @@ export const NOTE_SUMMARIZE_CREDITS = 5;            // $0.05 per note summarizat
 export const RECEPTIONIST_BUILD_CREDITS = 25;       // $0.25 per AI receptionist draft
 export const AGENT_TEST_CHAT_CREDITS = 3;           // $0.03 per test chat message
 export const IMPORT_PROSPECT_CREDITS = 5;           // $0.05 per prospect imported from Google Maps
+export const LEAD_AUDIT_CREDITS = 50;               // $0.50 per lead qualifier audit (Outscraper reviews + Google PSI + Claude synthesis)
 
 // Sign-up bonus — enough to try 1 website + a few AI features.
 export const SIGNUP_BONUS_CREDITS = 150;
@@ -57,16 +58,22 @@ export const PRICING_TABLE: PricingEntry[] = [
   { key: "receptionist",     label: "AI receptionist build", unit: "per draft",       creditsPerUnit: RECEPTIONIST_BUILD_CREDITS, estUpstreamCostUsd: 0.020, upstream: "Claude Sonnet 4 (prompt draft)" },
   { key: "agent_chat",       label: "Agent test chat",       unit: "per message",     creditsPerUnit: AGENT_TEST_CHAT_CREDITS,    estUpstreamCostUsd: 0.004, upstream: "Claude Haiku" },
   { key: "import_prospect",  label: "Import prospect",       unit: "per lookup",      creditsPerUnit: IMPORT_PROSPECT_CREDITS,    estUpstreamCostUsd: 0.017, upstream: "Google Places Details API" },
-  { key: "voice_call",       label: "Voice call",            unit: "per minute",      creditsPerUnit: RATE_CREDITS_PER_MIN,       estUpstreamCostUsd: 0.100, upstream: "ElevenLabs Conv AI + Twilio PSTN" },
+  { key: "lead_audit",       label: "Lead Qualifier audit",  unit: "per prospect",    creditsPerUnit: LEAD_AUDIT_CREDITS,         estUpstreamCostUsd: 0.150, upstream: "Outscraper Maps Reviews + Google PSI + Claude Sonnet 4" },
+  { key: "voice_call",       label: "Voice call",            unit: "per minute",      creditsPerUnit: RATE_CREDITS_PER_MIN,       estUpstreamCostUsd: 0.100, upstream: "ElevenLabs Conv AI + telecom carrier" },
   { key: "tts",              label: "Text-to-speech",        unit: "per 1K chars",    creditsPerUnit: RATE_CREDITS_PER_1K_CHARS,  estUpstreamCostUsd: 0.150, upstream: "ElevenLabs TTS" },
-  { key: "voicemail",        label: "Voicemail drop",        unit: "per drop",        creditsPerUnit: RATE_CREDITS_PER_VOICEMAIL, estUpstreamCostUsd: 0.080, upstream: "Twilio PSTN + ElevenLabs TTS (~500 chars)" },
-  { key: "sms",              label: "SMS follow-up",         unit: "per message",     creditsPerUnit: RATE_CREDITS_PER_SMS,       estUpstreamCostUsd: 0.0079, upstream: "Twilio SMS (US/Canada per segment)" },
-  { key: "phone_purchase",   label: "Phone number purchase", unit: "one-time",        creditsPerUnit: PHONE_NUMBER_PURCHASE_CREDITS, estUpstreamCostUsd: 1.00, upstream: "Twilio number purchase" },
-  { key: "phone_monthly",    label: "Phone number monthly",  unit: "per month",       creditsPerUnit: PHONE_NUMBER_MONTHLY_CREDITS, estUpstreamCostUsd: 1.15, upstream: "Twilio monthly fee" },
+  { key: "voicemail",        label: "Voicemail drop",        unit: "per drop",        creditsPerUnit: RATE_CREDITS_PER_VOICEMAIL, estUpstreamCostUsd: 0.080, upstream: "Telecom carrier + ElevenLabs TTS (~500 chars)" },
+  { key: "sms",              label: "SMS follow-up",         unit: "per message",     creditsPerUnit: RATE_CREDITS_PER_SMS,       estUpstreamCostUsd: 0.0079, upstream: "Carrier SMS (US/Canada per segment)" },
+  { key: "phone_purchase",   label: "Phone number purchase", unit: "one-time",        creditsPerUnit: PHONE_NUMBER_PURCHASE_CREDITS, estUpstreamCostUsd: 1.00, upstream: "Carrier number purchase" },
+  { key: "phone_monthly",    label: "Phone number monthly",  unit: "per month",       creditsPerUnit: PHONE_NUMBER_MONTHLY_CREDITS, estUpstreamCostUsd: 1.15, upstream: "Carrier monthly fee" },
 ];
 
 // 1 credit = $0.01 retail (exact-topup rate, the only rate users pay).
 export const CREDIT_UNIT_USD_RETAIL = 0.01;
+
+// Pack metadata lives in a client-safe module so client components can import
+// it without dragging in supabaseAdmin. Re-exported here for server callers
+// who already import from @/lib/credits.
+export { CREDIT_PACKS, getCreditPack, type CreditPack } from "./creditPacks";
 
 export async function getBalance(userId: string): Promise<number> {
   const { data } = await supabaseAdmin
@@ -75,6 +82,41 @@ export async function getBalance(userId: string): Promise<number> {
     .eq("user_id", userId)
     .maybeSingle();
   return data?.balance ?? 0;
+}
+
+// Velocity guardrail. Sums all debits in the last 24h.
+export async function getDailySpend(userId: string): Promise<number> {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data } = await supabaseAdmin
+    .from("credit_transactions")
+    .select("delta")
+    .eq("user_id", userId)
+    .lt("delta", 0)
+    .gte("created_at", since);
+  return (data ?? []).reduce((acc, t) => acc + Math.abs(t.delta), 0);
+}
+
+// Returns the cap (credits/24h) or null for unlimited.
+export async function getDailyCap(userId: string): Promise<number | null> {
+  const { data } = await supabaseAdmin
+    .from("users")
+    .select("daily_credit_cap")
+    .eq("id", userId)
+    .maybeSingle();
+  return data?.daily_credit_cap ?? null;
+}
+
+export class DailyCapExceededError extends Error {
+  cap: number;
+  spent: number;
+  attempted: number;
+  constructor(cap: number, spent: number, attempted: number) {
+    super(`Daily spend cap reached. Try again in 24 hours or contact support.`);
+    this.name = "DailyCapExceededError";
+    this.cap = cap;
+    this.spent = spent;
+    this.attempted = attempted;
+  }
 }
 
 export async function ensureBalanceRow(userId: string): Promise<void> {
@@ -124,6 +166,15 @@ export async function addCredits(userId: string, amount: number, opts: AdjustOpt
 
 export async function deductCredits(userId: string, amount: number, opts: AdjustOpts): Promise<number> {
   if (amount <= 0) throw new Error("amount must be positive");
+
+  const cap = await getDailyCap(userId);
+  if (cap !== null) {
+    const spent = await getDailySpend(userId);
+    if (spent + amount > cap) {
+      throw new DailyCapExceededError(cap, spent, amount);
+    }
+  }
+
   return adjust(userId, -amount, opts);
 }
 

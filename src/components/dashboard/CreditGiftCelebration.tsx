@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Coins, Gift, PartyPopper, X } from "lucide-react";
+import { Gift, Sparkles, X } from "lucide-react";
 
 const SEEN_KEY = "nextnote_gifts_seen";
 const DISPLAY_MS = 5200;
@@ -110,30 +110,38 @@ export default function CreditGiftCelebration() {
           <X className="w-3.5 h-3.5" />
         </button>
 
-        <div className="gift-icon">
-          <span className="gift-icon-ring" />
-          <span className="gift-icon-ring gift-icon-ring-2" />
-          <Gift className="w-8 h-8" />
+        <div className="gift-shine" aria-hidden />
+
+        <div className="gift-badge">
+          <Sparkles className="w-3 h-3" />
+          Reward unlocked
         </div>
 
-        <div className="gift-label">
-          <PartyPopper className="w-3 h-3 text-[var(--accent)]" />
-          You&apos;ve been gifted credits
+        <div className="gift-icon-wrap">
+          <span className="gift-icon-ring" aria-hidden />
+          <span className="gift-icon-ring gift-icon-ring-2" aria-hidden />
+          <div className="gift-icon">
+            <Gift className="w-8 h-8" />
+          </div>
         </div>
 
         <div className="gift-amount">
-          <Coins className="w-6 h-6 text-[var(--accent)]" />
-          +{current.amount.toLocaleString()}
-          <span className="gift-amount-unit">credits</span>
+          <span className="gift-amount-plus">+</span>
+          {current.amount.toLocaleString()}
         </div>
+        <div className="gift-amount-unit">credits added to your balance</div>
+
+        <div className="gift-divider" aria-hidden />
 
         {current.note ? (
           <p className="gift-note">&ldquo;{current.note}&rdquo;</p>
         ) : (
-          <p className="gift-note gift-note-muted">From the NextNote team 🎁</p>
+          <p className="gift-note gift-note-muted">A little something from the NextNote team</p>
         )}
 
-        <div className="gift-sub">Enjoy — they&apos;re already in your balance.</div>
+        <button className="gift-cta" onClick={dismissNow}>
+          Awesome, thanks
+        </button>
       </div>
     </div>
   );

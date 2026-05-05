@@ -21,6 +21,29 @@ export function normalizePhone(raw: string): string | null {
   return null;
 }
 
+// Reasonable variants for matching a stored prospect phone against a Twilio
+// caller-id. Stored phones come in many shapes — bare digits, +E.164, with
+// country code, without — so we generate the common ones and hand them to
+// supabase `.in("phone", variants)` for an indexed match.
+export function phoneVariants(raw: string): string[] {
+  const digits = raw.replace(/\D/g, "");
+  const out = new Set<string>();
+  if (raw) out.add(raw);
+  if (digits) {
+    out.add(digits);
+    out.add(`+${digits}`);
+    if (digits.length === 10) {
+      out.add(`+1${digits}`);
+      out.add(`1${digits}`);
+    }
+    if (digits.length === 11 && digits.startsWith("1")) {
+      out.add(digits.slice(1));
+      out.add(`+${digits}`);
+    }
+  }
+  return Array.from(out).filter(Boolean);
+}
+
 export interface SendSmsParams {
   from: string;
   to: string;
@@ -35,7 +58,7 @@ export interface SendSmsResult {
 
 export async function sendSms({ from, to, body, statusCallback }: SendSmsParams): Promise<SendSmsResult> {
   const sid = process.env.TWILIO_ACCOUNT_SID;
-  if (!sid) throw new Error("Twilio not configured");
+  if (!sid) throw new Error("Phone provider not configured");
 
   const params = new URLSearchParams({ From: from, To: to, Body: body });
   if (statusCallback) params.set("StatusCallback", statusCallback);
@@ -51,7 +74,7 @@ export async function sendSms({ from, to, body, statusCallback }: SendSmsParams)
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data?.message || `Twilio error ${res.status}`);
+    throw new Error(data?.message || `Carrier error ${res.status}`);
   }
   return { sid: data.sid, status: data.status };
 }

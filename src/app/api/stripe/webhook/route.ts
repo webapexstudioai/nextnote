@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { addCredits, deductCredits, getBalance, hasBeenProcessed } from "@/lib/credits";
 import { sendWelcomeEmail } from "@/lib/email-templates";
 import { purchaseAgencyNumber, refundCheckoutSession } from "@/lib/agencyPhone";
+import { fulfillDomainPurchase } from "@/lib/domainFulfillment";
 
 const ALLOWED_PLANS = new Set(["starter", "pro"]);
 
@@ -63,6 +64,13 @@ export async function POST(req: NextRequest) {
             console.error(`[webhook] agency phone purchase failed: ${result.error}`);
             await refundCheckoutSession(session.id, result.error);
           }
+          break;
+        }
+
+        // Domain purchase — register through Vercel + attach to site.
+        // The fulfillment helper handles refund-on-failure internally.
+        if (userId && kind === "domain_purchase") {
+          await fulfillDomainPurchase(session);
           break;
         }
 

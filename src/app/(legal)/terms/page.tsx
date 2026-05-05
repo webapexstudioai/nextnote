@@ -76,7 +76,7 @@ export default function TermsPage() {
 
       <h3>4.3 Phone numbers</h3>
       <ul>
-        <li>Phone numbers purchased through NextNote are leased from our carrier (Twilio) and administered by NextNote on your behalf.</li>
+        <li>Phone numbers purchased through NextNote are leased from our upstream telecom carrier and administered by NextNote on your behalf.</li>
         <li>The monthly rental fee is deducted in credits on the anniversary of purchase. If your balance is insufficient, the number is released and cannot be guaranteed to be recoverable.</li>
       </ul>
 
@@ -114,7 +114,7 @@ export default function TermsPage() {
 
       <h2>7. Third-party services</h2>
       <p>
-        NextNote integrates with third-party services (Google, Stripe, Twilio, ElevenLabs, etc.).
+        NextNote integrates with third-party services (Google, Stripe, ElevenLabs, telecom carriers, etc.).
         Your use of those services is governed by their own terms and privacy policies. We are
         not responsible for third-party services, and their availability may change without
         notice.

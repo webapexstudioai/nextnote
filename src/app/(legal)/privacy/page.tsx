@@ -41,7 +41,7 @@ export default function PrivacyPage() {
       <h3>1.2 Information from connected services</h3>
       <ul>
         <li><strong>Google (Calendar + Gmail send + profile)</strong> — if you connect your Google account, we receive an OAuth refresh token and use it to read and write calendar events, send emails on your behalf, and display your Google profile name and email. We store the refresh token encrypted at rest.</li>
-        <li><strong>Twilio</strong> — phone numbers you purchase or port through NextNote, verified caller IDs, and the delivery status of voicemail drops and calls.</li>
+        <li><strong>Telecom carrier</strong> — phone numbers you purchase or port through NextNote, verified caller IDs, and the delivery status of voicemail drops and calls.</li>
         <li><strong>ElevenLabs / Retell</strong> — AI agent configurations, conversation transcripts, and call recordings associated with voice agents you build.</li>
       </ul>
 
@@ -96,7 +96,7 @@ export default function PrivacyPage() {
         <li><strong>Supabase</strong> — primary database, authentication, and file storage.</li>
         <li><strong>Vercel</strong> — application hosting and serverless functions.</li>
         <li><strong>Stripe</strong> — payment processing.</li>
-        <li><strong>Twilio</strong> — phone number provisioning, voice calls, voicemail delivery.</li>
+        <li><strong>Telecom carrier</strong> — phone number provisioning, voice calls, voicemail delivery.</li>
         <li><strong>ElevenLabs</strong> — AI voice agents and text-to-speech.</li>
         <li><strong>Deepgram</strong> — speech-to-text transcription for voice features.</li>
         <li><strong>Retell AI</strong> — optional AI voice agent runtime (only if you configure it).</li>

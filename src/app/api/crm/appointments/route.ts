@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { mapAppointment, requireUser } from "@/lib/crm";
+import { syncAppointmentCreated } from "@/lib/calendarSync";
 
 export async function POST(req: NextRequest) {
   const userId = await requireUser();
@@ -48,6 +49,18 @@ export async function POST(req: NextRequest) {
     .update({ status: "Booked" })
     .eq("id", prospectId)
     .eq("user_id", userId);
+
+  // Push to Google Calendar (best-effort) and re-read the row so the
+  // response reflects calendar_event_id + any auto-generated meet_link.
+  if (!calendarEventId) {
+    await syncAppointmentCreated(data.id);
+    const { data: refreshed } = await supabaseAdmin
+      .from("appointments")
+      .select("*")
+      .eq("id", data.id)
+      .single();
+    return NextResponse.json({ appointment: mapAppointment(refreshed ?? data) });
+  }
 
   return NextResponse.json({ appointment: mapAppointment(data) });
 }

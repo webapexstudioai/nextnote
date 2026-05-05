@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   if (!twilioConfigured()) {
-    return NextResponse.json({ error: "Twilio not configured" }, { status: 503 });
+    return NextResponse.json({ error: "SMS provider not configured" }, { status: 503 });
   }
 
   const { prospect_id, template_id, body: rawBody, from_number, call_log_id } = await req.json();
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
       body: renderedBody,
     });
   } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : "Twilio send failed";
+    const errorMessage = err instanceof Error ? err.message : "SMS send failed";
     await supabaseAdmin
       .from("sms_messages")
       .update({ status: "failed", error_message: errorMessage })

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { stripPoweredByBadge } from "@/lib/websiteForms";
+import { ensureCounterFallback, stripPoweredByBadge } from "@/lib/websiteForms";
 
 // Reached only via subdomain rewrite from middleware — every request here
 // arrived as `{slug}.pitchsite.dev` and was internally routed to this path.
@@ -29,7 +29,11 @@ export async function GET(
 
   // Defensive backstop: white-label HTML must never carry a NextNote badge,
   // even if older sites slipped through before strict stripping.
-  const html = stripPoweredByBadge(data.html_content);
+  let html = stripPoweredByBadge(data.html_content);
+  // Counters render as `<span data-count="626">0</span>` and only animate when
+  // they enter the viewport. On hero-adjacent stats — or when IO never fires —
+  // the visible "0" sticks. The fallback settles them to the real number.
+  html = ensureCounterFallback(html);
 
   return new NextResponse(html, {
     headers: {

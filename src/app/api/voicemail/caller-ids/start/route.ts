@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const sid = process.env.TWILIO_ACCOUNT_SID;
     const token = process.env.TWILIO_AUTH_TOKEN;
     if (!sid || !token) {
-      return NextResponse.json({ error: "Twilio not configured" }, { status: 503 });
+      return NextResponse.json({ error: "Phone provider not configured" }, { status: 503 });
     }
 
     const { phone_number, friendly_name } = await req.json();
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       phone_number: phone,
       validation_code: validationCode,
-      message: "Twilio is calling the number now. When prompted, enter the code on your phone's keypad.",
+      message: "Calling the number now. When prompted, enter the code on your phone's keypad.",
     });
   } catch (err: unknown) {
     return NextResponse.json(

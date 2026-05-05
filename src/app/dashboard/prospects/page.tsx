@@ -21,6 +21,7 @@ function ProspectsPageInner() {
   const params = useSearchParams();
   const folderId = params.get("folder");
   const fileId = params.get("file");
+  const focusId = params.get("focus");
 
   const {
     prospects, folders,
@@ -69,6 +70,19 @@ function ProspectsPageInner() {
     const t = setTimeout(() => document.addEventListener("click", close), 0);
     return () => { clearTimeout(t); document.removeEventListener("click", close); };
   }, [folderMenu, fileMenu]);
+
+  // Auto-open the prospect's detail panel when ?focus=<id> is present —
+  // used by the softphone dock's "Open full file" link.
+  useEffect(() => {
+    if (!focusId) return;
+    const exists = prospects.some((p) => p.id === focusId);
+    if (!exists) return;
+    setSelectedId(focusId);
+    const p = new URLSearchParams(params.toString());
+    p.delete("focus");
+    const q = p.toString();
+    router.replace(q ? `/dashboard/prospects?${q}` : "/dashboard/prospects");
+  }, [focusId, prospects, params, router]);
 
   const activeFolder = folderId ? folders.find((f) => f.id === folderId) : null;
   const activeFile = activeFolder && fileId ? activeFolder.files.find((f) => f.id === fileId) : null;

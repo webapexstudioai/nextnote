@@ -7,15 +7,27 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
   const prospectId = req.nextUrl.searchParams.get("prospect_id");
-  if (!prospectId) return NextResponse.json({ error: "prospect_id required" }, { status: 400 });
+  const remoteNumber = req.nextUrl.searchParams.get("remote_number");
 
-  const { data, error } = await supabaseAdmin
+  if (!prospectId && !remoteNumber) {
+    return NextResponse.json({ error: "prospect_id or remote_number required" }, { status: 400 });
+  }
+
+  let q = supabaseAdmin
     .from("sms_messages")
-    .select("id, direction, body, to_number, from_number, status, error_message, sent_at, delivered_at, created_at")
+    .select("id, direction, body, to_number, from_number, status, error_message, sent_at, delivered_at, read_at, created_at")
     .eq("user_id", userId)
-    .eq("prospect_id", prospectId)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(100);
+
+  if (prospectId) {
+    q = q.eq("prospect_id", prospectId);
+  } else if (remoteNumber) {
+    // Unmatched thread: messages to/from this number that aren't linked to any prospect.
+    q = q.is("prospect_id", null).or(`from_number.eq.${remoteNumber},to_number.eq.${remoteNumber}`);
+  }
+
+  const { data, error } = await q;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ messages: data ?? [] });

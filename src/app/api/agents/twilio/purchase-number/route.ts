@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
 import { recordPhoneNumberOwnership } from "@/lib/agentOwnership";
 import { deductCredits, addCredits, getBalance, PHONE_NUMBER_PURCHASE_CREDITS } from "@/lib/credits";
+import { hasCompletedBusinessProfile } from "@/lib/businessProfile";
 
 // Reseller mode: purchases on NextNote's master Twilio account, deducts credits.
 export async function POST(req: NextRequest) {
@@ -18,6 +19,13 @@ export async function POST(req: NextRequest) {
 
     const { phoneNumber, friendlyName } = await req.json();
     if (!phoneNumber) return NextResponse.json({ error: "phoneNumber is required" }, { status: 400 });
+
+    if (!(await hasCompletedBusinessProfile(session.userId))) {
+      return NextResponse.json(
+        { error: "Complete your business profile before purchasing a number.", code: "profile_required" },
+        { status: 412 },
+      );
+    }
 
     const balance = await getBalance(session.userId);
     if (balance < PHONE_NUMBER_PURCHASE_CREDITS) {

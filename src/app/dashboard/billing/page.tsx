@@ -2,9 +2,9 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { Coins, Loader2, CheckCircle, AlertCircle, Zap, RefreshCw, ArrowRight } from "lucide-react";
+import { Coins, Loader2, CheckCircle, AlertCircle, Zap, RefreshCw, ArrowRight, Sparkles } from "lucide-react";
+import { CREDIT_PACKS } from "@/lib/creditPacks";
 
-const PRESETS = [100, 500, 1000, 2500];
 const MIN_TOPUP = 50;
 const MAX_TOPUP = 100_000;
 
@@ -67,6 +67,24 @@ function BillingInner() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credits: clamped, returnTo: "/dashboard/billing" }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || "Checkout failed");
+      window.location.href = data.url;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Checkout failed");
+      setPurchasing(false);
+    }
+  };
+
+  const buyPack = async (packId: string) => {
+    setPurchasing(true);
+    setError("");
+    try {
+      const res = await fetch("/api/credits/topup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ packId, returnTo: "/dashboard/billing" }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error || "Checkout failed");
@@ -145,33 +163,55 @@ function BillingInner() {
         </div>
       )}
 
-      <h2 className="text-sm font-medium text-[var(--foreground)] mb-3 uppercase tracking-wide">Top up</h2>
-      <div data-tour-id="billing-topup" className="liquid-glass rounded-2xl p-6">
+      <h2 className="text-sm font-medium text-[var(--foreground)] mb-3 uppercase tracking-wide">Credit packs</h2>
+      <div data-tour-id="billing-topup" className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+        {CREDIT_PACKS.map((pack) => {
+          const total = pack.credits + pack.bonus;
+          const isBusy = purchasing;
+          const isPopular = !!pack.popular;
+          return (
+            <button
+              key={pack.id}
+              onClick={() => buyPack(pack.id)}
+              disabled={isBusy}
+              className={`relative text-left rounded-2xl border p-5 transition-all overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed ${
+                isPopular
+                  ? "border-[var(--accent)]/40 bg-[var(--accent)]/8 hover:bg-[var(--accent)]/12 hover:border-[var(--accent)]/60"
+                  : "border-white/10 bg-[var(--background)] hover:bg-white/5 hover:border-white/20"
+              }`}
+            >
+              {pack.badge && (
+                <div className={`absolute top-0 right-0 px-2 py-0.5 text-[10px] uppercase tracking-wider font-semibold rounded-bl-lg ${
+                  isPopular ? "bg-[var(--accent)] text-white" : "bg-white/10 text-[var(--muted)]"
+                }`}>
+                  {pack.badge}
+                </div>
+              )}
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-base font-semibold text-[var(--foreground)]">{pack.label}</span>
+              </div>
+              <div className="text-2xl font-bold text-[var(--foreground)]">${(pack.priceCents / 100).toFixed(0)}</div>
+              <div className="mt-2 text-xs text-[var(--muted)] flex items-center gap-1.5 flex-wrap">
+                <span className="font-mono text-[var(--foreground)]">{total.toLocaleString()} credits</span>
+                {pack.bonus > 0 && (
+                  <span className="inline-flex items-center gap-0.5 text-emerald-400">
+                    <Sparkles className="w-3 h-3" /> +{pack.bonus.toLocaleString()} bonus
+                  </span>
+                )}
+              </div>
+              <div className="mt-4 inline-flex items-center gap-1 text-xs text-[var(--muted)]">
+                Buy now <ArrowRight className="w-3 h-3" />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <h2 className="text-sm font-medium text-[var(--foreground)] mb-3 uppercase tracking-wide">Custom amount</h2>
+      <div className="liquid-glass rounded-2xl p-6">
         <p className="text-sm text-[var(--muted)] mb-4">
           Credits are <span className="text-[var(--foreground)] font-medium">$0.01 each</span>. Minimum top-up is {MIN_TOPUP} credits. Credits never expire.
         </p>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-          {PRESETS.map((p) => {
-            const active = clamped === p;
-            return (
-              <button
-                key={p}
-                onClick={() => setAmount(p)}
-                className={`rounded-xl px-4 py-3 text-sm font-medium transition-all border ${
-                  active
-                    ? "bg-[var(--accent)]/15 border-[var(--accent)]/50 text-[var(--foreground)]"
-                    : "bg-[var(--background)] border-white/10 text-[var(--muted)] hover:text-[var(--foreground)] hover:border-white/20"
-                }`}
-              >
-                <div className="font-semibold">{p.toLocaleString()}</div>
-                <div className="text-[11px] text-[var(--muted)]">${(p / 100).toFixed(2)}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        <label className="block text-xs text-[var(--muted)] mb-1.5 uppercase tracking-wider">Or enter a custom amount</label>
         <div className="flex items-stretch gap-2">
           <input
             type="number"
@@ -190,7 +230,7 @@ function BillingInner() {
         <button
           onClick={buy}
           disabled={purchasing}
-          className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-semibold px-4 py-3 shadow-lg shadow-[var(--accent)]/25 transition-all disabled:opacity-60"
+          className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 text-[var(--foreground)] text-sm font-semibold px-4 py-3 transition-all disabled:opacity-60"
         >
           {purchasing ? (
             <>

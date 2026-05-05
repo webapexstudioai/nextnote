@@ -11,11 +11,15 @@ import {
   Shield,
   Receipt,
   Wallet,
+  ShieldCheck,
+  Radio,
 } from "lucide-react";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, match: "exact" as const },
   { href: "/admin/users", label: "Users", icon: Users, match: "prefix" as const },
+  { href: "/admin/business-profiles", label: "Business profiles", icon: ShieldCheck, match: "prefix" as const },
+  { href: "/admin/a2p", label: "10DLC compliance", icon: Radio, match: "prefix" as const },
   { href: "/admin/support", label: "Support", icon: MessageSquare, match: "prefix" as const },
   { href: "/admin/pricing", label: "Pricing", icon: Receipt, match: "prefix" as const },
   { href: "/admin/infrastructure", label: "Infrastructure", icon: Wallet, match: "prefix" as const },

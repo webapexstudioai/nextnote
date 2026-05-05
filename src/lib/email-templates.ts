@@ -464,3 +464,142 @@ export async function sendSignupReminderEmail(opts: {
   const { html, text, subject } = renderSignupReminderEmail(opts);
   return sendEmail({ to: opts.to, subject, html, text });
 }
+
+// --- A2P review (admin-gated) ----------------------------------------------
+// Sent when an NextNote admin approves or rejects a user's submitted business
+// profile. Approval is the green-light to register the brand with carriers;
+// rejection sends back specific corrections so the user can resubmit.
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export function renderA2pApprovedEmail(opts: { legalName: string; appUrl?: string }) {
+  const ctaUrl = `${opts.appUrl || APP_URL}/dashboard/agency-phone`;
+  const safeName = escapeHtml(opts.legalName || "your business");
+  const body = `
+    <h1 class="nn-heading" style="margin:0 0 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:24px;font-weight:600;color:#fafafa;letter-spacing:-0.02em;line-height:1.3;">
+      Your business profile was approved 🎉
+    </h1>
+    <p style="margin:0 0 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#a1a1aa;">
+      Good news — we reviewed <strong style="color:#fafafa;">${safeName}</strong> and everything checks out. We&rsquo;re now registering your brand with US carriers (10DLC) so your SMS lands reliably.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+      <tr>
+        <td bgcolor="#1a0e0c" style="background-color:#1a0e0c;border:1px solid #3d1f18;border-radius:12px;padding:18px 20px;">
+          <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:#ff8a6a;">What happens next</p>
+          <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#d4d4d8;">
+            Carrier registration takes 1&ndash;3 business days. You&rsquo;ll get another email when it&rsquo;s fully live. In the meantime you can keep using the <em>Send via my phone</em> fallback in the messages tab.
+          </p>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px;">
+      <tr>
+        <td bgcolor="#e8553d" style="background-color:#e8553d;border-radius:10px;">
+          <a href="${ctaUrl}" style="display:inline-block;padding:14px 34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:-0.005em;">
+            View status
+          </a>
+        </td>
+      </tr>
+    </table>
+  `;
+
+  const html = renderLayout({
+    preheader: "Your business profile passed review. Carrier registration is in progress.",
+    bodyHtml: body,
+  });
+
+  const text = `Your business profile was approved
+
+We reviewed ${opts.legalName || "your business"} and everything checks out. We're now registering your brand with US carriers (10DLC).
+
+Carrier registration takes 1-3 business days. You'll get another email when it's fully live.
+
+View status: ${ctaUrl}
+
+© ${new Date().getFullYear()} NextNote`;
+
+  return { html, text };
+}
+
+export function renderA2pRejectedEmail(opts: { legalName: string; adminNote: string; appUrl?: string }) {
+  const ctaUrl = `${opts.appUrl || APP_URL}/dashboard/agency-phone`;
+  const safeName = escapeHtml(opts.legalName || "your business");
+  const safeNote = escapeHtml(opts.adminNote.trim()).replace(/\n/g, "<br />");
+  const body = `
+    <h1 class="nn-heading" style="margin:0 0 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:24px;font-weight:600;color:#fafafa;letter-spacing:-0.02em;line-height:1.3;">
+      A few corrections needed on your business profile
+    </h1>
+    <p style="margin:0 0 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.65;color:#a1a1aa;">
+      We took a look at <strong style="color:#fafafa;">${safeName}</strong> and need a couple of things fixed before we can register it with carriers. Once you&rsquo;ve made the changes below, hit &ldquo;Resubmit&rdquo; from your dashboard.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+      <tr>
+        <td bgcolor="#1a0e0c" style="background-color:#1a0e0c;border:1px solid #3d1f18;border-radius:12px;padding:18px 20px;">
+          <p style="margin:0 0 8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;font-weight:600;color:#ff8a6a;letter-spacing:0.06em;text-transform:uppercase;">What to fix</p>
+          <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.65;color:#d4d4d8;">
+            ${safeNote}
+          </p>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px;">
+      <tr>
+        <td bgcolor="#e8553d" style="background-color:#e8553d;border-radius:10px;">
+          <a href="${ctaUrl}" style="display:inline-block;padding:14px 34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:-0.005em;">
+            Update profile
+          </a>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:18px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#a1a1aa;">
+      Stuck on something? Reply to this email and we&rsquo;ll help.
+    </p>
+  `;
+
+  const html = renderLayout({
+    preheader: "We need a few corrections before registering your brand with carriers.",
+    bodyHtml: body,
+  });
+
+  const text = `A few corrections needed on your business profile
+
+We reviewed ${opts.legalName || "your business"} and need a couple of things fixed before we can register it with carriers.
+
+What to fix:
+${opts.adminNote.trim()}
+
+Update your profile and resubmit: ${ctaUrl}
+
+Stuck on something? Just reply to this email.
+
+© ${new Date().getFullYear()} NextNote`;
+
+  return { html, text };
+}
+
+export async function sendA2pApprovedEmail(to: string, legalName: string) {
+  const { html, text } = renderA2pApprovedEmail({ legalName });
+  return sendEmail({
+    to,
+    subject: "Your business profile was approved — registering with carriers now",
+    html,
+    text,
+  });
+}
+
+export async function sendA2pRejectedEmail(to: string, legalName: string, adminNote: string) {
+  const { html, text } = renderA2pRejectedEmail({ legalName, adminNote });
+  return sendEmail({
+    to,
+    subject: "A few corrections needed on your business profile",
+    html,
+    text,
+  });
+}

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const sid = process.env.TWILIO_ACCOUNT_SID;
     const token = process.env.TWILIO_AUTH_TOKEN;
     if (!sid || !token) {
-      return NextResponse.json({ error: "Twilio not configured" }, { status: 503 });
+      return NextResponse.json({ error: "Phone provider not configured" }, { status: 503 });
     }
 
     const { phone_number } = await req.json();

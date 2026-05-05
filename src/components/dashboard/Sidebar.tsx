@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard, Users, Calendar, Settings, LogOut, Zap, Crown, Phone,
+  LayoutDashboard, Users, Calendar, Settings, LogOut, Zap, Crown,
   BarChart3, Bot, Coins, Globe, MapPin, LifeBuoy, MessageSquare, Sparkles,
   ChevronRight, Megaphone,
 } from "lucide-react";
@@ -43,6 +43,7 @@ const navItems: NavEntry[] = [
     type: "group", icon: Sparkles, label: "AI", tourId: "nav-group-ai",
     children: [
       { type: "item", icon: Zap, label: "Insights", href: "/dashboard/ai-insights", minTier: "pro", tourId: "nav-ai-insights" },
+      { type: "item", icon: Sparkles, label: "Lead Qualifier", href: "/dashboard/lead-qualifier", minTier: "starter", tourId: "nav-lead-qualifier" },
       { type: "item", icon: Bot, label: "Agents", href: "/dashboard/agents", minTier: "starter", tourId: "nav-agents" },
       { type: "item", icon: Globe, label: "Websites", href: "/dashboard/websites", minTier: "starter", tourId: "nav-websites" },
     ],
@@ -50,7 +51,7 @@ const navItems: NavEntry[] = [
   {
     type: "group", icon: MessageSquare, label: "Outreach", tourId: "nav-group-outreach",
     children: [
-      { type: "item", icon: Phone, label: "Agency Phone", href: "/dashboard/agency-phone", minTier: "starter", tourId: "nav-agency-phone" },
+      { type: "item", icon: MessageSquare, label: "Messages", href: "/dashboard/messages", minTier: "starter", tourId: "nav-messages" },
       { type: "item", icon: Megaphone, label: "Voicedrops", href: "/dashboard/voicedrops", minTier: "pro", tourId: "nav-voicedrops" },
       { type: "item", icon: MessageSquare, label: "Templates", href: "/dashboard/sms-templates", minTier: "starter", tourId: "nav-sms-templates" },
       { type: "item", icon: MessageSquare, label: "Sequences", href: "/dashboard/sms-sequences", minTier: "starter", tourId: "nav-sms-sequences" },
@@ -73,6 +74,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
   const pathname = usePathname();
   const [profile, setProfile] = useState({ name: "User", agencyName: "NextNote", subscriptionTier: "starter" as SubscriptionTier, profileImageUrl: null as string | null });
   const [supportUnread, setSupportUnread] = useState(0);
+  const [messagesUnread, setMessagesUnread] = useState(0);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -110,6 +112,25 @@ export default function Sidebar({ collapsed }: SidebarProps) {
         if (cancelled) return;
         const threads = (json.threads ?? []) as { unread: boolean }[];
         setSupportUnread(threads.filter((t) => t.unread).length);
+      } catch {}
+    }
+    load();
+    const int = setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(int);
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/sms/threads");
+        if (!res.ok) return;
+        const json = await res.json();
+        if (cancelled) return;
+        setMessagesUnread(json.total_unread ?? 0);
       } catch {}
     }
     load();
@@ -205,6 +226,11 @@ export default function Sidebar({ collapsed }: SidebarProps) {
             {leaf.label === "Support" && supportUnread > 0 && (
               <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
                 {supportUnread}
+              </span>
+            )}
+            {leaf.label === "Messages" && messagesUnread > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[#e8553d] px-1 text-[9px] font-bold text-white">
+                {messagesUnread}
               </span>
             )}
           </span>

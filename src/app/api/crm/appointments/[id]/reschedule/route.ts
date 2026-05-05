@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { mapAppointment, requireUser } from "@/lib/crm";
+import { syncAppointmentRescheduled } from "@/lib/calendarSync";
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const userId = await requireUser();
@@ -48,5 +49,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Failed to reschedule" }, { status: 500 });
   }
 
-  return NextResponse.json({ appointment: mapAppointment(data) });
+  // Move the Google Calendar event from the old row to the new one (or
+  // create fresh if there was no event yet).
+  await syncAppointmentRescheduled(params.id, data.id);
+  const { data: refreshed } = await supabaseAdmin
+    .from("appointments")
+    .select("*")
+    .eq("id", data.id)
+    .single();
+
+  return NextResponse.json({ appointment: mapAppointment(refreshed ?? data) });
 }

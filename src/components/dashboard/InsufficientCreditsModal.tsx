@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Coins, Zap, X, ArrowRight, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { Coins, Zap, X, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { CREDIT_PACKS, type CreditPack } from "@/lib/creditPacks";
 
 interface Props {
   open: boolean;
@@ -18,46 +20,63 @@ function formatUsd(cents: number) {
 }
 
 export default function InsufficientCreditsModal({ open, onClose, required, balance, action }: Props) {
-  const [buying, setBuying] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const shortfall = Math.max(0, required - balance);
-  const topupCredits = Math.max(MIN_TOPUP, shortfall);
-  const topupCents = topupCredits;
-  const minBumped = topupCredits !== shortfall;
+  const exactCredits = Math.max(MIN_TOPUP, shortfall);
+  const exactCents = exactCredits;
 
-  async function buyExact() {
+  // Highlight the smallest pack that covers the shortfall — that's the
+  // user's natural "this fixes my problem" choice and the one we should
+  // visually nudge toward by default.
+  const recommended =
+    CREDIT_PACKS.find((p) => p.credits + p.bonus >= shortfall) ?? CREDIT_PACKS[CREDIT_PACKS.length - 1];
+
+  async function startCheckout(payload: Record<string, unknown>, key: string) {
     setError("");
-    setBuying(true);
+    setBusy(key);
     try {
       const res = await fetch("/api/credits/topup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          credits: topupCredits,
+          ...payload,
           returnTo: typeof window !== "undefined" ? window.location.pathname + window.location.search : "/dashboard",
         }),
       });
       const json = await res.json();
       if (!res.ok || !json.url) {
         setError(json.error || "Couldn't start checkout. Try again in a moment.");
-        setBuying(false);
+        setBusy(null);
         return;
       }
       window.location.href = json.url;
     } catch {
       setError("Network error. Try again in a moment.");
-      setBuying(false);
+      setBusy(null);
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
+  const buyPack = (pack: CreditPack) => startCheckout({ packId: pack.id }, pack.id);
+  const buyExact = () => startCheckout({ credits: exactCredits }, "exact");
 
-      <div className="relative w-full max-w-md liquid-glass-strong rounded-3xl overflow-hidden liquid-in my-auto shadow-2xl">
+  return createPortal(
+    <>
+      <div
+        className="fixed z-[220] bg-black/70 backdrop-blur-md"
+        style={{ top: 0, left: 0, width: "100vw", height: "100vh" }}
+        onClick={onClose}
+      />
+      <div
+        className="fixed z-[221] flex items-start justify-center p-4 overflow-y-auto"
+        style={{ top: 0, left: 0, width: "100vw", height: "100vh" }}
+      >
+        <div className="relative w-full max-w-lg liquid-glass-strong rounded-3xl overflow-hidden liquid-in my-auto shadow-2xl">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/60 to-transparent" />
 
         <button
@@ -83,20 +102,59 @@ export default function InsufficientCreditsModal({ open, onClose, required, bala
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="flex items-center justify-between text-xs text-[var(--muted)]">
-              <span>Shortfall</span>
-              <span className="font-mono text-[var(--foreground)]">{shortfall.toLocaleString()} credits</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between text-xs text-[var(--muted)]">
-              <span>You'd pay</span>
-              <span className="font-mono text-[var(--foreground)]">{formatUsd(topupCents)}</span>
-            </div>
-            {minBumped && (
-              <p className="mt-3 text-[11px] text-[var(--muted)] leading-relaxed">
-                Minimum top-up is {MIN_TOPUP} credits — leftover sits in your balance for next time.
-              </p>
-            )}
+          <div className="mt-5 space-y-2">
+            {CREDIT_PACKS.map((pack) => {
+              const total = pack.credits + pack.bonus;
+              const isRecommended = pack.id === recommended.id;
+              const isBusy = busy === pack.id;
+              const anyBusy = busy !== null;
+              return (
+                <button
+                  key={pack.id}
+                  onClick={() => buyPack(pack)}
+                  disabled={anyBusy}
+                  className={`w-full text-left rounded-2xl border p-4 transition-all relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed ${
+                    isRecommended
+                      ? "border-[var(--accent)]/40 bg-[var(--accent)]/8 hover:bg-[var(--accent)]/12 hover:border-[var(--accent)]/60"
+                      : "border-white/10 bg-black/20 hover:bg-white/5 hover:border-white/20"
+                  }`}
+                >
+                  {isRecommended && (
+                    <div className="absolute top-0 right-0 px-2 py-0.5 text-[10px] uppercase tracking-wider font-semibold bg-[var(--accent)] text-white rounded-bl-lg">
+                      Recommended
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-[var(--foreground)]">{pack.label}</span>
+                        {pack.badge && !isRecommended && (
+                          <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-white/5 text-[var(--muted)] border border-white/10">
+                            {pack.badge}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-[var(--muted)] flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono text-[var(--foreground)]">{total.toLocaleString()} credits</span>
+                        {pack.bonus > 0 && (
+                          <span className="inline-flex items-center gap-0.5 text-emerald-400">
+                            <Sparkles className="w-3 h-3" /> +{pack.bonus.toLocaleString()} bonus
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-base font-bold text-[var(--foreground)]">{formatUsd(pack.priceCents)}</div>
+                      {isBusy ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--muted)] ml-auto mt-1" />
+                      ) : (
+                        <ArrowRight className="w-3.5 h-3.5 text-[var(--muted)] ml-auto mt-1" />
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           {error && (
@@ -105,27 +163,23 @@ export default function InsufficientCreditsModal({ open, onClose, required, bala
             </div>
           )}
 
-          <button
-            onClick={buyExact}
-            disabled={buying}
-            className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-semibold px-4 py-3 shadow-lg shadow-[var(--accent)]/30 transition-all disabled:opacity-60"
-          >
-            {buying ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Opening Stripe…
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4" />
-                Buy {topupCredits.toLocaleString()} credits — {formatUsd(topupCents)}
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-          <p className="mt-2 text-center text-[11px] text-[var(--muted)]">
-            One-click checkout. Credits appear instantly after payment.
-          </p>
+          <div className="mt-4 flex items-center justify-center">
+            <button
+              onClick={buyExact}
+              disabled={busy !== null}
+              className="text-[11px] text-[var(--muted)] hover:text-[var(--foreground)] transition-colors inline-flex items-center gap-1 disabled:opacity-50"
+            >
+              {busy === "exact" ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" /> Opening Stripe…
+                </>
+              ) : (
+                <>
+                  <Zap className="w-3 h-3" /> Or just cover the shortfall — {exactCredits.toLocaleString()} credits, {formatUsd(exactCents)}
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="border-t border-white/5 px-6 py-3 flex items-center justify-between">
@@ -142,7 +196,9 @@ export default function InsufficientCreditsModal({ open, onClose, required, bala
             Billing →
           </a>
         </div>
+        </div>
       </div>
-    </div>
+    </>,
+    document.body
   );
 }

@@ -162,7 +162,7 @@ async function processOne(enrollment: {
       metadata: { enrollment_id: enrollment.id, step_order: step.step_order },
     });
   } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : "Twilio send failed";
+    const errorMessage = err instanceof Error ? err.message : "Carrier send failed";
     await supabaseAdmin
       .from("sms_messages")
       .update({ status: "failed", error_message: errorMessage })
@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   if (!twilioConfigured()) {
-    return NextResponse.json({ error: "Twilio not configured" }, { status: 503 });
+    return NextResponse.json({ error: "Phone provider not configured" }, { status: 503 });
   }
 
   const nowIso = new Date().toISOString();

@@ -57,13 +57,31 @@ export default function VoicedropModal({ prospects, onClose, onSent }: Props) {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/voicemail/caller-ids");
-        if (res.ok) {
-          const data = await res.json();
-          const verified = (data.caller_ids || []).filter((c: CallerId) => c.verified);
-          setCallerIds(verified);
-          if (verified[0]) setSelectedFrom(verified[0].phone_number);
+        // The from-number for a drop is the user's verified personal cell
+        // (via Twilio OutgoingCallerIds — what powers a real call-back to
+        // their own phone). Grandfathered users with a NextNote agency line
+        // can still pick that as a fallback, but personal is the default.
+        const [callerIdsRes, agencyRes] = await Promise.all([
+          fetch("/api/voicemail/caller-ids").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+          fetch("/api/agency/phone").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        ]);
+
+        const verified: CallerId[] = (callerIdsRes?.caller_ids || []).filter(
+          (c: CallerId) => c.verified,
+        );
+
+        const agencyPhone = agencyRes?.agency_phone;
+        if (agencyPhone?.phone_number) {
+          verified.push({
+            id: `agency-${agencyPhone.phone_number}`,
+            phone_number: agencyPhone.phone_number,
+            friendly_name: agencyPhone.label || "NextNote Agency Line",
+            verified: true,
+          });
         }
+
+        setCallerIds(verified);
+        if (verified[0]) setSelectedFrom(verified[0].phone_number);
       } finally {
         setLoadingCallerIds(false);
       }

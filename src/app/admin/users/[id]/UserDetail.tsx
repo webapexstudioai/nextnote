@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import AgencyPhoneCard from "./AgencyPhoneCard";
 
 interface UserDetail {
   id: string;
@@ -73,6 +74,8 @@ export default function UserDetail({ userId }: { userId: string }) {
   const [subStatus, setSubStatus] = useState<string>("");
   const [busy, setBusy] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  const [cap, setCap] = useState<{ cap: number | null; spent24h: number } | null>(null);
+  const [capDraft, setCapDraft] = useState("");
 
   const loadDetail = useCallback(async () => {
     const res = await fetch(`/api/admin/users/${userId}`);
@@ -91,6 +94,15 @@ export default function UserDetail({ userId }: { userId: string }) {
     }
   }, [userId]);
 
+  const loadCap = useCallback(async () => {
+    const res = await fetch(`/api/admin/users/${userId}/cap`);
+    if (res.ok) {
+      const json = await res.json();
+      setCap(json);
+      setCapDraft(json.cap === null ? "" : String(json.cap));
+    }
+  }, [userId]);
+
   const loadCharges = useCallback(async () => {
     const res = await fetch(`/api/admin/users/${userId}/charges`);
     if (res.ok) {
@@ -102,12 +114,12 @@ export default function UserDetail({ userId }: { userId: string }) {
   useEffect(() => {
     (async () => {
       try {
-        await Promise.all([loadDetail(), loadNotes(), loadCharges()]);
+        await Promise.all([loadDetail(), loadNotes(), loadCharges(), loadCap()]);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load");
       }
     })();
-  }, [loadDetail, loadNotes, loadCharges]);
+  }, [loadDetail, loadNotes, loadCharges, loadCap]);
 
   function say(msg: string) {
     setFlash(msg);
@@ -133,6 +145,26 @@ export default function UserDetail({ userId }: { userId: string }) {
       setCreditAmount("");
       setCreditNote("");
       await loadDetail();
+    } catch (err) {
+      say(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function submitCap() {
+    setBusy("cap");
+    try {
+      const value = capDraft.trim();
+      const res = await fetch(`/api/admin/users/${userId}/cap`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cap: value === "" ? null : value }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed");
+      say(value === "" ? "Daily cap removed (unlimited)." : `Daily cap set to ${json.cap.toLocaleString()} credits.`);
+      await loadCap();
     } catch (err) {
       say(err instanceof Error ? err.message : "Failed");
     } finally {
@@ -432,6 +464,59 @@ export default function UserDetail({ userId }: { userId: string }) {
           </div>
         </div>
 
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-6">
+          <h3 className="text-lg font-semibold">Daily spend cap</h3>
+          <p className="mt-1 text-xs text-neutral-400">
+            Maximum credits this user can burn in any rolling 24h window. Protects against runaway loops or compromised accounts. Leave blank for unlimited.
+          </p>
+          {cap && (
+            <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-md bg-neutral-900 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-wider text-neutral-500">Spent (24h)</div>
+                <div className="font-mono text-base text-neutral-100">{cap.spent24h.toLocaleString()}</div>
+              </div>
+              <div className="rounded-md bg-neutral-900 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-wider text-neutral-500">Cap</div>
+                <div className="font-mono text-base text-neutral-100">
+                  {cap.cap === null ? "∞" : cap.cap.toLocaleString()}
+                </div>
+              </div>
+              {cap.cap !== null && cap.cap > 0 && (
+                <div className="col-span-2">
+                  <div className="h-1.5 w-full rounded-full bg-neutral-800 overflow-hidden">
+                    <div
+                      className={`h-full ${
+                        cap.spent24h / cap.cap > 0.9
+                          ? "bg-red-500"
+                          : cap.spent24h / cap.cap > 0.7
+                          ? "bg-amber-500"
+                          : "bg-emerald-500"
+                      }`}
+                      style={{ width: `${Math.min(100, (cap.spent24h / cap.cap) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="mt-4 space-y-3">
+            <input
+              type="number"
+              value={capDraft}
+              onChange={(e) => setCapDraft(e.target.value)}
+              placeholder="5000 (blank = unlimited)"
+              className="w-full rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm focus:border-neutral-600 focus:outline-none"
+            />
+            <button
+              onClick={submitCap}
+              disabled={busy === "cap"}
+              className="w-full rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-50"
+            >
+              {busy === "cap" ? "Saving…" : "Save cap"}
+            </button>
+          </div>
+        </div>
+
         <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-6">
           <h3 className="text-lg font-semibold">Comp account</h3>
           <p className="mt-1 text-xs text-neutral-400">
@@ -478,6 +563,10 @@ export default function UserDetail({ userId }: { userId: string }) {
             )}
           </div>
         </div>
+      </section>
+
+      <section>
+        <AgencyPhoneCard userId={userId} userEmail={user.email} />
       </section>
 
       <section className="grid gap-6 md:grid-cols-2">

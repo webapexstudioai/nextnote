@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { stripPoweredByBadge } from "@/lib/websiteForms";
+import { ensureCounterFallback, stripPoweredByBadge } from "@/lib/websiteForms";
 
 // Site IDs are 128-bit crypto-random tokens — unguessable — so this endpoint is
 // intentionally public (users share the URL with their prospects). Short IDs
@@ -32,16 +32,22 @@ export async function GET(
 
   // Backstop for older white-label sites that were saved before strict badge
   // stripping was added on the write path — scrub the badge on read.
-  const html = data.tier === "whitelabel"
+  let html = data.tier === "whitelabel"
     ? stripPoweredByBadge(data.html_content)
     : data.html_content;
+  // Counter-fallback retrofit: older sites don't have it baked in, but they
+  // need it just as much. Adding it on read is cheap (regex test + maybe one
+  // replace) and avoids a one-off DB migration.
+  html = ensureCounterFallback(html);
 
   return new NextResponse(html, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       // Don't let search engines index prospect pages by default.
       "X-Robots-Tag": "noindex, nofollow",
-      "Cache-Control": "public, max-age=3600",
+      // Short TTL + must-revalidate so AI/visual edits show up almost
+      // immediately. Browsers can still cache for 30s; the edge will revalidate.
+      "Cache-Control": "public, max-age=30, must-revalidate",
       "Referrer-Policy": "no-referrer",
     },
   });
