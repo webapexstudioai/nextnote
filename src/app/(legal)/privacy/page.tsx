@@ -165,7 +165,34 @@ export default function PrivacyPage() {
         acceptance of the revised policy.
       </p>
 
-      <h2>11. Contact</h2>
+      <h2>11. SMS messaging and toll-free communications</h2>
+
+      <p>
+        NextNote sends transactional SMS messages from a NextNote-owned toll-free number to users
+        who have provided and verified their personal phone number inside the dashboard. These
+        messages relate to your account and the activity you generate inside the Service —
+        examples include links to AI-generated client websites you have created, prospect activity
+        notifications, security alerts, and confirmations of actions you initiated. We do not send
+        marketing or promotional SMS messages.
+      </p>
+
+      <p><strong>Opt-in.</strong> You opt in to SMS by entering your phone number in Settings and
+      completing a one-time-code verification step. We will not text you until that verification
+      is complete. Message frequency varies based on your activity in the Service. Message and
+      data rates may apply.</p>
+
+      <p><strong>Opt-out.</strong> Reply <strong>STOP</strong> to any NextNote SMS message at any
+      time to immediately unsubscribe. Reply <strong>HELP</strong> for help, or email{" "}
+      <a href="mailto:support@nextnote.to">support@nextnote.to</a>. After you opt out, we will not
+      send further SMS messages from that toll-free number.</p>
+
+      <p><strong>Sharing.</strong> We do <strong>not</strong> share your phone number, your SMS
+      opt-in data, or the contents of messages we send you with third parties for their marketing
+      or promotional purposes. Phone numbers and message metadata are shared only with our telecom
+      carrier (Twilio) for the sole purpose of delivering the messages you have opted into, and
+      with the sub-processors listed in Section 4 to operate the Service.</p>
+
+      <h2>12. Contact</h2>
       <p>
         Questions, requests, or concerns? Email{" "}
         <a href="mailto:privacy@nextnote.to">privacy@nextnote.to</a> or write to:
