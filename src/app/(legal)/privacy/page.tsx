@@ -165,7 +165,7 @@ export default function PrivacyPage() {
         acceptance of the revised policy.
       </p>
 
-      <h2>11. SMS messaging and toll-free communications</h2>
+      <h2 id="sms-messaging-and-toll-free-communications">11. SMS messaging and toll-free communications</h2>
 
       <p>
         NextNote sends transactional SMS messages from a NextNote-owned toll-free number to users
