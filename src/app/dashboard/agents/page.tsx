@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import AgentTestWidget from "@/components/dashboard/AgentTestWidget";
 import ReceptionistBuilderModal from "@/components/dashboard/ReceptionistBuilderModal";
+import { regionsForCountry } from "@/lib/regions";
 import { SendToMyPhoneButton } from "@/components/SendToMyPhoneButton";
 import { useProspects } from "@/context/ProspectsContext";
 import type { Prospect } from "@/types";
@@ -88,7 +89,7 @@ export default function AgentsPage() {
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [assignAgentId, setAssignAgentId] = useState<string>("");
   const [showBuyNumber, setShowBuyNumber] = useState(false);
-  const [buyForm, setBuyForm] = useState({ areaCode: "", country: "US" });
+  const [buyForm, setBuyForm] = useState({ areaCode: "", country: "US", region: "" });
   const [searchingNumbers, setSearchingNumbers] = useState(false);
   const [availableNumbers, setAvailableNumbers] = useState<{ phone_number: string; friendly_name: string; locality?: string; region?: string; capabilities?: { voice?: boolean; sms?: boolean } }[]>([]);
   const [purchasingNumber, setPurchasingNumber] = useState<string | null>(null);
@@ -199,6 +200,26 @@ export default function AgentsPage() {
     } catch {} finally { setLoadingPhones(false); }
   }, []);
 
+  const searchAvailableNumbers = useCallback(async () => {
+    setSearchingNumbers(true);
+    setBuyError("");
+    setAvailableNumbers([]);
+    try {
+      const res = await fetch("/api/agents/twilio/available-numbers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buyForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Search failed");
+      setAvailableNumbers(data.numbers || []);
+    } catch (err) {
+      setBuyError(err instanceof Error ? err.message : "Search failed");
+    } finally {
+      setSearchingNumbers(false);
+    }
+  }, [buyForm]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -223,6 +244,17 @@ export default function AgentsPage() {
     setMounted(true);
     load();
   }, [load]);
+
+  // Auto-load recommended numbers when the buy modal opens with no filters,
+  // so the user sees a starting set without clicking Search first.
+  useEffect(() => {
+    if (showBuyNumber && availableNumbers.length === 0 && !searchingNumbers) {
+      searchAvailableNumbers();
+    }
+    // Only react to modal open — re-running on availableNumbers change would
+    // re-fire after the user clears results.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showBuyNumber]);
 
   // After Stripe Checkout redirects back, surface success/cancel and refresh
   // the phone list. The webhook may take a beat to provision so we retry.
@@ -491,43 +523,45 @@ export default function AgentsPage() {
                     <h3 className="text-sm font-semibold flex items-center gap-2"><Phone className="w-4 h-4 text-[var(--accent)]" /> Buy a Phone Number</h3>
                     <button onClick={() => setShowBuyNumber(false)} className="p-1.5 rounded-lg hover:bg-white/[0.04]"><X className="w-4 h-4" /></button>
                   </div>
-                  <p className="text-xs text-[var(--muted)]">Pick an area code, find an available number, and attach it to an agent.</p>
+                  <p className="text-xs text-[var(--muted)]">Pick a state or area code, find an available number, and attach it to an agent.</p>
                   <div className="rounded-xl border border-[var(--accent)]/25 bg-[var(--accent)]/5 px-3 py-2 text-[11px] text-[var(--muted)] flex items-center gap-2">
                     <Phone className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
                     <span><span className="text-[var(--foreground)] font-semibold">$5</span> one-time to activate, then <span className="text-[var(--foreground)] font-semibold">$5/mo</span> to keep the line. Charged together on the first invoice. Cancel anytime by releasing the number.</span>
                   </div>
                   {buyError && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{buyError}</div>}
                   {buySuccess && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">{buySuccess}</div>}
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Area Code <span className="text-[var(--muted)]/60 normal-case font-normal">(optional)</span></label>
-                      <input value={buyForm.areaCode} onChange={(e) => setBuyForm((p) => ({ ...p, areaCode: e.target.value }))} placeholder="e.g. 312, 773, 415" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm" />
-                    </div>
+                  <div className="grid sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Country</label>
-                      <select value={buyForm.country} onChange={(e) => setBuyForm((p) => ({ ...p, country: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm">
+                      <select value={buyForm.country} onChange={(e) => setBuyForm((p) => ({ ...p, country: e.target.value, region: "" }))} className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm">
                         <option value="US">United States</option>
                         <option value="CA">Canada</option>
                         <option value="GB">United Kingdom</option>
                         <option value="AU">Australia</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">State <span className="text-[var(--muted)]/60 normal-case font-normal">(optional)</span></label>
+                      <select
+                        value={buyForm.region}
+                        onChange={(e) => setBuyForm((p) => ({ ...p, region: e.target.value }))}
+                        disabled={regionsForCountry(buyForm.country).length === 0}
+                        className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm disabled:opacity-50"
+                      >
+                        <option value="">Any state</option>
+                        {regionsForCountry(buyForm.country).map((r) => (
+                          <option key={r.code} value={r.code}>{r.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Area Code <span className="text-[var(--muted)]/60 normal-case font-normal">(optional)</span></label>
+                      <input value={buyForm.areaCode} onChange={(e) => setBuyForm((p) => ({ ...p, areaCode: e.target.value }))} placeholder="e.g. 312, 773, 415" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm" />
+                    </div>
                   </div>
                   <button
                     disabled={searchingNumbers}
-                    onClick={async () => {
-                      setSearchingNumbers(true); setBuyError(""); setAvailableNumbers([]);
-                      try {
-                        const res = await fetch("/api/agents/twilio/available-numbers", {
-                          method: "POST", headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify(buyForm),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error);
-                        setAvailableNumbers(data.numbers || []);
-                      } catch (err) { setBuyError(err instanceof Error ? err.message : "Search failed"); }
-                      finally { setSearchingNumbers(false); }
-                    }}
+                    onClick={() => searchAvailableNumbers()}
                     className="w-full px-4 py-3 rounded-xl border border-[var(--border)] text-sm font-medium hover:bg-white/[0.04] transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {searchingNumbers ? <><Loader2 className="w-4 h-4 animate-spin" /> Searching...</> : <><Search className="w-4 h-4" /> Search Available Numbers</>}
@@ -535,7 +569,11 @@ export default function AgentsPage() {
 
                   {availableNumbers.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-[11px] uppercase tracking-wider text-[var(--muted)] font-semibold">{availableNumbers.length} numbers found — click to purchase</p>
+                      <p className="text-[11px] uppercase tracking-wider text-[var(--muted)] font-semibold">
+                        {!buyForm.areaCode && !buyForm.region
+                          ? `Recommended numbers — ${availableNumbers.length} available`
+                          : `${availableNumbers.length} numbers found — click to purchase`}
+                      </p>
                       <div className="rounded-2xl border border-[var(--border)] overflow-hidden max-h-72 overflow-y-auto">
                         {availableNumbers.map((num) => (
                           <div key={num.phone_number} className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] last:border-0 hover:bg-white/[0.04] transition-colors">

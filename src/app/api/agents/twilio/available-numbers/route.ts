@@ -11,10 +11,12 @@ export async function POST(req: NextRequest) {
     const token = process.env.TWILIO_AUTH_TOKEN;
     if (!sid || !token) return NextResponse.json({ error: "Phone number purchasing is not configured yet." }, { status: 503 });
 
-    const { areaCode, country } = await req.json().catch(() => ({}));
+    const { areaCode, country, region } = await req.json().catch(() => ({}));
     const countryCode = country || "US";
     const params = new URLSearchParams({ Limit: "20", VoiceEnabled: "true" });
     if (areaCode) params.set("AreaCode", String(areaCode));
+    // Twilio's InRegion is the 2-letter state/province code (US/CA only).
+    if (region) params.set("InRegion", String(region).toUpperCase());
 
     const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/AvailablePhoneNumbers/${countryCode}/Local.json?${params}`;
     const res = await fetch(url, {
