@@ -7,9 +7,9 @@ import { useRouter } from "next/navigation";
 import { useProspects } from "@/context/ProspectsContext";
 import { useSoftphone } from "@/context/SoftphoneProvider";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
 import MessageThread from "@/components/messages/MessageThread";
 import VoicedropModal from "@/components/dashboard/VoicedropModal";
+import ReceptionistBuilderModal from "@/components/dashboard/ReceptionistBuilderModal";
 import { SendToMyPhoneButton } from "@/components/SendToMyPhoneButton";
 
 interface DetailPanelProps {
@@ -172,38 +172,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
 
   // Build Receptionist
   const [showReceptionistBuilder, setShowReceptionistBuilder] = useState(false);
-  const [buildingReceptionist, setBuildingReceptionist] = useState(false);
-  const [receptionistError, setReceptionistError] = useState("");
-  const [receptionistPaywall, setReceptionistPaywall] = useState<{ required: number; balance: number } | null>(null);
-  const [creatingAgent, setCreatingAgent] = useState(false);
-  const [createdAgent, setCreatedAgent] = useState<{ agentId: string; agentName: string } | null>(null);
-  const [createAgentError, setCreateAgentError] = useState("");
-  const [receptionistDraft, setReceptionistDraft] = useState<null | {
-    agentName: string;
-    firstMessage: string;
-    tone: string;
-    systemPrompt: string;
-    knowledge: string;
-    bookingFlow: string[];
-    faqExamples: string[];
-  }>(null);
-  const [receptionistForm, setReceptionistForm] = useState<{
-    businessName: string;
-    niche: string;
-    services: string;
-    notes: string;
-    mapsDescription: string;
-    reviews: string;
-    gender: "female" | "male" | "auto";
-  }>({
-    businessName: prospect.name || "",
-    niche: prospect.service || "",
-    services: prospect.service || "",
-    notes: prospect.notes || "",
-    mapsDescription: "",
-    reviews: "",
-    gender: "auto",
-  });
 
   const currentIndex = pipeline.indexOf(prospect.status);
 
@@ -504,32 +472,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
       </div>
     </div>
   );
-
-  async function handleBuildReceptionist() {
-    setBuildingReceptionist(true);
-    setReceptionistError("");
-    try {
-      const res = await fetch("/api/agents/build-receptionist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(receptionistForm),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 402 && typeof data.required === "number" && typeof data.balance === "number") {
-          setReceptionistPaywall({ required: data.required, balance: data.balance });
-          return;
-        }
-        throw new Error(data.error || "Failed to build receptionist");
-      }
-      setReceptionistDraft(data.draft || null);
-    } catch (err) {
-      setReceptionistError(err instanceof Error ? err.message : "Failed to build receptionist");
-    } finally {
-      setBuildingReceptionist(false);
-    }
-  }
-
 
   const stageTheme: Record<string, { rgb: string; label: string; ring: string; strip: string }> = {
     New:       { rgb: "148, 163, 184", label: "slate",   ring: "0 0 0 1px rgba(148,163,184,0.14), 0 20px 60px rgba(0,0,0,0.40), 0 1px 0 rgba(255,255,255,0.04) inset", strip: "linear-gradient(90deg, transparent, rgba(148,163,184,0.55), transparent)" },
@@ -1424,130 +1366,16 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
       </div>
 
       {showReceptionistBuilder && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={() => setShowReceptionistBuilder(false)} />
-          <div className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[28px] border border-[var(--border)] bg-[var(--card)] p-6 shadow-[0_25px_80px_rgba(0,0,0,0.45)] animate-[fadeInUp_0.35s_ease-out] space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold flex items-center gap-2"><Bot className="w-5 h-5 text-[var(--accent)]" /> Build Receptionist</h3>
-                <p className="text-sm text-[var(--muted)] mt-1">Generate a draft AI receptionist from this prospect&apos;s business details.</p>
-              </div>
-              <button onClick={() => setShowReceptionistBuilder(false)} className="p-2 rounded-lg hover:bg-[var(--card-hover)] transition-colors"><X className="w-4 h-4" /></button>
-            </div>
-
-            {receptionistError && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{receptionistError}</div>}
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <input value={receptionistForm.businessName} onChange={(e) => setReceptionistForm((p) => ({ ...p, businessName: e.target.value }))} placeholder="Business Name" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm" />
-              <input value={receptionistForm.niche} onChange={(e) => setReceptionistForm((p) => ({ ...p, niche: e.target.value }))} placeholder="Niche" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm" />
-              <div className="md:col-span-2">
-                <p className="text-[11px] uppercase tracking-wider text-[var(--muted)] mb-2">Receptionist Gender</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["female", "male", "auto"] as const).map((g) => {
-                    const active = receptionistForm.gender === g;
-                    const label = g === "auto" ? "Auto (pick by niche)" : g === "female" ? "Female" : "Male";
-                    return (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() => setReceptionistForm((p) => ({ ...p, gender: g }))}
-                        className={`px-3 py-2.5 rounded-xl border text-sm transition-colors ${
-                          active
-                            ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--foreground)]"
-                            : "border-[var(--border)] hover:bg-[var(--card-hover)] text-[var(--muted)]"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <input value={receptionistForm.services} onChange={(e) => setReceptionistForm((p) => ({ ...p, services: e.target.value }))} placeholder="Services" className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm md:col-span-2" />
-              <textarea value={receptionistForm.notes} onChange={(e) => setReceptionistForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Business notes" rows={4} className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm resize-none md:col-span-2" />
-              <textarea value={receptionistForm.mapsDescription} onChange={(e) => setReceptionistForm((p) => ({ ...p, mapsDescription: e.target.value }))} placeholder="Google Maps description (optional)" rows={4} className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm resize-none" />
-              <textarea value={receptionistForm.reviews} onChange={(e) => setReceptionistForm((p) => ({ ...p, reviews: e.target.value }))} placeholder="Google review snippets (optional)" rows={4} className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] text-sm resize-none" />
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setShowReceptionistBuilder(false)} className="px-4 py-3 rounded-xl border border-[var(--border)] text-sm hover:bg-[var(--card-hover)] transition-colors">Close</button>
-              <button onClick={handleBuildReceptionist} disabled={buildingReceptionist} className="px-4 py-3 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors inline-flex items-center gap-2 disabled:opacity-50">
-                {buildingReceptionist ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} Generate Draft
-              </button>
-            </div>
-
-            {receptionistDraft && (
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5 space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wider text-[var(--muted)]">Generated Receptionist</p>
-                    <p className="text-lg font-semibold mt-1">{receptionistDraft.agentName}</p>
-                  </div>
-                  <button
-                    onClick={async () => {
-                      if (!receptionistDraft) return;
-                      setCreatingAgent(true);
-                      setCreateAgentError("");
-                      setCreatedAgent(null);
-                      try {
-                        const res = await fetch("/api/agents/elevenlabs/create", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            agentName: receptionistDraft.agentName,
-                            firstMessage: receptionistDraft.firstMessage,
-                            systemPrompt: (receptionistDraft as { fullPrompt?: string }).fullPrompt || receptionistDraft.systemPrompt,
-                          }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || "Failed to create agent");
-                        setCreatedAgent({ agentId: data.agentId, agentName: data.agentName });
-                        setTimeout(() => {
-                          router.push("/dashboard/agents");
-                        }, 1800);
-                      } catch (err) {
-                        setCreateAgentError(err instanceof Error ? err.message : "Failed to create agent");
-                      } finally {
-                        setCreatingAgent(false);
-                      }
-                    }}
-                    disabled={creatingAgent}
-                    className="px-4 py-2.5 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors whitespace-nowrap inline-flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {creatingAgent ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-                    {creatingAgent ? "Creating..." : "Make AI Receptionist"}
-                  </button>
-                </div>
-
-                {createAgentError && (
-                  <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{createAgentError}</div>
-                )}
-                {createdAgent && (
-                  <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 space-y-1">
-                    <p className="text-sm font-semibold text-emerald-400 flex items-center gap-2"><Bot className="w-4 h-4" /> AI Receptionist Created!</p>
-                    <p className="text-xs text-emerald-300">{createdAgent.agentName}</p>
-                    <p className="text-[10px] font-mono text-emerald-400/60">ID: {createdAgent.agentId}</p>
-                  </div>
-                )}
-                <div className="rounded-2xl border border-[rgba(232,85,61,0.18)] bg-[linear-gradient(180deg,rgba(232,85,61,0.08),rgba(255,255,255,0.02))] p-5">
-                  <pre className="whitespace-pre-wrap text-sm leading-6 text-[var(--foreground)] font-sans">{(receptionistDraft as { fullPrompt?: string }).fullPrompt || receptionistDraft.systemPrompt}</pre>
-                </div>
-
-                {('extractedBusinessProfile' in receptionistDraft) && (receptionistDraft as { extractedBusinessProfile?: { summary?: string; reviewInsights?: string[] } }).extractedBusinessProfile && (
-                  <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-4 space-y-2">
-                    <p className="text-[11px] uppercase tracking-wider text-[var(--muted)]">Extracted Business Profile</p>
-                    <p className="text-sm">{(receptionistDraft as { extractedBusinessProfile?: { summary?: string } }).extractedBusinessProfile?.summary}</p>
-                    <ul className="space-y-1 text-sm text-[var(--muted)] list-disc pl-5">
-                      {((receptionistDraft as { extractedBusinessProfile?: { reviewInsights?: string[] } }).extractedBusinessProfile?.reviewInsights || []).map((insight, idx) => (
-                        <li key={idx}>{insight}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        <ReceptionistBuilderModal
+          initial={{
+            businessName: prospect.name || "",
+            niche: prospect.service || "",
+            services: prospect.service || "",
+            notes: prospect.notes || "",
+            gender: "auto",
+          }}
+          onClose={() => setShowReceptionistBuilder(false)}
+        />
       )}
 
       <ConfirmModal
@@ -1563,16 +1391,6 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
         }}
         onCancel={() => setShowDeleteConfirm(false)}
       />
-
-      {receptionistPaywall && (
-        <InsufficientCreditsModal
-          open
-          onClose={() => setReceptionistPaywall(null)}
-          required={receptionistPaywall.required}
-          balance={receptionistPaywall.balance}
-          action="Drafting an AI receptionist"
-        />
-      )}
 
       {showVoicemailModal && (
         <VoicedropModal

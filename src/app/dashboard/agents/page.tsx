@@ -5,13 +5,17 @@ import { createPortal } from "react-dom";
 import {
   Bot, Plus, Search, Trash2, Loader2, RefreshCw, AlertCircle,
   MoreVertical, Phone, MessageSquare, BarChart2, Settings2,
-  Clock, CheckCircle2, TrendingUp,
-  Mic, PhoneCall, PhoneOff, Link2, X, ChevronUp, ChevronDown, Coins,
+  CheckCircle2, TrendingUp,
+  Mic, PhoneCall, PhoneOff, Link2, X, ChevronUp, ChevronDown, ChevronRight, Coins,
+  Folder as FolderIcon, FileText,
 } from "lucide-react";
 import Link from "next/link";
 import AgentTestWidget from "@/components/dashboard/AgentTestWidget";
 import InsufficientCreditsModal from "@/components/dashboard/InsufficientCreditsModal";
+import ReceptionistBuilderModal from "@/components/dashboard/ReceptionistBuilderModal";
 import { SendToMyPhoneButton } from "@/components/SendToMyPhoneButton";
+import { useProspects } from "@/context/ProspectsContext";
+import type { Prospect } from "@/types";
 
 interface ElevenAgent {
   agent_id: string;
@@ -130,6 +134,53 @@ export default function AgentsPage() {
   const [mounted, setMounted] = useState(false);
   const [selectedTestAgentId, setSelectedTestAgentId] = useState("");
 
+  // Build Receptionist — prospect picker + modal flow
+  const { prospects, folders } = useProspects();
+  const [showProspectPicker, setShowProspectPicker] = useState(false);
+  const [pickerFolderId, setPickerFolderId] = useState<string | null>(null);
+  const [pickerFileId, setPickerFileId] = useState<string | null>(null);
+  const [prospectSearch, setProspectSearch] = useState("");
+  const [receptionistProspect, setReceptionistProspect] = useState<Prospect | null>(null);
+
+  const ALL_IN_FOLDER = "__all__";
+  const pickerFolder = pickerFolderId ? folders.find((f) => f.id === pickerFolderId) : null;
+  const pickerFile = pickerFolder && pickerFileId && pickerFileId !== ALL_IN_FOLDER
+    ? pickerFolder.files.find((f) => f.id === pickerFileId)
+    : null;
+  const isPickingAllInFolder = pickerFileId === ALL_IN_FOLDER;
+  const pickerProspects = isPickingAllInFolder && pickerFolderId
+    ? prospects.filter((p) => p.folderId === pickerFolderId)
+    : pickerFileId
+    ? prospects.filter((p) => p.fileId === pickerFileId)
+    : pickerFolderId
+    ? prospects.filter((p) => p.folderId === pickerFolderId)
+    : [];
+  const searchedPickerProspects = prospectSearch
+    ? pickerProspects.filter((p) =>
+        p.name.toLowerCase().includes(prospectSearch.toLowerCase()) ||
+        (p.service || "").toLowerCase().includes(prospectSearch.toLowerCase())
+      )
+    : pickerProspects;
+
+  const enterFolder = (folderId: string) => {
+    const f = folders.find((fl) => fl.id === folderId);
+    setPickerFolderId(folderId);
+    if (f && f.files.length === 0) setPickerFileId(ALL_IN_FOLDER);
+    else setPickerFileId(null);
+  };
+
+  const closeProspectPicker = () => {
+    setShowProspectPicker(false);
+    setPickerFolderId(null);
+    setPickerFileId(null);
+    setProspectSearch("");
+  };
+
+  const pickProspect = (p: Prospect) => {
+    setReceptionistProspect(p);
+    closeProspectPicker();
+  };
+
   const loadConversations = useCallback(async (agentId?: string) => {
     setLoadingConvs(true);
     try {
@@ -213,9 +264,12 @@ export default function AgentsPage() {
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
             </button>
             {nav === "agents" && (
-              <Link href="/dashboard" className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-[#e8553d] to-[#d44429] text-white text-xs font-semibold shadow-lg shadow-[#e8553d]/20 hover:from-[#f06a54] hover:to-[#e8553d] transition-all">
+              <button
+                onClick={() => { setShowProspectPicker(true); setPickerFolderId(null); setPickerFileId(null); setProspectSearch(""); }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-[#e8553d] to-[#d44429] text-white text-xs font-semibold shadow-lg shadow-[#e8553d]/20 hover:from-[#f06a54] hover:to-[#e8553d] transition-all"
+              >
                 <Plus className="w-3.5 h-3.5" /> Build Receptionist
-              </Link>
+              </button>
             )}
           </div>
         </div>
@@ -277,10 +331,13 @@ export default function AgentsPage() {
                     <Bot className="w-7 h-7 text-[var(--accent)]" />
                   </div>
                   <p className="font-semibold text-sm">No agents yet</p>
-                  <p className="text-xs text-[var(--muted)]">Go to a prospect and click Build Receptionist to create your first AI agent.</p>
-                  <Link href="/dashboard" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#e8553d] to-[#d44429] text-white text-sm font-semibold shadow-lg shadow-[#e8553d]/20 hover:from-[#f06a54] hover:to-[#e8553d] transition-all">
+                  <p className="text-xs text-[var(--muted)]">Pick a prospect and we&apos;ll auto-build their AI receptionist from their business details.</p>
+                  <button
+                    onClick={() => { setShowProspectPicker(true); setPickerFolderId(null); setPickerFileId(null); setProspectSearch(""); }}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#e8553d] to-[#d44429] text-white text-sm font-semibold shadow-lg shadow-[#e8553d]/20 hover:from-[#f06a54] hover:to-[#e8553d] transition-all"
+                  >
                     <Plus className="w-4 h-4" /> Build Receptionist
-                  </Link>
+                  </button>
                 </div>
               ) : (
                 <div className="liquid-glass rounded-2xl overflow-hidden">
@@ -503,7 +560,7 @@ export default function AgentsPage() {
                     <h3 className="text-sm font-semibold flex items-center gap-2"><Link2 className="w-4 h-4 text-[var(--accent)]" /> Import Phone Number</h3>
                     <button onClick={() => setShowImportPhone(false)} className="p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors"><X className="w-4 h-4" /></button>
                   </div>
-                  <p className="text-xs text-[var(--muted)]">Connect an existing phone number to route calls to your AI agent. You'll need the carrier Account SID and Auth Token from your provider.</p>
+                  <p className="text-xs text-[var(--muted)]">Connect an existing phone number to route calls to your AI agent. You&apos;ll need the carrier Account SID and Auth Token from your provider.</p>
                   {importError && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{importError}</div>}
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
@@ -863,6 +920,206 @@ export default function AgentsPage() {
         balance={creditsPaywall?.balance ?? 0}
         action="Buying a phone number"
       />
+
+      {mounted && showProspectPicker && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-start justify-center p-4 overflow-y-auto" style={{ top: 0, left: 0, width: "100vw", height: "100vh" }}>
+          <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" onClick={closeProspectPicker} />
+          <div className="relative w-full max-w-lg liquid-glass-strong rounded-3xl overflow-hidden my-auto z-10">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/60 to-transparent" />
+            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold">Pick a Prospect</h2>
+                <p className="text-xs text-[var(--muted)] mt-0.5">We&apos;ll auto-fill their business details into the receptionist builder.</p>
+              </div>
+              <button onClick={closeProspectPicker} className="p-2 rounded-lg hover:bg-white/5 text-[var(--muted)]">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {folders.length === 0 ? (
+                <div className="rounded-2xl border-2 border-dashed border-[var(--border)] p-10 text-center space-y-3">
+                  <p className="text-sm font-semibold">No prospects yet</p>
+                  <p className="text-xs text-[var(--muted)]">Add prospects to your dashboard first, then come back to build a receptionist for them.</p>
+                  <Link href="/dashboard" onClick={closeProspectPicker} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--border)] text-xs hover:bg-white/[0.04]">
+                    Go to Dashboard
+                  </Link>
+                </div>
+              ) : (
+                <div className="rounded-xl bg-[var(--background)] border border-[var(--border)] overflow-hidden">
+                  <div className="flex items-center gap-1 px-3 py-2 bg-white/[0.02] border-b border-[var(--border)] text-[11px]">
+                    <button
+                      onClick={() => { setPickerFolderId(null); setPickerFileId(null); setProspectSearch(""); }}
+                      className={`hover:text-[var(--accent)] transition-colors ${!pickerFolderId ? "text-[var(--foreground)] font-medium" : "text-[var(--muted)]"}`}
+                    >
+                      Folders
+                    </button>
+                    {pickerFolder && (
+                      <>
+                        <ChevronRight className="w-3 h-3 text-[var(--muted)]" />
+                        <button
+                          onClick={() => {
+                            setPickerFileId(pickerFolder.files.length === 0 ? ALL_IN_FOLDER : null);
+                            setProspectSearch("");
+                          }}
+                          className={`hover:text-[var(--accent)] transition-colors truncate max-w-[100px] ${
+                            !pickerFileId || (isPickingAllInFolder && pickerFolder.files.length === 0)
+                              ? "text-[var(--foreground)] font-medium"
+                              : "text-[var(--muted)]"
+                          }`}
+                        >
+                          {pickerFolder.name}
+                        </button>
+                      </>
+                    )}
+                    {pickerFile && (
+                      <>
+                        <ChevronRight className="w-3 h-3 text-[var(--muted)]" />
+                        <span className="text-[var(--foreground)] font-medium truncate max-w-[100px]">{pickerFile.name}</span>
+                      </>
+                    )}
+                    {isPickingAllInFolder && pickerFolder && pickerFolder.files.length > 0 && (
+                      <>
+                        <ChevronRight className="w-3 h-3 text-[var(--muted)]" />
+                        <span className="text-[var(--foreground)] font-medium truncate max-w-[140px]">All prospects</span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="max-h-72 overflow-y-auto">
+                    {!pickerFolderId && (
+                      <div>
+                        {folders.map((folder) => {
+                          const count = prospects.filter((p) => p.folderId === folder.id).length;
+                          return (
+                            <button
+                              key={folder.id}
+                              onClick={() => enterFolder(folder.id)}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors text-left"
+                            >
+                              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${folder.color}15` }}>
+                                <FolderIcon className="w-3.5 h-3.5" style={{ color: folder.color }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{folder.name}</p>
+                                <p className="text-[10px] text-[var(--muted)]">{count} prospects · {folder.files.length} files</p>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-[var(--muted)] shrink-0" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {pickerFolderId && !pickerFileId && pickerFolder && pickerFolder.files.length > 0 && (
+                      <div>
+                        <button
+                          onClick={() => setPickerFileId(ALL_IN_FOLDER)}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors text-left border-b border-[var(--border)]"
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center shrink-0">
+                            <FolderIcon className="w-3.5 h-3.5 text-[var(--accent)]" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">All prospects in this folder</p>
+                            <p className="text-[10px] text-[var(--muted)]">
+                              {prospects.filter((p) => p.folderId === pickerFolderId).length} prospects
+                            </p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-[var(--muted)] shrink-0" />
+                        </button>
+                        {pickerFolder.files.map((file) => {
+                          const count = prospects.filter((p) => p.fileId === file.id).length;
+                          return (
+                            <button
+                              key={file.id}
+                              onClick={() => setPickerFileId(file.id)}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors text-left"
+                            >
+                              <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                <FileText className="w-3.5 h-3.5 text-[var(--muted)]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{file.name}</p>
+                                <p className="text-[10px] text-[var(--muted)]">{count} prospects · {file.source}</p>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-[var(--muted)] shrink-0" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {pickerFileId && (
+                      <div>
+                        <div className="sticky top-0 p-2 bg-[var(--background)] border-b border-[var(--border)]">
+                          <input
+                            autoFocus
+                            value={prospectSearch}
+                            onChange={(e) => setProspectSearch(e.target.value)}
+                            placeholder={isPickingAllInFolder ? "Search prospects in this folder..." : "Search prospects in this file..."}
+                            className="w-full px-3 py-1.5 rounded-lg bg-[var(--card)] border border-[var(--border)] text-xs focus:outline-none focus:border-[var(--accent)] placeholder:text-zinc-600"
+                          />
+                        </div>
+                        {searchedPickerProspects.length > 0 ? (
+                          searchedPickerProspects.map((p) => (
+                            <button
+                              key={p.id}
+                              onClick={() => pickProspect(p)}
+                              className="w-full text-left px-3 py-2.5 hover:bg-white/5 transition-colors flex items-center gap-3"
+                            >
+                              <div className="w-7 h-7 rounded-full bg-[var(--accent)]/10 flex items-center justify-center shrink-0 text-[10px] font-bold text-[var(--accent)]">
+                                {p.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{p.name}</p>
+                                <p className="text-[10px] text-[var(--muted)] truncate">
+                                  {[p.service, p.phone, p.email].filter(Boolean).join(" · ") || "No details"}
+                                </p>
+                              </div>
+                              <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${
+                                p.status === "Closed" ? "bg-rose-500/15 text-rose-400"
+                                : p.status === "Booked" ? "bg-emerald-500/15 text-emerald-400"
+                                : p.status === "Qualified" ? "bg-purple-500/15 text-purple-400"
+                                : p.status === "Contacted" ? "bg-amber-500/15 text-amber-400"
+                                : "bg-blue-500/15 text-blue-400"
+                              }`}>{p.status}</span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="px-3 py-6 text-xs text-[var(--muted)] text-center">
+                            {prospectSearch
+                              ? "No matching prospects"
+                              : isPickingAllInFolder
+                                ? "No prospects in this folder yet"
+                                : "No prospects in this file"}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {receptionistProspect && (
+        <ReceptionistBuilderModal
+          initial={{
+            businessName: receptionistProspect.name || "",
+            niche: receptionistProspect.service || "",
+            services: receptionistProspect.service || "",
+            notes: receptionistProspect.notes || "",
+            gender: "auto",
+          }}
+          onClose={() => setReceptionistProspect(null)}
+          onCreated={() => { load(); }}
+          navigateAfterCreate={false}
+        />
+      )}
     </div>
   );
 }
