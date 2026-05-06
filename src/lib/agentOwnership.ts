@@ -57,7 +57,8 @@ export async function recordPhoneNumberOwnership(
   phoneNumberId: string,
   phoneNumber: string,
   label: string,
-  twilioSid: string | null
+  twilioSid: string | null,
+  stripeSubscriptionId: string | null = null,
 ): Promise<void> {
   const { error } = await supabaseAdmin
     .from("user_phone_numbers")
@@ -67,6 +68,7 @@ export async function recordPhoneNumberOwnership(
       phone_number: phoneNumber,
       label,
       twilio_sid: twilioSid,
+      stripe_subscription_id: stripeSubscriptionId,
     });
   if (error) {
     console.error("recordPhoneNumberOwnership failed:", error);

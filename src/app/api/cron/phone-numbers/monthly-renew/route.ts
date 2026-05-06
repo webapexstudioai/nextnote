@@ -31,9 +31,13 @@ export async function POST(req: NextRequest) {
   const twilioToken = process.env.TWILIO_AUTH_TOKEN;
   const elevenKey = process.env.ELEVENLABS_API_KEY;
 
+  // Numbers with a Stripe subscription are billed by Stripe directly, so
+  // skip them here — only the legacy credits-funded numbers go through this
+  // cron. New purchases (post-Stripe-migration) will always have a sub id.
   const { data: due, error } = await supabaseAdmin
     .from("user_phone_numbers")
     .select("id, user_id, elevenlabs_phone_number_id, phone_number, twilio_sid")
+    .is("stripe_subscription_id", null)
     .lte("next_renewal_at", new Date().toISOString())
     .limit(500);
 

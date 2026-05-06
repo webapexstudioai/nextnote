@@ -6,6 +6,7 @@ import { addCredits, deductCredits, getBalance, hasBeenProcessed } from "@/lib/c
 import { sendWelcomeEmail } from "@/lib/email-templates";
 import { purchaseAgencyNumber, refundCheckoutSession } from "@/lib/agencyPhone";
 import { fulfillDomainPurchase } from "@/lib/domainFulfillment";
+import { provisionAiPhoneNumber, releaseAiPhoneNumber } from "@/lib/aiPhoneProvision";
 
 const ALLOWED_PLANS = new Set(["starter", "pro"]);
 
@@ -71,6 +72,47 @@ export async function POST(req: NextRequest) {
         // The fulfillment helper handles refund-on-failure internally.
         if (userId && kind === "domain_purchase") {
           await fulfillDomainPurchase(session);
+          break;
+        }
+
+        // AI receptionist phone line — Stripe subscription paid, so buy the
+        // Twilio number + import to ElevenLabs. If provisioning fails we
+        // cancel the new sub immediately so the user isn't billed monthly
+        // for nothing. Stripe auto-issues the prorated refund.
+        if (userId && kind === "ai_phone_purchase") {
+          const phoneNumber = session.metadata?.phoneNumber;
+          const friendlyName = session.metadata?.friendlyName;
+          const subscriptionId =
+            typeof session.subscription === "string"
+              ? session.subscription
+              : session.subscription?.toString() || null;
+
+          if (!phoneNumber || !subscriptionId) {
+            console.error(
+              `[webhook] ai_phone_purchase missing phoneNumber/subscription on ${session.id}`,
+            );
+            if (subscriptionId) {
+              await stripe.subscriptions
+                .cancel(subscriptionId, { invoice_now: false, prorate: true })
+                .catch(() => {});
+            }
+            break;
+          }
+
+          if (await hasBeenProcessed(`ai_phone_purchase:${session.id}`)) break;
+
+          const result = await provisionAiPhoneNumber({
+            userId,
+            phoneNumber,
+            label: friendlyName,
+            stripeSubscriptionId: subscriptionId,
+          });
+          if (!result.success) {
+            console.error(`[webhook] ai_phone_purchase failed: ${result.error}`);
+            await stripe.subscriptions
+              .cancel(subscriptionId, { invoice_now: false, prorate: true })
+              .catch(() => {});
+          }
           break;
         }
 
@@ -159,6 +201,30 @@ export async function POST(req: NextRequest) {
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         const userId = subscription.metadata?.userId;
+        const subKind = subscription.metadata?.kind;
+
+        // AI phone line subscription canceled — release the Twilio number +
+        // ElevenLabs phone, drop ownership row. The release route already
+        // cancels the sub before deleting, so this branch handles the cases
+        // where Stripe cancels (failed payment, user via Stripe portal).
+        if (subKind === "ai_phone_subscription") {
+          const { data: row } = await supabaseAdmin
+            .from("user_phone_numbers")
+            .select("user_id, elevenlabs_phone_number_id, twilio_sid")
+            .eq("stripe_subscription_id", subscription.id)
+            .maybeSingle();
+          if (row) {
+            await releaseAiPhoneNumber({
+              elevenLabsId: row.elevenlabs_phone_number_id,
+              twilioSid: row.twilio_sid,
+            });
+            await supabaseAdmin
+              .from("user_phone_numbers")
+              .delete()
+              .eq("stripe_subscription_id", subscription.id);
+          }
+          break;
+        }
 
         if (userId) {
           await supabaseAdmin
