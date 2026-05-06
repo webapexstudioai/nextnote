@@ -13,7 +13,11 @@ export interface ToolConfig {
   transferCondition?: string;
   bookEnabled: boolean;
   rescheduleEnabled: boolean;
+  cancelEnabled: boolean;
   availabilityEnabled: boolean;
+  emailEnabled: boolean;
+  leadCaptureEnabled: boolean;
+  takeMessageEnabled: boolean;
 }
 
 interface BuiltInTool {
@@ -94,6 +98,64 @@ export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarPr
     };
   }
 
+  // Calendar-independent tools — wired off the same secret + userId pattern.
+  if (cfg.emailEnabled) {
+    webhook_tools.push(webhookTool({
+      name: "send_email",
+      description: "Send an email to the caller from the business. Use this when the caller asks you to text/email/send them an address, quote, link, or confirmation. Always confirm the email address out loud before sending.",
+      url: `${base}/api/tools/notify/email/${userId}`,
+      secret,
+      bodySchema: {
+        type: "object",
+        properties: {
+          to: { type: "string", description: "Recipient email address, exactly as the caller spelled it." },
+          subject: { type: "string", description: "Short subject line (max 200 chars)." },
+          message: { type: "string", description: "Plain-text body of the email. Be concise and clear." },
+        },
+        required: ["to", "subject", "message"],
+      },
+    }));
+  }
+
+  if (cfg.leadCaptureEnabled) {
+    webhook_tools.push(webhookTool({
+      name: "capture_lead",
+      description: "Save the caller as a new lead in the CRM. Call this near the end of any call where the caller showed interest in services, even if they didn't book. Always collect at least a phone number or email before calling.",
+      url: `${base}/api/tools/notify/lead/${userId}`,
+      secret,
+      bodySchema: {
+        type: "object",
+        properties: {
+          caller_name: { type: "string", description: "Full name of the caller, if given." },
+          caller_phone: { type: "string", description: "Caller's phone number in any readable format." },
+          caller_email: { type: "string", description: "Caller's email address, if given." },
+          service_requested: { type: "string", description: "What service or product the caller asked about (1 short line)." },
+          summary: { type: "string", description: "2-4 sentence summary of what the caller wanted and any next step you promised them." },
+        },
+        required: ["caller_name"],
+      },
+    }));
+  }
+
+  if (cfg.takeMessageEnabled) {
+    webhook_tools.push(webhookTool({
+      name: "take_message",
+      description: "Record a message for the business owner when the caller wants a callback or specifically asks to leave a message. The owner gets emailed and the message lands in their CRM. Always collect the caller's phone number first.",
+      url: `${base}/api/tools/notify/message/${userId}`,
+      secret,
+      bodySchema: {
+        type: "object",
+        properties: {
+          caller_name: { type: "string", description: "Caller's name." },
+          caller_phone: { type: "string", description: "Phone number to call back." },
+          message: { type: "string", description: "The message itself, in the caller's words." },
+          callback_time: { type: "string", description: "Best time of day to return the call, if the caller mentioned one." },
+        },
+        required: ["caller_name", "caller_phone", "message"],
+      },
+    }));
+  }
+
   if (!provider) return { built_in_tools, webhook_tools };
   const prefix = provider === "google" ? "google" : "cal";
   const bookingRef = provider === "google"
@@ -154,6 +216,23 @@ export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarPr
     }));
   }
 
+  if (cfg.cancelEnabled) {
+    webhook_tools.push(webhookTool({
+      name: "cancel_appointment",
+      description: "Cancel an existing appointment when the caller asks to cancel. Requires the original booking reference. Always confirm with the caller before cancelling.",
+      url: `${base}/api/tools/${prefix}/cancel/${userId}`,
+      secret,
+      bodySchema: {
+        type: "object",
+        properties: {
+          booking_uid: { type: "string", description: bookingRef },
+          reason: { type: "string", description: "Why the caller is cancelling, if they said." },
+        },
+        required: ["booking_uid"],
+      },
+    }));
+  }
+
   return { built_in_tools, webhook_tools };
 }
 
@@ -167,7 +246,11 @@ export function parseTools(prompt: PromptToolsShape | undefined): ToolConfig {
     transferEnabled: false,
     bookEnabled: false,
     rescheduleEnabled: false,
+    cancelEnabled: false,
     availabilityEnabled: false,
+    emailEnabled: false,
+    leadCaptureEnabled: false,
+    takeMessageEnabled: false,
   };
   if (!prompt) return cfg;
 
@@ -196,7 +279,11 @@ export function parseTools(prompt: PromptToolsShape | undefined): ToolConfig {
     }
     if (t.name === "book_appointment") cfg.bookEnabled = true;
     if (t.name === "reschedule_appointment") cfg.rescheduleEnabled = true;
+    if (t.name === "cancel_appointment") cfg.cancelEnabled = true;
     if (t.name === "check_availability") cfg.availabilityEnabled = true;
+    if (t.name === "send_email") cfg.emailEnabled = true;
+    if (t.name === "capture_lead") cfg.leadCaptureEnabled = true;
+    if (t.name === "take_message") cfg.takeMessageEnabled = true;
   }
   return cfg;
 }

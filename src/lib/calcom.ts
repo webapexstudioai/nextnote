@@ -91,3 +91,17 @@ export async function rescheduleBooking(creds: CalCreds, args: {
     }
   );
 }
+
+export async function cancelBooking(creds: CalCreds, args: {
+  bookingUid: string;
+  reason?: string;
+}) {
+  return call<{ data: { uid: string; status: string } }>(
+    `/bookings/${encodeURIComponent(args.bookingUid)}/cancel`,
+    "POST",
+    creds.apiKey,
+    {
+      cancellationReason: args.reason || "Cancelled by AI agent on caller's request",
+    }
+  );
+}

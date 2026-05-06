@@ -145,4 +145,17 @@ export async function updateEvent(userId: string, args: { eventId: string; newSt
   };
 }
 
+export async function deleteEvent(userId: string, args: { eventId: string }) {
+  const creds = await loadGoogleCreds(userId);
+  if (!creds) throw new Error("Google Calendar not connected");
+  const auth = await getAuthClient(userId, creds);
+  const cal = google.calendar({ version: "v3", auth });
+  await cal.events.delete({
+    calendarId: creds.calendarId,
+    eventId: args.eventId,
+    sendUpdates: "all",
+  });
+  return { eventId: args.eventId };
+}
+
 export type CalendarEvent = calendar_v3.Schema$Event;

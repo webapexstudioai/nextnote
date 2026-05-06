@@ -90,7 +90,8 @@ export default function AgentEditorPage() {
 
   const [tools, setTools] = useState<ToolConfig>({
     transferEnabled: false, transferNumber: "", transferCondition: "",
-    bookEnabled: false, rescheduleEnabled: false, availabilityEnabled: false,
+    bookEnabled: false, rescheduleEnabled: false, cancelEnabled: false, availabilityEnabled: false,
+    emailEnabled: false, leadCaptureEnabled: false, takeMessageEnabled: false,
   });
   const [calConnected, setCalConnected] = useState(false);
   const [calApiKeyInput, setCalApiKeyInput] = useState("");
@@ -479,7 +480,7 @@ export default function AgentEditorPage() {
                                   await fetch("/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ google_disconnect: true, ...(calendarProvider === "google" ? { calendar_provider: calConnected ? "cal" : null } : {}) }) });
                                   setGoogleConnected(false);
                                   if (calendarProvider === "google") setCalendarProvider(calConnected ? "cal" : null);
-                                  if (!calConnected) setTools((t) => ({ ...t, bookEnabled: false, rescheduleEnabled: false, availabilityEnabled: false }));
+                                  if (!calConnected) setTools((t) => ({ ...t, bookEnabled: false, rescheduleEnabled: false, cancelEnabled: false, availabilityEnabled: false }));
                                 }}
                                 className="text-[11px] text-red-400 hover:text-red-300"
                               >
@@ -517,11 +518,12 @@ export default function AgentEditorPage() {
                         {/* Shared tool toggles */}
                         {(calConnected || googleConnected) && (
                           <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 space-y-2">
-                            <p className="text-sm font-semibold">What the agent can do</p>
+                            <p className="text-sm font-semibold">Calendar actions</p>
                             {[
                               { key: "availabilityEnabled" as const, label: "Check availability", desc: "Ask the calendar for open slots before booking." },
                               { key: "bookEnabled" as const, label: "Book appointment", desc: "Create a new booking from the call." },
                               { key: "rescheduleEnabled" as const, label: "Reschedule appointment", desc: "Move an existing booking to a new time." },
+                              { key: "cancelEnabled" as const, label: "Cancel appointment", desc: "Cancel an existing booking when the caller asks." },
                             ].map(({ key, label, desc }) => (
                               <label key={key} className="flex items-start justify-between gap-3 py-1.5 cursor-pointer">
                                 <div>
@@ -536,6 +538,28 @@ export default function AgentEditorPage() {
                             ))}
                           </div>
                         )}
+
+                        {/* Always-on tools — work without any calendar provider connected. */}
+                        <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 space-y-2">
+                          <p className="text-sm font-semibold">CRM &amp; communication</p>
+                          <p className="text-[11px] text-[var(--muted)] -mt-1 mb-1">No setup required — these run on NextNote&apos;s infrastructure.</p>
+                          {[
+                            { key: "emailEnabled" as const, label: "Send email", desc: "Email the caller a quote, address, link, or confirmation mid-call." },
+                            { key: "leadCaptureEnabled" as const, label: "Capture lead", desc: "Auto-save callers as prospects in your CRM, even if they don't book." },
+                            { key: "takeMessageEnabled" as const, label: "Take a message", desc: "Record a callback message and email it to you immediately." },
+                          ].map(({ key, label, desc }) => (
+                            <label key={key} className="flex items-start justify-between gap-3 py-1.5 cursor-pointer">
+                              <div>
+                                <p className="text-sm text-[var(--foreground)]">{label}</p>
+                                <p className="text-[11px] text-[var(--muted)]">{desc}</p>
+                              </div>
+                              <div className="relative inline-flex items-center">
+                                <input type="checkbox" className="sr-only peer" checked={tools[key]} onChange={(e) => setTools((t) => ({ ...t, [key]: e.target.checked }))} />
+                                <div className="w-10 h-6 bg-[var(--border)] rounded-full peer-checked:bg-[var(--accent)] transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:w-5 after:h-5 after:transition-all peer-checked:after:translate-x-4" />
+                              </div>
+                            </label>
+                          ))}
+                        </div>
 
                         {(() => {
                           if (!toolsStatus) {
