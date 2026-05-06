@@ -13,3 +13,10 @@ export const PRICE_IDS: Record<string, string> = {
 // as a recurring price ($5.00 USD, monthly). Charged immediately on checkout
 // so the first month's rent and the line activation are the same transaction.
 export const AI_PHONE_MONTHLY_PRICE_ID = process.env.STRIPE_PRICE_AI_PHONE_MONTHLY || "";
+
+// One-time activation fee billed on the first invoice alongside month one.
+// Env override lets us tune without redeploying. Default $5 (500 cents).
+export const AI_PHONE_PURCHASE_CENTS = parseInt(
+  process.env.STRIPE_AI_PHONE_PURCHASE_CENTS || "500",
+  10,
+);

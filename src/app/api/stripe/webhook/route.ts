@@ -234,6 +234,37 @@ export async function POST(req: NextRequest) {
               subscription_tier: "starter",
             })
             .eq("id", userId);
+
+          // Cascade: kill every AI phone line this user owns. Each line
+          // has its own Stripe sub independent of the main NextNote plan,
+          // so without this they'd keep getting $5/mo charges after
+          // canceling. Delete DB rows first so the per-line
+          // subscription.deleted events that Stripe will fire are no-ops.
+          const { data: phones } = await supabaseAdmin
+            .from("user_phone_numbers")
+            .select("elevenlabs_phone_number_id, twilio_sid, stripe_subscription_id")
+            .eq("user_id", userId)
+            .not("stripe_subscription_id", "is", null);
+
+          if (phones && phones.length > 0) {
+            await supabaseAdmin
+              .from("user_phone_numbers")
+              .delete()
+              .eq("user_id", userId)
+              .not("stripe_subscription_id", "is", null);
+
+            for (const phone of phones) {
+              await releaseAiPhoneNumber({
+                elevenLabsId: phone.elevenlabs_phone_number_id,
+                twilioSid: phone.twilio_sid,
+              });
+              if (phone.stripe_subscription_id) {
+                await stripe.subscriptions
+                  .cancel(phone.stripe_subscription_id, { invoice_now: false, prorate: false })
+                  .catch((err) => console.error("[cascade] cancel phone sub failed:", err));
+              }
+            }
+          }
         }
         break;
       }

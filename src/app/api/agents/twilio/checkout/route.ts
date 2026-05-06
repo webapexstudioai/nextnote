@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/session";
-import { stripe, AI_PHONE_MONTHLY_PRICE_ID } from "@/lib/stripe";
+import { stripe, AI_PHONE_MONTHLY_PRICE_ID, AI_PHONE_PURCHASE_CENTS } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
 import { hasCompletedBusinessProfile } from "@/lib/businessProfile";
 
@@ -69,7 +69,24 @@ export async function POST(req: NextRequest) {
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
-      line_items: [{ price: AI_PHONE_MONTHLY_PRICE_ID, quantity: 1 }],
+      line_items: [
+        // One-time activation fee — billed on the first invoice alongside
+        // month one. Stripe lets you mix one-time line items with the
+        // recurring price in subscription mode.
+        {
+          price_data: {
+            currency: "usd",
+            unit_amount: AI_PHONE_PURCHASE_CENTS,
+            product_data: {
+              name: "Phone number activation",
+              description: `One-time setup fee for ${phoneNumber}`,
+            },
+          },
+          quantity: 1,
+        },
+        // Recurring monthly rent.
+        { price: AI_PHONE_MONTHLY_PRICE_ID, quantity: 1 },
+      ],
       success_url: `${appUrl}/dashboard/agents?phone=success&number=${encodeURIComponent(phoneNumber)}`,
       cancel_url: `${appUrl}/dashboard/agents?phone=canceled`,
       metadata: {

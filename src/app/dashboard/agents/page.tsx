@@ -494,7 +494,7 @@ export default function AgentsPage() {
                   <p className="text-xs text-[var(--muted)]">Pick an area code, find an available number, and attach it to an agent.</p>
                   <div className="rounded-xl border border-[var(--accent)]/25 bg-[var(--accent)]/5 px-3 py-2 text-[11px] text-[var(--muted)] flex items-center gap-2">
                     <Phone className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
-                    <span><span className="text-[var(--foreground)] font-semibold">$5/mo</span> billed to your card. First month is charged on activation. Cancel anytime by releasing the number.</span>
+                    <span><span className="text-[var(--foreground)] font-semibold">$5</span> one-time to activate, then <span className="text-[var(--foreground)] font-semibold">$5/mo</span> to keep the line. Charged together on the first invoice. Cancel anytime by releasing the number.</span>
                   </div>
                   {buyError && <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">{buyError}</div>}
                   {buySuccess && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">{buySuccess}</div>}
@@ -565,7 +565,7 @@ export default function AgentsPage() {
                               className="px-3 py-2 rounded-xl bg-[var(--accent)] text-white text-xs font-semibold hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
                             >
                               {purchasingNumber === num.phone_number ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Phone className="w-3.5 h-3.5" />}
-                              Buy · $5/mo
+                              Buy · $5 + $5/mo
                             </button>
                           </div>
                         ))}
