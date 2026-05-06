@@ -41,13 +41,14 @@ export async function POST(req: NextRequest) {
           prompt: {
             prompt: finalPrompt,
             llm: "gemini-2.0-flash",
-            tools: [
-              {
+            built_in_tools: {
+              end_call: {
                 type: "system",
                 name: "end_call",
                 description: "End the call when the caller says goodbye, confirms they have no other questions, or the conversation is clearly complete. Do not end the call while the caller is still asking questions.",
+                params: { system_tool_type: "end_call" },
               },
-            ],
+            },
           },
           first_message: firstMessage || `Thank you for calling ${agentName}. How can I help you today?`,
           language: "en",

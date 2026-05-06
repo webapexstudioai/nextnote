@@ -1,5 +1,7 @@
-// Builds the ElevenLabs ConvAI `tools` array for an agent based on NextNote's UI toggles.
-// Tools go on conversation_config.agent.prompt.tools and get invoked mid-conversation.
+// Builds the ElevenLabs ConvAI tool config for an agent based on NextNote's UI toggles.
+// System tools (end_call, transfer_to_number) live on prompt.built_in_tools — a dict
+// keyed by tool name, with each tool's params carrying a system_tool_type discriminator.
+// Webhook tools still inline on prompt.tools as an array.
 
 import { getAppUrl } from "@/lib/appUrl";
 
@@ -14,18 +16,29 @@ export interface ToolConfig {
   availabilityEnabled: boolean;
 }
 
-interface ElevenTool {
-  type: string;
+interface BuiltInTool {
+  type: "system";
+  name: string;
+  description?: string;
+  params: { system_tool_type: string; [key: string]: unknown };
+}
+
+interface WebhookTool {
+  type: "webhook";
   name: string;
   description?: string;
   response_timeout_secs?: number;
-  params?: Record<string, unknown>;
-  api_schema?: {
+  api_schema: {
     url: string;
     method: string;
     request_headers?: Record<string, string>;
     request_body_schema?: Record<string, unknown>;
   };
+}
+
+export interface BuiltTools {
+  built_in_tools: Record<string, BuiltInTool>;
+  webhook_tools: WebhookTool[];
 }
 
 function webhookTool(opts: {
@@ -34,7 +47,7 @@ function webhookTool(opts: {
   url: string;
   secret: string;
   bodySchema: { type: "object"; properties: Record<string, { type: string; description: string }>; required: string[] };
-}): ElevenTool {
+}): WebhookTool {
   return {
     type: "webhook",
     name: opts.name,
@@ -49,25 +62,28 @@ function webhookTool(opts: {
   };
 }
 
-export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarProvider): ElevenTool[] {
+export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarProvider): BuiltTools {
   const base = getAppUrl();
   const secret = process.env.TOOLS_WEBHOOK_SECRET || "";
-  const tools: ElevenTool[] = [];
+  const built_in_tools: Record<string, BuiltInTool> = {};
+  const webhook_tools: WebhookTool[] = [];
 
   // Every agent gets end_call so the LLM can actually hang up. Without it the
   // call idles until the platform's hard timeout fires.
-  tools.push({
+  built_in_tools.end_call = {
     type: "system",
     name: "end_call",
     description: "End the call when the caller says goodbye, confirms they have no other questions, or the conversation is clearly complete. Do not end the call while the caller is still asking questions.",
-  });
+    params: { system_tool_type: "end_call" },
+  };
 
   if (cfg.transferEnabled && cfg.transferNumber) {
-    tools.push({
+    built_in_tools.transfer_to_number = {
       type: "system",
       name: "transfer_to_number",
       description: "Transfer the call to a human when the caller asks or the agent cannot help.",
       params: {
+        system_tool_type: "transfer_to_number",
         transfers: [
           {
             phone_number: cfg.transferNumber,
@@ -75,17 +91,17 @@ export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarPr
           },
         ],
       },
-    });
+    };
   }
 
-  if (!provider) return tools;
+  if (!provider) return { built_in_tools, webhook_tools };
   const prefix = provider === "google" ? "google" : "cal";
   const bookingRef = provider === "google"
     ? "Google Calendar event ID from the original booking."
     : "Cal.com booking UID from the original confirmation.";
 
   if (cfg.availabilityEnabled) {
-    tools.push(webhookTool({
+    webhook_tools.push(webhookTool({
       name: "check_availability",
       description: "Check open slots on the user's calendar. Call this before attempting to book so you can offer real times.",
       url: `${base}/api/tools/${prefix}/availability/${userId}`,
@@ -102,7 +118,7 @@ export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarPr
   }
 
   if (cfg.bookEnabled) {
-    tools.push(webhookTool({
+    webhook_tools.push(webhookTool({
       name: "book_appointment",
       description: "Book a new appointment on the user's calendar. Collect attendee name, email, and confirmed start time before calling.",
       url: `${base}/api/tools/${prefix}/book/${userId}`,
@@ -121,7 +137,7 @@ export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarPr
   }
 
   if (cfg.rescheduleEnabled) {
-    tools.push(webhookTool({
+    webhook_tools.push(webhookTool({
       name: "reschedule_appointment",
       description: "Move an existing appointment to a new time. Requires the original booking reference.",
       url: `${base}/api/tools/${prefix}/reschedule/${userId}`,
@@ -138,21 +154,41 @@ export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarPr
     }));
   }
 
-  return tools;
+  return { built_in_tools, webhook_tools };
 }
 
-export function parseTools(tools: ElevenTool[] | undefined): ToolConfig {
+interface PromptToolsShape {
+  tools?: Array<{ type?: string; name?: string; params?: Record<string, unknown> }>;
+  built_in_tools?: Record<string, { type?: string; name?: string; params?: Record<string, unknown> } | null>;
+}
+
+export function parseTools(prompt: PromptToolsShape | undefined): ToolConfig {
   const cfg: ToolConfig = {
     transferEnabled: false,
     bookEnabled: false,
     rescheduleEnabled: false,
     availabilityEnabled: false,
   };
-  if (!Array.isArray(tools)) return cfg;
+  if (!prompt) return cfg;
+
+  // Read system tools from built_in_tools (canonical) first, then fall back to
+  // the legacy prompt.tools array if an older agent hasn't been migrated yet.
+  const builtIn = prompt.built_in_tools || {};
+  const transfer = builtIn.transfer_to_number;
+  if (transfer) {
+    cfg.transferEnabled = true;
+    const transfers = (transfer.params as { transfers?: { phone_number?: string; condition?: string }[] } | undefined)?.transfers;
+    if (transfers?.[0]) {
+      cfg.transferNumber = transfers[0].phone_number;
+      cfg.transferCondition = transfers[0].condition;
+    }
+  }
+
+  const tools = Array.isArray(prompt.tools) ? prompt.tools : [];
   for (const t of tools) {
-    if (t.type === "system" && t.name === "transfer_to_number") {
+    if (!cfg.transferEnabled && t.type === "system" && t.name === "transfer_to_number") {
       cfg.transferEnabled = true;
-      const transfers = (t.params as { transfers?: { phone_number?: string; condition?: string }[] })?.transfers;
+      const transfers = (t.params as { transfers?: { phone_number?: string; condition?: string }[] } | undefined)?.transfers;
       if (transfers?.[0]) {
         cfg.transferNumber = transfers[0].phone_number;
         cfg.transferCondition = transfers[0].condition;

@@ -136,7 +136,7 @@ export default function AgentEditorPage() {
       setTurnTimeout(agentData.conversation_config?.turn?.turn_timeout ?? 7);
       setMaxDuration(agentData.conversation_config?.conversation?.max_duration_seconds ?? 600);
 
-      setTools(parseTools(agentData.conversation_config?.agent?.prompt?.tools));
+      setTools(parseTools(agentData.conversation_config?.agent?.prompt));
       setCalConnected(!!settingsData.cal_connected);
       setCalEventTypeId(settingsData.cal_event_type_id || "");
       setCalTimezone(settingsData.cal_timezone || "America/New_York");

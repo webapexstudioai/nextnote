@@ -45,11 +45,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ag
     else if (stored === "cal" && settings?.cal_api_key_encrypted) provider = "cal";
     else if (settings?.google_refresh_token_encrypted) provider = "google";
     else if (settings?.cal_api_key_encrypted) provider = "cal";
-    const tools = buildTools(session.userId, cfg, provider);
+    const { built_in_tools, webhook_tools } = buildTools(session.userId, cfg, provider);
     body.conversation_config = body.conversation_config || {};
     body.conversation_config.agent = body.conversation_config.agent || {};
     body.conversation_config.agent.prompt = body.conversation_config.agent.prompt || {};
-    body.conversation_config.agent.prompt.tools = tools;
+    body.conversation_config.agent.prompt.built_in_tools = built_in_tools;
+    body.conversation_config.agent.prompt.tools = webhook_tools;
     delete body._tool_config;
   }
   const res = await fetch(`${BASE}/${agentId}`, {
