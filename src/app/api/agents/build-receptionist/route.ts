@@ -64,8 +64,8 @@ export async function POST(req: NextRequest) {
     const fullPrompt = await aiChat(
       cfg.config,
       `You are an expert AI receptionist prompt writer. You write complete, production-ready, long-form receptionist system prompts for businesses that use AI voice agents. Your output should be a full detailed script similar to a professional receptionist brief — not a short summary.`,
-      `Write a complete AI receptionist system prompt for the following business.\n\n${businessContext}\n\n${nameGuidance}\n\nInclude these sections:\n- Business header and agent name (use the name you picked following the CRITICAL NAMING RULE above)\n- Opening greeting (exact words, starting with the agent's first name)\n- Language and personality rules\n- One-question-at-a-time rule\n- Goals list\n- Service routing logic based on their services\n- Step-by-step question flow for booking\n- Business knowledge section\n- FAQ section\n- Objection handling section\n- Escalation rules\n- General rules\n\nWrite it as a complete formatted script, not JSON. Make it premium, detailed, and near production-ready.`,
-      2048
+      `Write a complete AI receptionist system prompt for the following business.\n\n${businessContext}\n\n${nameGuidance}\n\nInclude these sections:\n- Business header and agent name (use the name you picked following the CRITICAL NAMING RULE above)\n- Opening greeting (exact words, starting with the agent's first name)\n- Language and personality rules\n- One-question-at-a-time rule\n- Goals list\n- Service routing logic based on their services\n- Step-by-step question flow for booking\n- Business knowledge section\n- FAQ section\n- Objection handling section\n- Escalation rules\n- General rules\n\nWrite it as a complete formatted script, not JSON. Make it premium, detailed, and near production-ready. Finish every section — do not stop mid-flow.`,
+      8000
     );
 
     // Step 2: Extract structured metadata from the prompt — smaller, safer JSON
