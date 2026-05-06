@@ -1165,6 +1165,7 @@ export default function AgentsPage() {
             services: receptionistProspect.service || "",
             notes: receptionistProspect.notes || "",
             gender: "auto",
+            contactName: receptionistProspect.contactName || "",
           }}
           onClose={() => setReceptionistProspect(null)}
           onCreated={() => { load(); }}

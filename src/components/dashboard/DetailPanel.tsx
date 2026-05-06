@@ -1373,6 +1373,7 @@ export default function DetailPanel({ prospect, onClose }: DetailPanelProps) {
             services: prospect.service || "",
             notes: prospect.notes || "",
             gender: "auto",
+            contactName: prospect.contactName || "",
           }}
           onClose={() => setShowReceptionistBuilder(false)}
         />

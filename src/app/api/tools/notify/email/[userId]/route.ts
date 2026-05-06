@@ -42,9 +42,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ use
     return NextResponse.json({ success: false, error: "`subject` and `message` are required." }, { status: 400 });
   }
 
-  // White-label: the recipient sees the agency name as the sender, replies
-  // route to the owner's email, and the body header shows the agency logo +
-  // name instead of NextNote branding.
+  // White-label: when the webhook URL carries ?agent=..., authorizeNotifyCall
+  // resolves these from the agent's stored branding (prospect business name,
+  // contact, logo). Otherwise it falls back to the agency owner's profile.
   const { agencyName, ownerName, email: ownerEmail, logoUrl } = auth.user;
   const safeBody = escapeHtml(message).replace(/\n/g, "<br />");
 

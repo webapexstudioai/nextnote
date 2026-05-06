@@ -7,6 +7,7 @@ import {
   ArrowLeft, Bot, Save, Loader2, AlertCircle, CheckCircle2,
   Brain, Mic, Globe, Settings2, Maximize2, Minimize2,
   ChevronDown, ChevronUp, Trash2, Wrench, PhoneForwarded, Calendar, Plug,
+  Building2, Upload,
 } from "lucide-react";
 import { parseTools, type ToolConfig } from "@/lib/tools";
 
@@ -41,11 +42,12 @@ interface AgentDetail {
   };
 }
 
-type Panel = "prompt" | "voice" | "tools" | "behavior" | "advanced";
+type Panel = "prompt" | "voice" | "branding" | "tools" | "behavior" | "advanced";
 
 const PANELS: { id: Panel; label: string; icon: React.ElementType }[] = [
   { id: "prompt", label: "Prompt & Identity", icon: Brain },
   { id: "voice", label: "Voice & Speech", icon: Mic },
+  { id: "branding", label: "Business Identity", icon: Building2 },
   { id: "tools", label: "Tools & Actions", icon: Wrench },
   { id: "behavior", label: "Behavior", icon: Settings2 },
   { id: "advanced", label: "Advanced", icon: Globe },
@@ -72,7 +74,7 @@ export default function AgentEditorPage() {
   const [success, setSuccess] = useState("");
   const [mounted, setMounted] = useState(false);
   const [expanded, setExpanded] = useState<Record<Panel, boolean>>({
-    prompt: true, voice: true, tools: false, behavior: false, advanced: false,
+    prompt: true, voice: true, branding: false, tools: false, behavior: false, advanced: false,
   });
   const [focusPanel, setFocusPanel] = useState<Panel | null>(null);
 
@@ -108,6 +110,13 @@ export default function AgentEditorPage() {
     secretConfigured: boolean;
     source: string;
   } | null>(null);
+
+  const [brandingBusinessName, setBrandingBusinessName] = useState("");
+  const [brandingContactName, setBrandingContactName] = useState("");
+  const [brandingLogoUrl, setBrandingLogoUrl] = useState("");
+  const [brandingSaving, setBrandingSaving] = useState(false);
+  const [brandingMessage, setBrandingMessage] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -147,6 +156,16 @@ export default function AgentEditorPage() {
       fetch("/api/agents/tools-status")
         .then((r) => (r.ok ? r.json() : null))
         .then((s) => s && setToolsStatus(s))
+        .catch(() => {});
+
+      fetch(`/api/agents/${agentId}/branding`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((b) => {
+          if (!b) return;
+          setBrandingBusinessName(b.businessName || "");
+          setBrandingContactName(b.contactName || "");
+          setBrandingLogoUrl(b.businessLogoUrl || "");
+        })
         .catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load agent");
@@ -347,6 +366,125 @@ export default function AgentEditorPage() {
                           </div>
                         ))}
                       </>
+                    )}
+
+                    {id === "branding" && (
+                      <div className="space-y-4">
+                        <p className="text-xs text-[var(--muted)] leading-5">
+                          Outbound emails this agent sends mid-call (quotes, confirmations, addresses) are white-labeled with the prospect&apos;s business identity below. Leave blank to fall back to your agency profile.
+                        </p>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Business Name</label>
+                          <input
+                            value={brandingBusinessName}
+                            onChange={(e) => setBrandingBusinessName(e.target.value)}
+                            placeholder="e.g. Acme Plumbing"
+                            className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] focus:outline-none focus:border-[var(--accent)] text-sm transition-colors"
+                          />
+                          <p className="text-[11px] text-[var(--muted)] mt-1.5">Shown as the From name + email header.</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Contact Name</label>
+                          <input
+                            value={brandingContactName}
+                            onChange={(e) => setBrandingContactName(e.target.value)}
+                            placeholder="e.g. Mike (Owner)"
+                            className="w-full px-4 py-3 rounded-xl bg-[var(--background)] border border-[var(--border)] focus:outline-none focus:border-[var(--accent)] text-sm transition-colors"
+                          />
+                          <p className="text-[11px] text-[var(--muted)] mt-1.5">Optional. Shows in the email footer next to the business name.</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[var(--muted)] uppercase tracking-wider mb-1.5">Business Logo</label>
+                          <div className="flex items-center gap-3">
+                            <div className="w-14 h-14 rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--background)] flex items-center justify-center shrink-0">
+                              {brandingLogoUrl ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img src={brandingLogoUrl} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Building2 className="w-5 h-5 text-[var(--muted)]" />
+                              )}
+                            </div>
+                            <div className="flex-1 flex flex-wrap items-center gap-2">
+                              <label className="px-3 py-2 rounded-lg border border-[var(--border)] text-xs hover:bg-white/[0.04] cursor-pointer inline-flex items-center gap-2">
+                                {logoUploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+                                {logoUploading ? "Uploading..." : "Upload"}
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp,image/gif"
+                                  className="hidden"
+                                  onChange={async (e) => {
+                                    const f = e.target.files?.[0];
+                                    if (!f) return;
+                                    setLogoUploading(true);
+                                    setBrandingMessage("");
+                                    try {
+                                      const fd = new FormData();
+                                      fd.append("logo", f);
+                                      const res = await fetch(`/api/agents/${agentId}/logo`, { method: "POST", body: fd });
+                                      const data = await res.json();
+                                      if (!res.ok) throw new Error(data.error || "Upload failed");
+                                      setBrandingLogoUrl(data.url);
+                                    } catch (err) {
+                                      setBrandingMessage(err instanceof Error ? err.message : "Upload failed");
+                                    } finally {
+                                      setLogoUploading(false);
+                                      e.target.value = "";
+                                    }
+                                  }}
+                                />
+                              </label>
+                              {brandingLogoUrl && (
+                                <button
+                                  onClick={async () => {
+                                    if (!confirm("Remove logo?")) return;
+                                    await fetch(`/api/agents/${agentId}/logo`, { method: "DELETE" });
+                                    setBrandingLogoUrl("");
+                                  }}
+                                  className="px-3 py-2 rounded-lg border border-red-500/20 text-red-400 text-xs hover:bg-red-500/10 transition-colors"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-[var(--muted)] mt-1.5">JPG, PNG, WebP, or GIF. Max 2MB.</p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <button
+                            disabled={brandingSaving}
+                            onClick={async () => {
+                              setBrandingSaving(true);
+                              setBrandingMessage("");
+                              try {
+                                const res = await fetch(`/api/agents/${agentId}/branding`, {
+                                  method: "PUT",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    businessName: brandingBusinessName,
+                                    contactName: brandingContactName,
+                                  }),
+                                });
+                                const data = await res.json();
+                                if (!res.ok) throw new Error(data.error || "Save failed");
+                                setBrandingMessage("Saved.");
+                              } catch (err) {
+                                setBrandingMessage(err instanceof Error ? err.message : "Save failed");
+                              } finally {
+                                setBrandingSaving(false);
+                              }
+                            }}
+                            className="px-4 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:bg-[var(--accent-hover)] transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                          >
+                            {brandingSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            Save Identity
+                          </button>
+                          {brandingMessage && <p className="text-[11px] text-[var(--muted)]">{brandingMessage}</p>}
+                        </div>
+                      </div>
                     )}
 
                     {id === "tools" && (

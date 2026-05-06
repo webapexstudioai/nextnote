@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "./supabase";
 import { decrypt } from "./crypto";
+import { getAgentBranding } from "./agentOwnership";
 
 export interface ResolvedCreds {
   apiKey: string;
@@ -10,8 +11,10 @@ export interface ResolvedCreds {
 
 // Lightweight auth for tools that don't need calendar credentials — verifies
 // the shared webhook secret and that the userId points at a real account.
-// Returns the user's email + white-label profile (agency name, owner name,
-// logo URL) so outgoing emails can be branded as the agency, not NextNote.
+// Returns a branding profile for outbound communications. When an `agent`
+// query param is present, branding resolves at the agent level (the prospect
+// business this receptionist represents) and falls back to the agency owner's
+// profile only when those fields are unset.
 export async function authorizeNotifyCall(req: NextRequest, userId: string): Promise<
   | {
       user: {
@@ -43,9 +46,24 @@ export async function authorizeNotifyCall(req: NextRequest, userId: string): Pro
     return { error: NextResponse.json({ error: "Account not found", success: false }, { status: 404 }) };
   }
 
-  // Legal business name from the optional KYB profile is the most formal label
-  // (used for things like booking confirmations). Agency name from the user
-  // profile is what shows up as the email From; falls back through name → legal.
+  const agentId = req.nextUrl.searchParams.get("agent")?.trim() || "";
+  if (agentId) {
+    const branding = await getAgentBranding(userId, agentId);
+    if (branding) {
+      return {
+        user: {
+          id: data.id,
+          email: data.email || "",
+          ownerName: branding.contactName,
+          agencyName: branding.businessName,
+          businessName: branding.businessName,
+          logoUrl: branding.logoUrl,
+        },
+      };
+    }
+  }
+
+  // No agent context — fall back to agency-level identity (legacy behavior).
   const { data: profile } = await supabaseAdmin
     .from("user_business_profiles")
     .select("legal_name")

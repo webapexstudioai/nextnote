@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    const { agentName, firstMessage, systemPrompt, voiceId } = await req.json();
+    const { agentName, firstMessage, systemPrompt, voiceId, businessName, contactName, businessLogoUrl } = await req.json();
     if (!agentName || !systemPrompt) {
       return NextResponse.json({ error: "Agent name and system prompt are required" }, { status: 400 });
     }
@@ -80,7 +80,11 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      await recordAgentOwnership(session.userId, data.agent_id, data.name || agentName);
+      await recordAgentOwnership(session.userId, data.agent_id, data.name || agentName, {
+        businessName: typeof businessName === "string" ? businessName : null,
+        contactName: typeof contactName === "string" ? contactName : null,
+        businessLogoUrl: typeof businessLogoUrl === "string" ? businessLogoUrl : null,
+      });
     } catch (ownErr) {
       // Roll back the ElevenLabs agent so we don't orphan it on the shared account.
       await fetch(`https://api.elevenlabs.io/v1/convai/agents/${data.agent_id}`, {

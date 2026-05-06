@@ -66,11 +66,15 @@ function webhookTool(opts: {
   };
 }
 
-export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarProvider): BuiltTools {
+export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarProvider, agentId?: string): BuiltTools {
   const base = getAppUrl();
   const secret = process.env.TOOLS_WEBHOOK_SECRET || "";
   const built_in_tools: Record<string, BuiltInTool> = {};
   const webhook_tools: WebhookTool[] = [];
+  // The notify webhooks white-label outgoing email/lead/message off the agent
+  // (the prospect business) instead of the agency owner. The agent ID isn't in
+  // the URL path, so we tag it as a query param.
+  const agentQuery = agentId ? `?agent=${encodeURIComponent(agentId)}` : "";
 
   // Every agent gets end_call so the LLM can actually hang up. Without it the
   // call idles until the platform's hard timeout fires.
@@ -103,7 +107,7 @@ export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarPr
     webhook_tools.push(webhookTool({
       name: "send_email",
       description: "Send an email to the caller from the business. Use this when the caller asks you to text/email/send them an address, quote, link, or confirmation. Always confirm the email address out loud before sending.",
-      url: `${base}/api/tools/notify/email/${userId}`,
+      url: `${base}/api/tools/notify/email/${userId}${agentQuery}`,
       secret,
       bodySchema: {
         type: "object",
@@ -121,7 +125,7 @@ export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarPr
     webhook_tools.push(webhookTool({
       name: "capture_lead",
       description: "Save the caller as a new lead in the CRM. Call this near the end of any call where the caller showed interest in services, even if they didn't book. Always collect at least a phone number or email before calling.",
-      url: `${base}/api/tools/notify/lead/${userId}`,
+      url: `${base}/api/tools/notify/lead/${userId}${agentQuery}`,
       secret,
       bodySchema: {
         type: "object",
@@ -141,7 +145,7 @@ export function buildTools(userId: string, cfg: ToolConfig, provider: CalendarPr
     webhook_tools.push(webhookTool({
       name: "take_message",
       description: "Record a message for the business owner when the caller wants a callback or specifically asks to leave a message. The owner gets emailed and the message lands in their CRM. Always collect the caller's phone number first.",
-      url: `${base}/api/tools/notify/message/${userId}`,
+      url: `${base}/api/tools/notify/message/${userId}${agentQuery}`,
       secret,
       bodySchema: {
         type: "object",

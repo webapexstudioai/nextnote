@@ -13,6 +13,7 @@ export interface ReceptionistBuilderInitial {
   mapsDescription?: string;
   reviews?: string;
   gender?: "female" | "male" | "auto";
+  contactName?: string;
 }
 
 interface ReceptionistDraft {
@@ -99,6 +100,8 @@ export default function ReceptionistBuilderModal({
           agentName: draft.agentName,
           firstMessage: draft.firstMessage,
           systemPrompt: draft.fullPrompt || draft.systemPrompt,
+          businessName: form.businessName || initial.businessName || "",
+          contactName: initial.contactName || "",
         }),
       });
       const data = await res.json();

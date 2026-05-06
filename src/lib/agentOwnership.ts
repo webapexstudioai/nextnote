@@ -42,14 +42,74 @@ export async function listOwnedPhoneNumberIds(userId: string): Promise<string[]>
   return (data || []).map((r: { elevenlabs_phone_number_id: string }) => r.elevenlabs_phone_number_id);
 }
 
-export async function recordAgentOwnership(userId: string, agentId: string, name: string): Promise<void> {
+export async function recordAgentOwnership(
+  userId: string,
+  agentId: string,
+  name: string,
+  branding?: { businessName?: string | null; contactName?: string | null; businessLogoUrl?: string | null },
+): Promise<void> {
   const { error } = await supabaseAdmin
     .from("user_agents")
-    .insert({ user_id: userId, elevenlabs_agent_id: agentId, name });
+    .insert({
+      user_id: userId,
+      elevenlabs_agent_id: agentId,
+      name,
+      business_name: branding?.businessName?.trim() || null,
+      contact_name: branding?.contactName?.trim() || null,
+      business_logo_url: branding?.businessLogoUrl?.trim() || null,
+    });
   if (error) {
     console.error("recordAgentOwnership failed:", error);
     throw new Error(`Failed to record agent ownership: ${error.message}`);
   }
+}
+
+export interface AgentBranding {
+  businessName: string;
+  contactName: string;
+  logoUrl: string | null;
+  ownerEmail: string;
+  agencyFallbackName: string;
+}
+
+// Resolves the white-label identity for outbound communications from this agent.
+// Per-agent values (set when the agent was built from a prospect) win over the
+// agency owner's profile — the caller is talking to "Acme Plumbing", not the
+// NextNote operator that runs Acme's account.
+export async function getAgentBranding(userId: string, agentId: string): Promise<AgentBranding | null> {
+  const { data: agent } = await supabaseAdmin
+    .from("user_agents")
+    .select("name, business_name, contact_name, business_logo_url")
+    .eq("user_id", userId)
+    .eq("elevenlabs_agent_id", agentId)
+    .maybeSingle();
+  if (!agent) return null;
+
+  const { data: user } = await supabaseAdmin
+    .from("users")
+    .select("email, name, agency_name, profile_image_url")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const ownerName = (user?.name as string | null)?.trim() || "";
+  const agencyName = (user?.agency_name as string | null)?.trim() || "";
+  const fallbackName = agencyName || ownerName || "Your business";
+
+  const businessName = (agent.business_name as string | null)?.trim()
+    || (agent.name as string | null)?.trim()
+    || fallbackName;
+  const contactName = (agent.contact_name as string | null)?.trim() || ownerName;
+  const logoUrl = (agent.business_logo_url as string | null)?.trim()
+    || (user?.profile_image_url as string | null)
+    || null;
+
+  return {
+    businessName,
+    contactName,
+    logoUrl,
+    ownerEmail: (user?.email as string | null) || "",
+    agencyFallbackName: fallbackName,
+  };
 }
 
 export async function recordPhoneNumberOwnership(
