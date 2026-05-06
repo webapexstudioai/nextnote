@@ -5,16 +5,29 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "noreply@nextnote.to";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://nextnote.to";
 
+// Strip the bytes that would break an RFC-5322 display name (CRLF for header
+// injection, quote/angle chars that confuse the parser). Resend rejects names
+// containing newlines anyway, but defense in depth.
+function safeFromName(raw: string): string {
+  return raw.replace(/[\r\n"<>]/g, "").trim().slice(0, 80);
+}
+
 export async function sendEmail(params: {
   to: string;
   subject: string;
   html: string;
   text: string;
+  // Optional white-label overrides. With both set, recipients see
+  // "{fromName} <noreply@nextnote.to>" and replies route to `replyTo`.
+  fromName?: string;
+  replyTo?: string;
 }) {
+  const displayName = params.fromName ? safeFromName(params.fromName) : "NextNote";
+  const replyTo = params.replyTo || FROM_EMAIL;
   return resend.emails.send({
-    from: `NextNote <${FROM_EMAIL}>`,
+    from: `${displayName} <${FROM_EMAIL}>`,
     to: [params.to],
-    replyTo: FROM_EMAIL,
+    replyTo,
     subject: params.subject,
     text: params.text,
     html: params.html,

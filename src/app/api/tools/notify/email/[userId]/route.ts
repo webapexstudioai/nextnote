@@ -42,19 +42,42 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ use
     return NextResponse.json({ success: false, error: "`subject` and `message` are required." }, { status: 400 });
   }
 
-  const businessName = auth.user.businessName;
+  // White-label: the recipient sees the agency name as the sender, replies
+  // route to the owner's email, and the body header shows the agency logo +
+  // name instead of NextNote branding.
+  const { agencyName, ownerName, email: ownerEmail, logoUrl } = auth.user;
   const safeBody = escapeHtml(message).replace(/\n/g, "<br />");
+
+  const headerMarkup = logoUrl
+    ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(agencyName)}" width="48" height="48" style="display:block;border-radius:12px;margin:0 auto 12px auto;border:0;" />`
+    : "";
+
+  const footerLine = ownerName && ownerName.toLowerCase() !== agencyName.toLowerCase()
+    ? `${escapeHtml(ownerName)} · ${escapeHtml(agencyName)}`
+    : escapeHtml(agencyName);
+
   const html = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.6;color:#111;max-width:560px;margin:0 auto;padding:24px;">
+      <div style="text-align:center;margin-bottom:20px;">
+        ${headerMarkup}
+        <div style="font-weight:700;font-size:16px;color:#111;">${escapeHtml(agencyName)}</div>
+      </div>
       <div>${safeBody}</div>
       <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-      <p style="font-size:11px;color:#777;margin:0;">Sent on behalf of ${escapeHtml(businessName)} via NextNote.</p>
+      <p style="font-size:11px;color:#777;margin:0;">${footerLine}</p>
     </div>
   `;
-  const text = `${message}\n\n—\nSent on behalf of ${businessName} via NextNote.`;
+  const text = `${message}\n\n—\n${ownerName && ownerName !== agencyName ? `${ownerName}\n` : ""}${agencyName}`;
 
   try {
-    await sendEmail({ to, subject, html, text });
+    await sendEmail({
+      to,
+      subject,
+      html,
+      text,
+      fromName: agencyName,
+      replyTo: ownerEmail || undefined,
+    });
     return NextResponse.json({ success: true, message: `Email sent to ${to}.` });
   } catch (e) {
     return NextResponse.json(
