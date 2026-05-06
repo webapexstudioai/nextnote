@@ -562,33 +562,19 @@ export default function AgentEditorPage() {
                         </div>
 
                         {(() => {
-                          if (!toolsStatus) {
-                            return (
-                              <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-[11px] text-[var(--muted)] leading-5">
-                                Checking webhook reachability…
-                              </div>
-                            );
-                          }
-                          const { appUrl, reachable, isLocalhost, secretConfigured, source } = toolsStatus;
+                          // Only render the diagnostic banner when something is actually wrong
+                          // (missing secret, no public URL, localhost). The green "all good"
+                          // state is just noise for paying users on nextnote.to.
+                          if (!toolsStatus) return null;
+                          const { appUrl, reachable, isLocalhost, secretConfigured } = toolsStatus;
                           const ok = reachable && secretConfigured;
-                          const tone = ok
-                            ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-300/90"
-                            : "border-amber-500/20 bg-amber-500/5 text-amber-300/90";
-                          const Icon = ok ? CheckCircle2 : AlertCircle;
+                          if (ok) return null;
                           return (
-                            <div className={`rounded-xl border ${tone} px-3 py-2.5 text-[11px] leading-5 space-y-1.5`}>
+                            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 text-amber-300/90 px-3 py-2.5 text-[11px] leading-5 space-y-1.5">
                               <div className="flex items-center gap-1.5 font-semibold">
-                                <Icon className="w-3.5 h-3.5" />
-                                {ok ? "Tools will fire during real calls" : "Tools won’t fire yet"}
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                Tools won&rsquo;t fire yet
                               </div>
-                              {appUrl ? (
-                                <div>
-                                  Webhook base: <code className="font-mono text-[10.5px]">{appUrl}</code>
-                                  <span className="ml-1 opacity-60">(from {source})</span>
-                                </div>
-                              ) : (
-                                <div>No public app URL detected.</div>
-                              )}
                               {!secretConfigured && (
                                 <div>
                                   Set <code className="font-mono">TOOLS_WEBHOOK_SECRET</code> in your env — webhooks reject any request without it.
@@ -596,7 +582,7 @@ export default function AgentEditorPage() {
                               )}
                               {isLocalhost && (
                                 <div>
-                                  You’re on localhost. Start a tunnel (<code className="font-mono">ngrok http 3000</code>) and set{" "}
+                                  You&rsquo;re on localhost. Start a tunnel (<code className="font-mono">ngrok http 3000</code>) and set{" "}
                                   <code className="font-mono">APP_URL</code> to the tunnel URL in <code className="font-mono">.env.local</code>, then Save.
                                 </div>
                               )}
@@ -605,7 +591,6 @@ export default function AgentEditorPage() {
                                   Set <code className="font-mono">APP_URL</code> (or deploy to Vercel to auto-use <code className="font-mono">VERCEL_URL</code>).
                                 </div>
                               )}
-                              {ok && <div className="opacity-70">Remember to click <strong>Save</strong> so ElevenLabs receives the updated webhook URLs.</div>}
                             </div>
                           );
                         })()}
