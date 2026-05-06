@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { rateLimit, clientKey } from "@/lib/rateLimit";
+import { sendEmail } from "@/lib/email-templates";
 
 const MAX_FIELD_LEN = 2000;
 const LEADS_FOLDER_NAME = "Website Leads";
 const LEADS_FOLDER_COLOR = "#10b981";
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 type Body = {
   name?: unknown;
@@ -91,7 +101,7 @@ export async function POST(
 
   const { data: site } = await supabaseAdmin
     .from("generated_websites")
-    .select("id, user_id, prospect_name")
+    .select("id, user_id, prospect_id, prospect_name")
     .eq("id", id)
     .maybeSingle();
 
@@ -125,5 +135,91 @@ export async function POST(
     return NextResponse.json({ error: "Could not save lead" }, { status: 500 });
   }
 
+  // Notify the prospect (the local business that owns this site) by email so
+  // they can call the homeowner back. Best-effort — never block on email.
+  if (site.prospect_id) {
+    notifyProspectOfWebsiteLead({
+      prospectId: site.prospect_id as string,
+      siteName: site.prospect_name || "your website",
+      submitter: { name, email, phone, message },
+    }).catch((e) => console.error("notifyProspectOfWebsiteLead failed:", e));
+  }
+
   return NextResponse.json({ ok: true });
+}
+
+async function notifyProspectOfWebsiteLead(args: {
+  prospectId: string;
+  siteName: string;
+  submitter: { name: string | null; email: string | null; phone: string | null; message: string | null };
+}) {
+  const { data: prospect } = await supabaseAdmin
+    .from("prospects")
+    .select("name, email, contact_name")
+    .eq("id", args.prospectId)
+    .maybeSingle();
+
+  // The prospect owner's email is the only place to send the alert. If they
+  // didn't fill in an email when the prospect was created, silently skip —
+  // the lead is still in the agency's CRM, no harm done.
+  if (!prospect?.email) return;
+
+  const businessName = (prospect.name as string | null)?.trim() || args.siteName;
+  const contactName = (prospect.contact_name as string | null)?.trim() || "";
+
+  const { name, email: leadEmail, phone, message } = args.submitter;
+  const greeting = contactName ? `Hi ${escapeHtml(contactName.split(/\s+/)[0])},` : "Hi there,";
+
+  const detailRows: string[] = [];
+  if (name) detailRows.push(`<tr><td style="padding:6px 0;color:#6b7280;font-size:12px;width:100px;">Name</td><td style="padding:6px 0;font-size:14px;color:#111;">${escapeHtml(name)}</td></tr>`);
+  if (phone) detailRows.push(`<tr><td style="padding:6px 0;color:#6b7280;font-size:12px;">Phone</td><td style="padding:6px 0;font-size:14px;color:#111;"><a href="tel:${escapeHtml(phone)}" style="color:#e8553d;text-decoration:none;">${escapeHtml(phone)}</a></td></tr>`);
+  if (leadEmail) detailRows.push(`<tr><td style="padding:6px 0;color:#6b7280;font-size:12px;">Email</td><td style="padding:6px 0;font-size:14px;color:#111;"><a href="mailto:${escapeHtml(leadEmail)}" style="color:#e8553d;text-decoration:none;">${escapeHtml(leadEmail)}</a></td></tr>`);
+
+  const messageBlock = message
+    ? `<div style="margin-top:18px;padding:14px 16px;background:#f9fafb;border-left:3px solid #e8553d;border-radius:6px;"><p style="margin:0 0 6px 0;color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">What they said</p><p style="margin:0;color:#111;font-size:14px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(message)}</p></div>`
+    : "";
+
+  const subject = name
+    ? `New lead from your website — ${name}`
+    : `New lead from your website`;
+
+  const html = `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;">
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="display:inline-block;padding:6px 14px;border-radius:999px;background:#fff4f0;color:#e8553d;font-weight:600;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;">New website lead</div>
+      </div>
+      <h1 style="margin:0 0 14px 0;font-size:22px;color:#111;text-align:center;">Someone just requested an inspection</h1>
+      <p style="margin:0 0 18px 0;font-size:14px;line-height:1.6;color:#374151;">${greeting} a visitor on <strong>${escapeHtml(businessName)}</strong>'s website filled out the contact form. Reach out soon — fast follow-up wins jobs.</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;margin:0 0 4px 0;">
+        ${detailRows.join("")}
+      </table>
+      ${messageBlock}
+      ${phone ? `<div style="margin-top:22px;text-align:center;"><a href="tel:${escapeHtml(phone)}" style="display:inline-block;padding:12px 24px;background:#e8553d;color:#fff;border-radius:10px;text-decoration:none;font-weight:600;font-size:14px;">Call ${escapeHtml(name || "now")}</a></div>` : ""}
+      <hr style="border:none;border-top:1px solid #eee;margin:28px 0 14px 0;" />
+      <p style="font-size:11px;color:#9ca3af;margin:0;text-align:center;">Sent by <strong>${escapeHtml(businessName)}</strong> · This lead is also saved in your CRM.</p>
+    </div>
+  `;
+
+  const text = [
+    `${greeting.replace(/<[^>]+>/g, "")}`,
+    "",
+    `A visitor on ${businessName}'s website just submitted the contact form.`,
+    "",
+    name ? `Name:    ${name}` : null,
+    phone ? `Phone:   ${phone}` : null,
+    leadEmail ? `Email:   ${leadEmail}` : null,
+    message ? `\nMessage:\n${message}` : null,
+    "",
+    "Reach out soon — fast follow-up wins jobs.",
+  ].filter(Boolean).join("\n");
+
+  await sendEmail({
+    to: prospect.email,
+    subject,
+    html,
+    text,
+    fromName: businessName,
+    // Replies go straight to the homeowner who submitted the form.
+    replyTo: leadEmail || undefined,
+  });
 }
