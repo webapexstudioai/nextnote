@@ -20,7 +20,7 @@ function BillingInner() {
   const search = useSearchParams();
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [amount, setAmount] = useState<number>(500);
+  const [amount, setAmount] = useState<string>("500");
   const [purchasing, setPurchasing] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
@@ -56,7 +56,9 @@ function BillingInner() {
     }
   }, [search, load]);
 
-  const clamped = Math.min(MAX_TOPUP, Math.max(MIN_TOPUP, Math.floor(amount || 0)));
+  const parsed = parseInt(amount, 10);
+  const hasValidAmount = Number.isFinite(parsed) && parsed >= MIN_TOPUP;
+  const clamped = Math.min(MAX_TOPUP, Math.max(MIN_TOPUP, Number.isFinite(parsed) ? parsed : MIN_TOPUP));
   const priceUsd = (clamped / 100).toFixed(2);
 
   const buy = async () => {
@@ -214,28 +216,37 @@ function BillingInner() {
         </p>
         <div className="flex items-stretch gap-2">
           <input
-            type="number"
-            min={MIN_TOPUP}
-            max={MAX_TOPUP}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={amount}
-            onChange={(e) => setAmount(Number(e.target.value))}
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "");
+              const trimmed = digits.replace(/^0+(?=\d)/, "");
+              setAmount(trimmed);
+            }}
             className="flex-1 px-4 py-3 bg-[var(--background)] border border-white/10 rounded-xl text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40"
-            placeholder="Credits"
+            placeholder={`${MIN_TOPUP}+ credits`}
           />
           <div className="flex items-center px-4 rounded-xl border border-white/10 bg-[var(--background)] text-sm font-mono text-[var(--muted)]">
-            ${priceUsd}
+            ${hasValidAmount ? priceUsd : "0.00"}
           </div>
         </div>
 
         <button
           onClick={buy}
-          disabled={purchasing}
-          className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 text-[var(--foreground)] text-sm font-semibold px-4 py-3 transition-all disabled:opacity-60"
+          disabled={purchasing || !hasValidAmount}
+          className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 text-[var(--foreground)] text-sm font-semibold px-4 py-3 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {purchasing ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
               Opening Stripe…
+            </>
+          ) : !hasValidAmount ? (
+            <>
+              <Zap className="w-4 h-4" />
+              Enter at least {MIN_TOPUP} credits
             </>
           ) : (
             <>
