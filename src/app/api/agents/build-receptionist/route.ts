@@ -68,12 +68,14 @@ export async function POST(req: NextRequest) {
       8000
     );
 
-    // Step 2: Extract structured metadata from the prompt — smaller, safer JSON
+    // Step 2: Extract structured metadata from the prompt — smaller, safer JSON.
+    // Feed enough of the prompt for the greeting + summary to fit, and give the
+    // model real headroom so the firstMessage string doesn't get truncated.
     const metaText = await aiChat(
       cfg.config,
-      `Extract structured metadata from a receptionist prompt. Return ONLY valid compact JSON with no extra text.`,
-      `From this receptionist prompt, extract metadata and return ONLY this JSON:\n{"agentName":"...","firstMessage":"...","tone":"...","services":["..."],"businessSummary":"..."}\n\nThe agentName must be the first name used by the receptionist in the prompt (do not invent a different one, do not default to 'Sarah').\n\nPrompt:\n${fullPrompt.slice(0, 1200)}`,
-      400,
+      `Extract structured metadata from a receptionist prompt. Return ONLY valid compact JSON with no extra text. The firstMessage value must be a COMPLETE sentence ending in punctuation — never a partial phrase.`,
+      `From this receptionist prompt, extract metadata and return ONLY this JSON:\n{"agentName":"...","firstMessage":"...","tone":"...","services":["..."],"businessSummary":"..."}\n\nThe agentName must be the first name used by the receptionist in the prompt (do not invent a different one, do not default to 'Sarah').\n\nThe firstMessage must be the COMPLETE opening greeting the receptionist would say out loud on the first second of a phone call — a full sentence introducing themselves by first name and the business. Example shape: "Hi, thanks for calling [Business] — this is [Name], how can I help you?". Never return a fragment.\n\nPrompt:\n${fullPrompt.slice(0, 4000)}`,
+      1200,
       "fast"
     );
 
@@ -85,6 +87,18 @@ export async function POST(req: NextRequest) {
     } catch {
       // fallback
     }
+
+    // Guard against truncated/partial first messages slipping through to
+    // ElevenLabs (e.g. "...this is" with no name). If the extracted greeting
+    // doesn't end on real punctuation, swap in a deterministic template.
+    const extractedAgentName = ((meta.agentName as string) || "").trim();
+    const rawFirst = ((meta.firstMessage as string) || "").trim();
+    const looksComplete = /[.!?]["')\]]?$/.test(rawFirst) && rawFirst.length > 20;
+    const fallbackFirst = extractedAgentName
+      ? `Hi, thanks for calling ${businessName} — this is ${extractedAgentName}, how can I help you today?`
+      : `Hi, thanks for calling ${businessName}. How can I help you today?`;
+    const firstMessage = looksComplete ? rawFirst : fallbackFirst;
+    meta.firstMessage = firstMessage;
 
     await deductCredits(session.userId, RECEPTIONIST_BUILD_CREDITS, {
       reason: "receptionist_build",
